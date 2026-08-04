@@ -12,9 +12,12 @@
     "diff:demo": "node packages/helix-cli/bin/helix.mjs diff --a certificates/demo-certified.json --b certificates/demo-draft-backdoor.json",
     "smoke": "node scripts/smoke.mjs",
     "host-smoke": "node scripts/host-smoke.mjs",
+    "static-smoke": "node scripts/static-smoke.mjs",
+    "dna-core-smoke": "node scripts/dna-core-smoke.mjs",
     "gce-smoke": "node scripts/smoke.mjs",
     "nft-smoke": "bash scripts/gce-nft-smoke.sh",
-    "agent": "node packages/helix-agent/bin/helix-agent.mjs"
+    "agent": "node packages/helix-agent/bin/helix-agent.mjs",
+    "test": "node scripts/dna-core-smoke.mjs && node scripts/smoke.mjs && node scripts/host-smoke.mjs && node scripts/static-smoke.mjs"
   },
   "engines": {
     "node": ">=20"

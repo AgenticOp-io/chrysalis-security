@@ -1,18 +1,32 @@
 /**
  * Helix DNA core — trust nothing until certified.
  * v0: method + host + path template; JSON key fingerprint only for json routes.
+ * Static assets collapse by extension (double-star glob) so learn stays quiet on hashed bundles.
  */
 
 /** @typedef {{ method: string, path: string, host?: string, status?: number, contentType?: string, body?: unknown }} Observation */
 /** @typedef {{ method: string, path_template: string, host: string, content_class: string, status_classes: number[], response_key_fingerprint: string|null }} DnaRoute */
 /** @typedef {{ schema: 'app-dna-v1', app_id: string, created_at: string, mode: 'draft'|'certified', parent_hash: string|null, routes: DnaRoute[], holes: object[] }} AppDna */
 
+/** File extensions treated as static assets (collapsed in DNA). */
+export const STATIC_EXT_RE =
+  /\.(js|mjs|cjs|css|map|png|jpe?g|gif|svg|ico|webp|avif|woff2?|ttf|eot|wasm)$/i;
+
 export function pathTemplate(path) {
   const raw = String(path || '/').split('?')[0] || '/';
+  const staticMatch = raw.match(STATIC_EXT_RE);
+  if (staticMatch) {
+    const ext = staticMatch[1].toLowerCase().replace('jpeg', 'jpg');
+    return `/**/*.${ext === 'jpeg' ? 'jpg' : ext}`;
+  }
   return raw
     .replace(/\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '/:id')
     .replace(/\/[0-9a-f]{16,}/gi, '/:id')
     .replace(/\/\d+/g, '/:id');
+}
+
+export function isStaticAssetPath(path) {
+  return STATIC_EXT_RE.test(String(path || '/').split('?')[0] || '/');
 }
 
 export function contentClass(contentType) {
@@ -65,7 +79,6 @@ export function learnFromObservations(observations, opts = {}) {
     if (obs.status != null) {
       route.status_classes.add(Math.floor(Number(obs.status) / 100) * 100);
     }
-    // Prefer json class if we ever see json on this route
     if (klass === 'json') {
       route.content_class = 'json';
       const fp = responseKeyFingerprint(obs.body);
@@ -146,7 +159,6 @@ export function scoreRequest(dna, req) {
     (r) => r.method === method && r.path_template === path_template && (r.host || 'default') === host,
   );
   if (!route) {
-    // Fallback: host-agnostic match for single-app DNA that used host=default
     const loose = dna.routes.find((r) => r.method === method && r.path_template === path_template);
     if (!loose) {
       return {
@@ -163,7 +175,7 @@ export function scoreRequest(dna, req) {
 }
 
 /**
- * Response-time check: JSON key drift only.
+ * Response-time check: JSON key drift only (never HTML/static bodies).
  * @param {DnaRoute} route
  * @param {{ contentType?: string, body?: unknown }} res
  */

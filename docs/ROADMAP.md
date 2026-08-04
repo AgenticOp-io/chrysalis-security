@@ -10,13 +10,15 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] Mode A soft host agent (`helix-agent`) + `host-smoke.mjs`  
 - [x] Linux nft redirect helper (`scripts/host-redirect-nft.sh`)  
 - [x] Dockerfile env surface  
-- [x] **GCE prove on agenticop-master:** `SMOKE_OK` · `HOST_SMOKE_OK` · `NFT_SMOKE_OK`  
+- [x] GCE prove: `SMOKE_OK` · `HOST_SMOKE_OK` · `NFT_SMOKE_OK`  
+- [x] Static-asset path collapse (`/**/*.<ext>`) + `static-smoke` / `dna-core-smoke`  
+- [x] `scripts/gce-sync.ps1` Helix sync+prove  
 
 ## Now
 
-- [ ] Static-asset path collapse  
-- [ ] One real site on GCE behind helix-agent  
-- [ ] Keep gce sync script for Helix lane  
+- [ ] Persistent mini-site behind helix-agent on GCE (high port)  
+- [ ] JSON schema drift enforce smoke  
+- [ ] Push Secure updates to AgenticOp-io/chrysalis-security  
 
 ## Later
 
