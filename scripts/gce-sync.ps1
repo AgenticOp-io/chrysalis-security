@@ -49,7 +49,9 @@ $smokeCmds = @(
   "node scripts/smoke.mjs",
   "node scripts/host-smoke.mjs",
   "node scripts/static-smoke.mjs",
-  "node scripts/schema-drift-smoke.mjs"
+  "node scripts/schema-drift-smoke.mjs",
+  "node scripts/sign-smoke.mjs",
+  "node scripts/bridge-smoke.mjs"
 )
 if (-not $SkipNft) { $smokeCmds += "bash scripts/gce-nft-smoke.sh" }
 if ($SiteUp) {
