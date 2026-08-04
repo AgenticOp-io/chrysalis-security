@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agenticop.io/schemas/app-dna-v1.json",
+  "title": "app-dna-v1",
+  "description": "Helix behavioral DNA certificate. Identity of a running app as proved by traffic.",
+  "type": "object",
+  "required": ["schema", "app_id", "created_at", "mode", "routes"],
+  "properties": {
+    "schema": { "const": "app-dna-v1" },
+    "app_id": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
+    "mode": { "enum": ["draft", "certified"] },
+    "parent_hash": { "type": ["string", "null"] },
+    "routes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["method", "path_template", "host", "content_class"],
+        "properties": {
+          "host": { "type": "string" },
+          "method": { "type": "string" },
+          "path_template": { "type": "string" },
+          "content_class": { "enum": ["json", "html", "other"] },
+          "status_classes": {
+            "type": "array",
+            "items": { "type": "integer" }
+          },
+          "response_key_fingerprint": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "holes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code", "reason"],
+        "properties": {
+          "code": { "type": "string" },
+          "reason": { "type": "string" },
+          "observed_at": { "type": "string" }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}
