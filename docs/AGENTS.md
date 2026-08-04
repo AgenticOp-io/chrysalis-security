@@ -14,6 +14,8 @@ You are building **Helix** (DNA firewall). Not the Universal Translator.
 
 Trust nothing: if it isn’t in certified DNA, it doesn’t pass. Keep the product **simple**. No Chrysalis-style rule encyclopedias. No custom OS.
 
+**CWL:** Always check `engines/chrysalis-cwl` before inventing language/bridge semantics. Helix owns DNA, not CWL.
+
 ## Refuse
 
 - Silent allows  

@@ -1,0 +1,15 @@
+---
+description: Helix must defer CWL language semantics to chrysalis-cwl
+globs: **/*.{mjs,md}
+alwaysApply: true
+---
+
+# Secure lane — CWL check
+
+Helix primary artifact is traffic **DNA** (`app-dna-v1`), not CWL.
+
+If you touch CWL naming, bridge, import/export, or “language surface” ideas:
+
+1. Check **`engines/chrysalis-cwl`** (and `AgenticOps/docs/THREE_PILLARS.md`) first.
+2. Do not invent CWL grammar/semantics inside this repo.
+3. Keep firewall locks (D1–D4) independent of convert/CWL product deadlines.
