@@ -14,10 +14,11 @@
     "host-smoke": "node scripts/host-smoke.mjs",
     "static-smoke": "node scripts/static-smoke.mjs",
     "dna-core-smoke": "node scripts/dna-core-smoke.mjs",
+    "schema-drift-smoke": "node scripts/schema-drift-smoke.mjs",
     "gce-smoke": "node scripts/smoke.mjs",
     "nft-smoke": "bash scripts/gce-nft-smoke.sh",
     "agent": "node packages/helix-agent/bin/helix-agent.mjs",
-    "test": "node scripts/dna-core-smoke.mjs && node scripts/smoke.mjs && node scripts/host-smoke.mjs && node scripts/static-smoke.mjs"
+    "test": "node scripts/dna-core-smoke.mjs && node scripts/smoke.mjs && node scripts/host-smoke.mjs && node scripts/static-smoke.mjs && node scripts/schema-drift-smoke.mjs"
   },
   "engines": {
     "node": ">=20"

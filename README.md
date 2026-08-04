@@ -7,8 +7,8 @@ Locks: [`docs/DECISIONS.md`](./docs/DECISIONS.md) · Beginning: [`docs/BEGINNING
 ## Prove
 
 ```bash
-npm run smoke
-npm run host-smoke
+npm test   # dna-core + smoke + host + static + schema-drift
+.\scripts\gce-sync.ps1 -SiteUp   # GCE pack + all smokes + persistent site :18085
 ```
 
 ## Mode A (no NGFW NAT change)

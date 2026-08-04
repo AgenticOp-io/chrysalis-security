@@ -5,13 +5,16 @@
 .EXAMPLE
   .\scripts\gce-sync.ps1
   .\scripts\gce-sync.ps1 -SkipNft
+  .\scripts\gce-sync.ps1 -SiteUp
 #>
 param(
   [string] $Project = "chrysalis-dev-f5x6qv",
   [string] $Zone = "us-central1-a",
   [string] $Name = "agenticop-master",
   [switch] $SkipNft,
-  [switch] $SyncOnly
+  [switch] $SyncOnly,
+  [switch] $SiteUp,
+  [switch] $Relearn
 )
 
 $ErrorActionPreference = "Stop"
@@ -45,9 +48,14 @@ $smokeCmds = @(
   "node scripts/dna-core-smoke.mjs",
   "node scripts/smoke.mjs",
   "node scripts/host-smoke.mjs",
-  "node scripts/static-smoke.mjs"
+  "node scripts/static-smoke.mjs",
+  "node scripts/schema-drift-smoke.mjs"
 )
 if (-not $SkipNft) { $smokeCmds += "bash scripts/gce-nft-smoke.sh" }
+if ($SiteUp) {
+  if ($Relearn) { $smokeCmds += "RELEARN=1 bash scripts/gce-site-up.sh" }
+  else { $smokeCmds += "bash scripts/gce-site-up.sh" }
+}
 if ($SyncOnly) {
   $smokeCmds = @(
     "set -e",

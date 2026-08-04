@@ -13,15 +13,16 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] GCE prove: `SMOKE_OK` · `HOST_SMOKE_OK` · `NFT_SMOKE_OK`  
 - [x] Static-asset path collapse (`/**/*.<ext>`) + `static-smoke` / `dna-core-smoke`  
 - [x] `scripts/gce-sync.ps1` Helix sync+prove  
+- [x] JSON schema drift enforce smoke (`schema-drift-smoke`)  
+- [x] Persistent mini-site behind helix-agent on GCE (`gce-site-up.sh`, port 18085)  
 
 ## Now
 
-- [ ] Persistent mini-site behind helix-agent on GCE (high port)  
-- [ ] JSON schema drift enforce smoke  
+- [ ] Mode B transparent bridge spike  
+- [ ] Signed DNA certificate format  
 
 ## Later
 
-- [ ] Mode B transparent bridge  
 - [ ] K8s sidecar  
 - [ ] Optional TLS terminate  
-- [ ] Signed DNA · SIEM export  
+- [ ] SIEM export  

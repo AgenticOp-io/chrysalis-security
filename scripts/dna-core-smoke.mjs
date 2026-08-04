@@ -6,6 +6,7 @@ import {
   pathTemplate,
   learnFromObservations,
   scoreRequest,
+  scoreResponse,
   isStaticAssetPath,
 } from '../packages/dna-core/index.mjs';
 
@@ -38,5 +39,24 @@ assert(okJs.allow === true, 'new hashed js allowed via collapse');
 
 const bad = scoreRequest(dna, { method: 'GET', path: '/api/backdoor', host: '127.0.0.1' });
 assert(bad.allow === false && bad.hole.code === 'HX-ROUTE-UNKNOWN', 'unknown api blocked');
+
+const jsonRoute = {
+  method: 'GET',
+  path_template: '/api/health',
+  host: '127.0.0.1',
+  content_class: 'json',
+  status_classes: [200],
+  response_key_fingerprint: 'ok,service',
+};
+const drift = scoreResponse(jsonRoute, {
+  contentType: 'application/json',
+  body: { ok: true, service: 'x', pwned: true },
+});
+assert(drift.allow === false && drift.hole.code === 'HX-SCHEMA-DRIFT', 'schema drift scored');
+const stable = scoreResponse(jsonRoute, {
+  contentType: 'application/json',
+  body: { service: 'x', ok: true },
+});
+assert(stable.allow === true, 'stable keys allow');
 
 console.log('DNA_CORE_OK');
