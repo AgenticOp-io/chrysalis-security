@@ -18,7 +18,6 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 
 - [ ] Persistent mini-site behind helix-agent on GCE (high port)  
 - [ ] JSON schema drift enforce smoke  
-- [ ] Push Secure updates to AgenticOp-io/chrysalis-security  
 
 ## Later
 
