@@ -3,10 +3,11 @@
  * v0: method + host + path template; JSON key fingerprint only for json routes.
  * Static assets collapse by extension (double-star glob) so learn stays quiet on hashed bundles.
  */
+import crypto from 'node:crypto';
 
 /** @typedef {{ method: string, path: string, host?: string, status?: number, contentType?: string, body?: unknown }} Observation */
 /** @typedef {{ method: string, path_template: string, host: string, content_class: string, status_classes: number[], response_key_fingerprint: string|null }} DnaRoute */
-/** @typedef {{ schema: 'app-dna-v1', app_id: string, created_at: string, mode: 'draft'|'certified', parent_hash: string|null, routes: DnaRoute[], holes: object[] }} AppDna */
+/** @typedef {{ schema: 'app-dna-v1', app_id: string, created_at: string, mode: 'draft'|'certified', parent_hash: string|null, routes: DnaRoute[], holes: object[], signature?: { alg: string, key_id: string, value: string } }} AppDna */
 
 /** File extensions treated as static assets (collapsed in DNA). */
 export const STATIC_EXT_RE =
@@ -205,4 +206,102 @@ export function scoreObservation(dna, obs) {
   const req = scoreRequest(dna, obs);
   if (!req.allow) return req;
   return scoreResponse(req.route, obs);
+}
+
+/**
+ * Canonical JSON for signing — omit signature block; deep-sorted keys.
+ * @param {AppDna & { signature?: object }} dna
+ */
+export function dnaSigningPayload(dna) {
+  const { signature: _sig, ...rest } = dna || {};
+  return stableStringify(rest);
+}
+
+/**
+ * HMAC-SHA256 sign a certified DNA certificate (lab / operator key).
+ * @param {AppDna} dna
+ * @param {{ secret: string|Buffer, key_id?: string }} opts
+ */
+export function signDna(dna, opts) {
+  if (!opts?.secret) throw new Error('signDna requires secret');
+  const keyId = opts.key_id || 'default';
+  const body = { ...dna, mode: dna.mode || 'certified' };
+  delete body.signature;
+  const payload = stableStringify(body);
+  const value = crypto.createHmac('sha256', opts.secret).update(payload).digest('hex');
+  return {
+    ...body,
+    signature: {
+      alg: 'hmac-sha256',
+      key_id: keyId,
+      value,
+    },
+  };
+}
+
+/**
+ * Verify DNA signature. Unsigned DNA returns { ok: true, unsigned: true }.
+ * @param {AppDna & { signature?: { alg?: string, key_id?: string, value?: string } }} dna
+ * @param {{ secret?: string|Buffer, key_id?: string, require?: boolean }} opts
+ */
+export function verifyDna(dna, opts = {}) {
+  const sig = dna?.signature;
+  if (!sig || !sig.value) {
+    if (opts.require) {
+      return {
+        ok: false,
+        hole: { code: 'HX-DNA-UNSIGNED', reason: 'Certified DNA requires signature' },
+      };
+    }
+    return { ok: true, unsigned: true };
+  }
+  if (!opts.secret) {
+    return {
+      ok: false,
+      hole: { code: 'HX-DNA-KEY-MISSING', reason: 'DNA is signed but no secret provided' },
+    };
+  }
+  if (sig.alg && sig.alg !== 'hmac-sha256') {
+    return {
+      ok: false,
+      hole: { code: 'HX-DNA-ALG', reason: `Unsupported signature alg: ${sig.alg}` },
+    };
+  }
+  if (opts.key_id && sig.key_id && opts.key_id !== sig.key_id) {
+    return {
+      ok: false,
+      hole: {
+        code: 'HX-DNA-KEY-ID',
+        reason: `key_id mismatch: got ${sig.key_id}, expected ${opts.key_id}`,
+      },
+    };
+  }
+  const { signature: _s, ...rest } = dna;
+  const payload = stableStringify(rest);
+  const expected = crypto.createHmac('sha256', opts.secret).update(payload).digest('hex');
+  const a = Buffer.from(String(sig.value), 'utf8');
+  const b = Buffer.from(expected, 'utf8');
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    return {
+      ok: false,
+      hole: { code: 'HX-DNA-BAD-SIG', reason: 'DNA signature verification failed' },
+    };
+  }
+  return { ok: true, unsigned: false, key_id: sig.key_id || 'default' };
+}
+
+function stableStringify(obj) {
+  return JSON.stringify(sortKeysDeep(obj));
+}
+
+function sortKeysDeep(value) {
+  if (Array.isArray(value)) return value.map(sortKeysDeep);
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const k of Object.keys(value).sort()) {
+      out[k] = sortKeysDeep(value[k]);
+    }
+    return out;
+  }
+  return value;
 }

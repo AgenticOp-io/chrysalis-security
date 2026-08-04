@@ -7,6 +7,7 @@
   "scripts": {
     "demo:api": "node fixtures/demo-api/server.mjs",
     "proxy": "node packages/helix-proxy/server.mjs",
+    "bridge": "node packages/helix-bridge/bin/helix-bridge.mjs",
     "helix": "node packages/helix-cli/bin/helix.mjs",
     "learn:demo": "node packages/helix-cli/bin/helix.mjs learn --in fixtures/sample-observations.ndjson --out certificates/demo-draft.json",
     "diff:demo": "node packages/helix-cli/bin/helix.mjs diff --a certificates/demo-certified.json --b certificates/demo-draft-backdoor.json",
@@ -15,10 +16,12 @@
     "static-smoke": "node scripts/static-smoke.mjs",
     "dna-core-smoke": "node scripts/dna-core-smoke.mjs",
     "schema-drift-smoke": "node scripts/schema-drift-smoke.mjs",
+    "sign-smoke": "node scripts/sign-smoke.mjs",
+    "bridge-smoke": "node scripts/bridge-smoke.mjs",
     "gce-smoke": "node scripts/smoke.mjs",
     "nft-smoke": "bash scripts/gce-nft-smoke.sh",
     "agent": "node packages/helix-agent/bin/helix-agent.mjs",
-    "test": "node scripts/dna-core-smoke.mjs && node scripts/smoke.mjs && node scripts/host-smoke.mjs && node scripts/static-smoke.mjs && node scripts/schema-drift-smoke.mjs"
+    "test": "node scripts/dna-core-smoke.mjs && node scripts/smoke.mjs && node scripts/host-smoke.mjs && node scripts/static-smoke.mjs && node scripts/schema-drift-smoke.mjs && node scripts/sign-smoke.mjs && node scripts/bridge-smoke.mjs"
   },
   "engines": {
     "node": ">=20"

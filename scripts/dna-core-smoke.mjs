@@ -8,6 +8,8 @@ import {
   scoreRequest,
   scoreResponse,
   isStaticAssetPath,
+  signDna,
+  verifyDna,
 } from '../packages/dna-core/index.mjs';
 
 function assert(cond, msg) {
@@ -58,5 +60,12 @@ const stable = scoreResponse(jsonRoute, {
   body: { service: 'x', ok: true },
 });
 assert(stable.allow === true, 'stable keys allow');
+
+const signed = signDna(
+  { schema: 'app-dna-v1', app_id: 'u', created_at: 't', mode: 'certified', parent_hash: null, routes: [], holes: [] },
+  { secret: 'k', key_id: 't' },
+);
+assert(verifyDna(signed, { secret: 'k' }).ok === true, 'sign verify');
+assert(verifyDna(signed, { secret: 'x' }).ok === false, 'bad key');
 
 console.log('DNA_CORE_OK');

@@ -14,6 +14,7 @@
  *   DNA=/data/app.dna.json
  *   OBSERVE=/data/observations.ndjson
  *   SHADOW_LOG=/data/shadow.ndjson
+ *   HELIX_DNA_KEY=… / HELIX_DNA_REQUIRE=1
  *
  * Same engine as helix-proxy; this entrypoint is the host-install story.
  */
@@ -27,6 +28,9 @@ const mode = process.env.MODE || 'learn';
 const dnaPath = process.env.DNA || '';
 const observePath = process.env.OBSERVE || './data/observations.ndjson';
 const shadowLogPath = process.env.SHADOW_LOG || './data/shadow.ndjson';
+const dnaKey = process.env.HELIX_DNA_KEY || '';
+const dnaKeyId = process.env.HELIX_DNA_KEY_ID || '';
+const requireSignedDna = process.env.HELIX_DNA_REQUIRE === '1' || process.env.HELIX_DNA_REQUIRE === 'true';
 
 if (!['learn', 'shadow', 'enforce'].includes(mode)) {
   console.error(`Invalid MODE=${mode}`);
@@ -37,13 +41,23 @@ if ((mode === 'shadow' || mode === 'enforce') && (!dnaPath || !fs.existsSync(dna
   process.exit(1);
 }
 
-const server = createHelixProxy({
-  upstream,
-  mode,
-  dnaPath: dnaPath || undefined,
-  observePath: mode === 'learn' ? observePath : undefined,
-  shadowLogPath: mode === 'shadow' ? shadowLogPath : undefined,
-});
+let server;
+try {
+  server = createHelixProxy({
+    upstream,
+    mode,
+    dnaPath: dnaPath || undefined,
+    observePath: mode === 'learn' ? observePath : undefined,
+    shadowLogPath: mode === 'shadow' ? shadowLogPath : undefined,
+    dnaKey: dnaKey || undefined,
+    dnaKeyId: dnaKeyId || undefined,
+    requireSignedDna,
+    placement: 'agent',
+  });
+} catch (err) {
+  console.error(err.hole ? JSON.stringify(err.hole) : String(err.message || err));
+  process.exit(1);
+}
 
 server.listen(listenPort, listenHost, () => {
   console.log(

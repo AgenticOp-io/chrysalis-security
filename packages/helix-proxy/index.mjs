@@ -6,7 +6,15 @@ import http from 'node:http';
 import https from 'node:https';
 import fs from 'node:fs';
 import path from 'node:path';
-import { scoreRequest, scoreResponse, pathTemplate, contentClass, responseKeyFingerprint } from '../dna-core/index.mjs';
+import {
+  scoreRequest,
+  scoreResponse,
+  pathTemplate,
+  contentClass,
+  responseKeyFingerprint,
+  verifyDna,
+  signDna,
+} from '../dna-core/index.mjs';
 
 function appendNdjson(filePath, obj) {
   if (!filePath) return;
@@ -14,9 +22,18 @@ function appendNdjson(filePath, obj) {
   fs.appendFileSync(filePath, JSON.stringify(obj) + '\n');
 }
 
-function loadDna(dnaPath) {
+function loadDna(dnaPath, verifyOpts) {
   if (!dnaPath || !fs.existsSync(dnaPath)) return null;
-  return JSON.parse(fs.readFileSync(dnaPath, 'utf8'));
+  const dna = JSON.parse(fs.readFileSync(dnaPath, 'utf8'));
+  if (verifyOpts) {
+    const v = verifyDna(dna, verifyOpts);
+    if (!v.ok) {
+      const err = new Error(v.hole?.reason || 'DNA verify failed');
+      err.hole = v.hole;
+      throw err;
+    }
+  }
+  return dna;
 }
 
 function requestHost(req) {
@@ -31,13 +48,26 @@ function requestHost(req) {
  *   dnaPath?: string,
  *   observePath?: string,
  *   shadowLogPath?: string,
+ *   dnaKey?: string,
+ *   dnaKeyId?: string,
+ *   requireSignedDna?: boolean,
+ *   placement?: 'proxy'|'agent'|'bridge',
  * }} opts
  */
 export function createHelixProxy(opts) {
-  let dna = loadDna(opts.dnaPath);
+  const verifyOpts =
+    opts.dnaKey || opts.requireSignedDna
+      ? {
+          secret: opts.dnaKey || undefined,
+          key_id: opts.dnaKeyId,
+          require: Boolean(opts.requireSignedDna),
+        }
+      : null;
+
+  let dna = loadDna(opts.dnaPath, verifyOpts);
 
   function reloadDna() {
-    dna = loadDna(opts.dnaPath);
+    dna = loadDna(opts.dnaPath, verifyOpts);
     return dna;
   }
 
@@ -168,4 +198,4 @@ export function createHelixProxy(opts) {
   return server;
 }
 
-export { pathTemplate, contentClass, responseKeyFingerprint };
+export { pathTemplate, contentClass, responseKeyFingerprint, signDna, verifyDna };

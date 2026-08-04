@@ -15,11 +15,13 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] `scripts/gce-sync.ps1` Helix sync+prove  
 - [x] JSON schema drift enforce smoke (`schema-drift-smoke`)  
 - [x] Persistent mini-site behind helix-agent on GCE (`gce-site-up.sh`, port 18085)  
+- [x] Signed DNA (`hmac-sha256`) + `sign-smoke` / `helix verify`  
+- [x] Mode B userspace bridge spike (`helix-bridge` + `bridge-smoke`)  
 
 ## Now
 
-- [ ] Mode B transparent bridge spike  
-- [ ] Signed DNA certificate format  
+- [ ] Mode B L2 / dual-NIC appliance path (beyond userspace spike)  
+- [ ] Ed25519 DNA signatures (optional alg)  
 
 ## Later
 
