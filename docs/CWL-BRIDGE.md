@@ -3,7 +3,9 @@
 Helix protects with traffic DNA out of the box. This bridge is **optional**: seed draft DNA from a CWL module, or compare CWL surface ⊆ certified DNA for cutover.
 
 **Contract owner:** `engines/chrysalis-cwl` — [RFC-0022](../../chrysalis-cwl/docs/language/CWL-RFC-0022-dna-surface-bridge.md)  
-**Implementation:** `packages/cwl-bridge` (consumes CWL parser; does not fork grammar)
+**Implementation:** `packages/cwl-bridge` (consumes CWL `cwl-dna-seed.mjs` + parser; does not fork grammar)
+
+Seed prefers language-pillar `scripts/hub-ingest/cwl-dna-seed.mjs` when present (CWL 0.1.6+). Helix owns strip / promote / compare / enforce only.
 
 ## Commands
 

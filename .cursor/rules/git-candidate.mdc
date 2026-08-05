@@ -1,0 +1,12 @@
+---
+description: Commit always; push only to candidate/* — never main
+alwaysApply: true
+---
+
+# Git — candidate only (Helix / Secure)
+
+- **Commit** completed work on the active lane (do not leave large finished slices uncommitted).
+- **Push** only to branches named `candidate/*` (or another non-`main`/`master` branch the user named).
+- **Never** `git push` to `main` or `master`. Agents do **not** have authority to update main.
+- After push: report remote URL + branch + SHA.
+- Merge to main is a **human / authority** action (PR merge), not an agent push.

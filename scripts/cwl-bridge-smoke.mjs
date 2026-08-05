@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * RFC-0022 smoke: seed DNA from CWL language gold + shape compare.
- * Requires sibling engines/chrysalis-cwl (or CHRYSALIS_CWL_ROOT).
+ * Optional: skips cleanly if chrysalis-cwl is absent (DNA firewall must not require CWL).
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -21,7 +21,16 @@ function assert(cond, msg) {
   if (!cond) throw new Error(msg);
 }
 
-const cwlRoot = resolveCwlRoot();
+let cwlRoot;
+try {
+  cwlRoot = resolveCwlRoot();
+} catch {
+  console.log(
+    'CWL_BRIDGE_SMOKE_SKIP (chrysalis-cwl not found — set CHRYSALIS_CWL_ROOT or keep engines/chrysalis-cwl sibling)',
+  );
+  process.exit(0);
+}
+
 const goldCwl = path.join(cwlRoot, 'fixtures', 'language-gold', '24-dna-bridge', 'routes.cwl');
 const goldExpected = path.join(
   cwlRoot,
@@ -30,6 +39,13 @@ const goldExpected = path.join(
   '24-dna-bridge',
   'expected-dna.json',
 );
+
+if (!fs.existsSync(goldCwl) || !fs.existsSync(goldExpected)) {
+  console.log(
+    `CWL_BRIDGE_SMOKE_SKIP (missing gold under ${path.join(cwlRoot, 'fixtures/language-gold/24-dna-bridge')})`,
+  );
+  process.exit(0);
+}
 
 assert(fs.existsSync(goldCwl), `missing CWL gold: ${goldCwl}`);
 assert(fs.existsSync(goldExpected), `missing expected DNA gold: ${goldExpected}`);

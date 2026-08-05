@@ -24,14 +24,22 @@ From `chrysalis-security`:
 Prefer this when iterating; GCE still gates ship.
 
 ```bash
-# Full DNA + bridge pack (same Node smokes as sync, minus nft/site)
+# Full DNA + optional CWL bridge pack (CWL absent → SKIP, DNA still gates)
 node scripts/gce-smoke.mjs
 # or: npm run gce-smoke
 
-# Or npm (includes CWL bridge; fails hard if chrysalis-cwl missing)
-npm test
-npm run cwl-bridge-smoke
+npm test                  # DNA + CWL when present; CWL smokes SKIP if pillar absent
+npm run cutover-smoke     # → CUTOVER_SMOKE_OK (or CUTOVER_SMOKE_SKIP)
+npm run cwl-bridge-smoke  # → CWL_BRIDGE_SMOKE_OK (or CWL_BRIDGE_SMOKE_SKIP)
 ```
+
+### Prove tokens (sync bar)
+
+| Where | Command | Token |
+|-------|---------|--------|
+| CWL | `npm run smoke:ut-spine:helix` | `UT_SPINE_OK` |
+| Secure | `npm run cutover-smoke` | `CUTOVER_SMOKE_OK` |
+| Secure GCE | `.\scripts\gce-sync.ps1 -WithCwl` | `CWL_BRIDGE_SMOKE_OK` + `CUTOVER_SMOKE_OK` + `GCE_SYNC_OK` |
 
 ### DNA tokens
 
@@ -50,7 +58,7 @@ npm run cwl-bridge-smoke
 
 ### CWL bridge (RFC-0022)
 
-Needs language pillar gold — **not** shipped inside the Helix tarball:
+Needs language pillar gold — **not** required for DNA firewall:
 
 - Sibling `engines/chrysalis-cwl` (AgenticOps layout), **or**
 - `CHRYSALIS_CWL_ROOT` pointing at that tree
@@ -58,22 +66,19 @@ Needs language pillar gold — **not** shipped inside the Helix tarball:
 ```bash
 # Local (sibling present under AgenticOps/engines)
 node scripts/cwl-bridge-smoke.mjs   # → CWL_BRIDGE_SMOKE_OK
+node scripts/cutover-smoke.mjs      # → CUTOVER_SMOKE_OK
 
-# On GCE without CWL tree: sync prints CWL_BRIDGE_SMOKE_SKIP (honest; DNA smokes still gate)
-# To prove bridge on agenticop-master, put CWL on-box first, e.g.:
-#   export CHRYSALIS_CWL_ROOT=~/chrysalis-cwl
-#   node scripts/cwl-bridge-smoke.mjs
+# Without CWL tree: CWL_BRIDGE_SMOKE_SKIP / CUTOVER_SMOKE_SKIP (honest; DNA still gates)
+# GCE with bridge: .\scripts\gce-sync.ps1 -WithCwl
 ```
 
-Optional S2 cutover E2E: `scripts/cutover-smoke.mjs` when present → otherwise `CUTOVER_SMOKE_SKIP`.
-
-### UT ↔ Convert demo (local or after sync)
+### UT ↔ Helix demo (CWL owns spine — not Convert)
 
 ```bash
 # Local: DNA pack + cutover + CWL smoke:ut-spine (sibling engines)
 npm run ut-gce-demo   # → UT_GCE_DEMO_OK
 
-# CWL-side one-shot (from chrysalis-cwl)
+# CWL-side one-shot (from chrysalis-cwl) — authority prove token
 npm run smoke:ut-spine:helix
 ```
 
