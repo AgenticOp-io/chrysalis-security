@@ -5,10 +5,12 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { routeKey, responseKeyFingerprint } from '../dna-core/index.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
+const requireFromHere = createRequire(import.meta.url);
 
 /**
  * Resolve chrysalis-cwl root (sibling under AgenticOps/engines by default).
@@ -17,12 +19,24 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 export function resolveCwlRoot(override) {
   if (override) return path.resolve(override);
   if (process.env.CHRYSALIS_CWL_ROOT) return path.resolve(process.env.CHRYSALIS_CWL_ROOT);
+
+  // Prefer @chrysalis/cwl pin (file: or registry) → pillar root
+  try {
+    const pkgJson = requireFromHere.resolve('@chrysalis/cwl/package.json');
+    const fromPin = path.resolve(path.dirname(pkgJson), '../..');
+    if (fs.existsSync(path.join(fromPin, 'scripts', 'hub-ingest', 'cwl-parser.mjs'))) {
+      return fromPin;
+    }
+  } catch {
+    /* not installed */
+  }
+
   const sibling = path.resolve(HERE, '../../../chrysalis-cwl');
   if (fs.existsSync(path.join(sibling, 'scripts', 'hub-ingest', 'cwl-parser.mjs'))) {
     return sibling;
   }
   throw new Error(
-    'chrysalis-cwl not found — set CHRYSALIS_CWL_ROOT or keep engines/chrysalis-cwl next to chrysalis-security',
+    'chrysalis-cwl not found — npm i @chrysalis/cwl (file: pin), set CHRYSALIS_CWL_ROOT, or keep engines/chrysalis-cwl next to chrysalis-security',
   );
 }
 

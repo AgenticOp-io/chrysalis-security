@@ -18,7 +18,17 @@ npm run helix -- seed-cwl --in path/to/routes.cwl --out data/seeded.dna.json --s
 npm run helix -- compare-cwl --cwl path/to/routes.cwl --dna certificates/app.json
 ```
 
-Env: `CHRYSALIS_CWL_ROOT` if the language pillar is not at `../chrysalis-cwl`.
+Env: `CHRYSALIS_CWL_ROOT` if the language pillar is not at `../chrysalis-cwl`.  
+Dependency pin: `"@chrysalis/cwl": "file:../chrysalis-cwl/packages/cwl"` (resolves pillar via package when installed).
+
+## Pin note (Phase 1.0 — pre-publish)
+
+Secure pins `@chrysalis/cwl` as **`file:../chrysalis-cwl/packages/cwl`** (not a registry release; package stays private). Bridge tools also resolve the language pillar via:
+
+1. Sibling `../chrysalis-cwl` under `AgenticOps/engines/`  
+2. Env **`CHRYSALIS_CWL_ROOT`** / CLI `--cwl-root` → absolute path to that repo root
+
+Language version bar: `LANGUAGE_VERSION.md` in chrysalis-cwl (currently **0.1.7**). Full pin / future registry path: [`chrysalis-cwl/docs/language/CWL-PUBLISH.md`](../../chrysalis-cwl/docs/language/CWL-PUBLISH.md). Do not fork grammar here.
 
 ## Rules (honest)
 
@@ -33,6 +43,7 @@ Promote / sign must use `stripBridgeEnvelope` (or `--strip-bridge`) — schema i
 
 ```bash
 npm run cwl-bridge-smoke   # → CWL_BRIDGE_SMOKE_OK
+npm run cutover-smoke      # → CUTOVER_SMOKE_OK (seed→strip→promote(+HMAC)→compare→enforce allow/deny)
 ```
 
 Uses language gold `fixtures/language-gold/24-dna-bridge/` from chrysalis-cwl.
