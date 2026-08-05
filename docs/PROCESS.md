@@ -39,7 +39,7 @@ against a normal HTTP app — not only the toy fixture.
 
 1. Proxy records observations (host, path template, content-type, json keys)  
 2. Enforce unknown routes + JSON key drift  
-3. `scripts/gce-smoke.sh`  
+3. `scripts/gce-smoke.mjs` (DNA pack + `cwl-bridge-smoke` when CWL root present)  
 4. Minimal container env (`UPSTREAM` / `MODE` / `DNA`)  
 
 Later: TLS terminate, signing, SQL, SIEM — after beginning is boring.

@@ -40,6 +40,21 @@
           "observed_at": { "type": "string" }
         }
       }
+    },
+    "signature": {
+      "type": "object",
+      "description": "Optional certificate signature (hmac-sha256 or ed25519).",
+      "required": ["alg", "key_id", "value"],
+      "properties": {
+        "alg": { "enum": ["hmac-sha256", "ed25519"] },
+        "key_id": { "type": "string", "minLength": 1 },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Hex digest (HMAC) or hex Ed25519 signature (64 bytes)."
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false

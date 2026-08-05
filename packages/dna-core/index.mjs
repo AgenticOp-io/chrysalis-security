@@ -217,18 +217,131 @@ export function dnaSigningPayload(dna) {
   return stableStringify(rest);
 }
 
+/** Supported DNA signature algorithms. */
+export const DNA_SIG_ALGS = Object.freeze(['hmac-sha256', 'ed25519']);
+
+/** PKCS8 prefix for raw 32-byte Ed25519 seed → DER private key. */
+const ED25519_PKCS8_PREFIX = Buffer.from('302e020100300506032b657004220420', 'hex');
+/** SPKI prefix for raw 32-byte Ed25519 public key → DER. */
+const ED25519_SPKI_PREFIX = Buffer.from('302a300506032b6570032100', 'hex');
+
 /**
- * HMAC-SHA256 sign a certified DNA certificate (lab / operator key).
+ * Parse Ed25519 key material: PEM, DER, or raw 32-byte (hex / base64 / Buffer).
+ * @param {string|Buffer|crypto.KeyObject} material
+ * @param {'private'|'public'} kind
+ * @returns {crypto.KeyObject}
+ */
+export function loadEd25519Key(material, kind = 'private') {
+  if (material && typeof material === 'object' && typeof material.type === 'string' && material.asymmetricKeyType) {
+    return material;
+  }
+  const raw = normalizeKeyBytes(material);
+  if (!raw || !raw.length) throw new Error(`ed25519 ${kind} key material required`);
+
+  const asPem = raw.toString('utf8');
+  if (asPem.includes('BEGIN')) {
+    return kind === 'public' ? crypto.createPublicKey(asPem) : crypto.createPrivateKey(asPem);
+  }
+
+  if (raw.length === 32) {
+    if (kind === 'public') {
+      return crypto.createPublicKey({
+        key: Buffer.concat([ED25519_SPKI_PREFIX, raw]),
+        format: 'der',
+        type: 'spki',
+      });
+    }
+    return crypto.createPrivateKey({
+      key: Buffer.concat([ED25519_PKCS8_PREFIX, raw]),
+      format: 'der',
+      type: 'pkcs8',
+    });
+  }
+
+  // Full DER (PKCS8 / SPKI)
+  try {
+    if (kind === 'public') {
+      return crypto.createPublicKey({ key: raw, format: 'der', type: 'spki' });
+    }
+    return crypto.createPrivateKey({ key: raw, format: 'der', type: 'pkcs8' });
+  } catch (err) {
+    throw new Error(`Invalid ed25519 ${kind} key: ${err.message || err}`);
+  }
+}
+
+/**
+ * @returns {{ privateKey: crypto.KeyObject, publicKey: crypto.KeyObject, privatePem: string, publicPem: string }}
+ */
+export function generateEd25519KeyPair() {
+  const { privateKey, publicKey } = crypto.generateKeyPairSync('ed25519');
+  return {
+    privateKey,
+    publicKey,
+    privatePem: privateKey.export({ type: 'pkcs8', format: 'pem' }),
+    publicPem: publicKey.export({ type: 'spki', format: 'pem' }),
+  };
+}
+
+function normalizeKeyBytes(material) {
+  if (material == null) return null;
+  if (Buffer.isBuffer(material)) return material;
+  const s = String(material).trim();
+  if (!s) return null;
+  if (s.includes('BEGIN')) return Buffer.from(s, 'utf8');
+  // hex (64 chars = 32 bytes raw; longer = DER)
+  if (/^[0-9a-fA-F]+$/.test(s) && s.length % 2 === 0) {
+    return Buffer.from(s, 'hex');
+  }
+  // base64
+  try {
+    const b = Buffer.from(s, 'base64');
+    if (b.length === 32 || b.length === 48 || b.length === 44) return b;
+  } catch {
+    /* fall through */
+  }
+  return Buffer.from(s, 'utf8');
+}
+
+function resolveSignAlg(opts) {
+  const alg = String(opts?.alg || 'hmac-sha256').toLowerCase();
+  if (!DNA_SIG_ALGS.includes(alg)) {
+    throw new Error(`Unsupported signature alg: ${alg}`);
+  }
+  return alg;
+}
+
+/**
+ * Sign a certified DNA certificate (HMAC-SHA256 or Ed25519).
  * @param {AppDna} dna
- * @param {{ secret: string|Buffer, key_id?: string }} opts
+ * @param {{
+ *   alg?: 'hmac-sha256'|'ed25519',
+ *   secret?: string|Buffer,
+ *   privateKey?: string|Buffer|crypto.KeyObject,
+ *   key?: string|Buffer,
+ *   key_id?: string,
+ * }} opts
  */
 export function signDna(dna, opts) {
-  if (!opts?.secret) throw new Error('signDna requires secret');
+  const alg = resolveSignAlg(opts || {});
   const keyId = opts.key_id || 'default';
   const body = { ...dna, mode: dna.mode || 'certified' };
   delete body.signature;
   const payload = stableStringify(body);
-  const value = crypto.createHmac('sha256', opts.secret).update(payload).digest('hex');
+
+  if (alg === 'ed25519') {
+    const material = opts.privateKey ?? opts.key ?? opts.secret;
+    if (!material) throw new Error('signDna ed25519 requires privateKey (or key/secret)');
+    const priv = loadEd25519Key(material, 'private');
+    const value = crypto.sign(null, Buffer.from(payload, 'utf8'), priv).toString('hex');
+    return {
+      ...body,
+      signature: { alg: 'ed25519', key_id: keyId, value },
+    };
+  }
+
+  const secret = opts.secret ?? opts.key;
+  if (!secret) throw new Error('signDna requires secret');
+  const value = crypto.createHmac('sha256', secret).update(payload).digest('hex');
   return {
     ...body,
     signature: {
@@ -241,8 +354,16 @@ export function signDna(dna, opts) {
 
 /**
  * Verify DNA signature. Unsigned DNA returns { ok: true, unsigned: true }.
+ * HMAC uses `secret`; Ed25519 uses `publicKey` (or privateKey / secret as PEM/raw).
  * @param {AppDna & { signature?: { alg?: string, key_id?: string, value?: string } }} dna
- * @param {{ secret?: string|Buffer, key_id?: string, require?: boolean }} opts
+ * @param {{
+ *   secret?: string|Buffer,
+ *   publicKey?: string|Buffer|crypto.KeyObject,
+ *   privateKey?: string|Buffer|crypto.KeyObject,
+ *   key?: string|Buffer,
+ *   key_id?: string,
+ *   require?: boolean,
+ * }} opts
  */
 export function verifyDna(dna, opts = {}) {
   const sig = dna?.signature;
@@ -255,18 +376,15 @@ export function verifyDna(dna, opts = {}) {
     }
     return { ok: true, unsigned: true };
   }
-  if (!opts.secret) {
-    return {
-      ok: false,
-      hole: { code: 'HX-DNA-KEY-MISSING', reason: 'DNA is signed but no secret provided' },
-    };
-  }
-  if (sig.alg && sig.alg !== 'hmac-sha256') {
+
+  const alg = String(sig.alg || 'hmac-sha256').toLowerCase();
+  if (!DNA_SIG_ALGS.includes(alg)) {
     return {
       ok: false,
       hole: { code: 'HX-DNA-ALG', reason: `Unsupported signature alg: ${sig.alg}` },
     };
   }
+
   if (opts.key_id && sig.key_id && opts.key_id !== sig.key_id) {
     return {
       ok: false,
@@ -276,9 +394,84 @@ export function verifyDna(dna, opts = {}) {
       },
     };
   }
+
   const { signature: _s, ...rest } = dna;
   const payload = stableStringify(rest);
-  const expected = crypto.createHmac('sha256', opts.secret).update(payload).digest('hex');
+
+  if (alg === 'ed25519') {
+    const material = opts.publicKey ?? opts.privateKey ?? opts.key ?? opts.secret;
+    if (!material) {
+      return {
+        ok: false,
+        hole: { code: 'HX-DNA-KEY-MISSING', reason: 'DNA is signed but no public key provided' },
+      };
+    }
+    let pub;
+    try {
+      if (opts.publicKey) {
+        pub = loadEd25519Key(opts.publicKey, 'public');
+      } else if (opts.privateKey) {
+        pub = crypto.createPublicKey(loadEd25519Key(opts.privateKey, 'private'));
+      } else {
+        // Auto: PEM public, PEM private, or raw 32-byte public
+        const text = Buffer.isBuffer(material) ? material.toString('utf8') : String(material);
+        if (text.includes('BEGIN PUBLIC KEY')) {
+          pub = loadEd25519Key(material, 'public');
+        } else if (text.includes('BEGIN PRIVATE KEY')) {
+          pub = crypto.createPublicKey(loadEd25519Key(material, 'private'));
+        } else {
+          const bytes = normalizeKeyBytes(material);
+          if (bytes && bytes.length === 32) {
+            pub = loadEd25519Key(bytes, 'public');
+          } else {
+            try {
+              pub = loadEd25519Key(material, 'public');
+            } catch {
+              pub = crypto.createPublicKey(loadEd25519Key(material, 'private'));
+            }
+          }
+        }
+      }
+    } catch (err) {
+      return {
+        ok: false,
+        hole: {
+          code: 'HX-DNA-KEY-MISSING',
+          reason: `Invalid ed25519 key: ${err.message || err}`,
+        },
+      };
+    }
+    let sigBuf;
+    try {
+      sigBuf = Buffer.from(String(sig.value), 'hex');
+    } catch {
+      sigBuf = Buffer.alloc(0);
+    }
+    if (sigBuf.length !== 64) {
+      return {
+        ok: false,
+        hole: { code: 'HX-DNA-BAD-SIG', reason: 'DNA signature verification failed' },
+      };
+    }
+    const ok = crypto.verify(null, Buffer.from(payload, 'utf8'), pub, sigBuf);
+    if (!ok) {
+      return {
+        ok: false,
+        hole: { code: 'HX-DNA-BAD-SIG', reason: 'DNA signature verification failed' },
+      };
+    }
+    return { ok: true, unsigned: false, key_id: sig.key_id || 'default', alg: 'ed25519' };
+  }
+
+  // hmac-sha256
+  const secret = opts.secret ?? opts.key;
+  if (!secret) {
+    return {
+      ok: false,
+      hole: { code: 'HX-DNA-KEY-MISSING', reason: 'DNA is signed but no secret provided' },
+    };
+  }
+  const expected = crypto.createHmac('sha256', secret).update(payload).digest('hex');
   const a = Buffer.from(String(sig.value), 'utf8');
   const b = Buffer.from(expected, 'utf8');
   if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
@@ -287,7 +480,7 @@ export function verifyDna(dna, opts = {}) {
       hole: { code: 'HX-DNA-BAD-SIG', reason: 'DNA signature verification failed' },
     };
   }
-  return { ok: true, unsigned: false, key_id: sig.key_id || 'default' };
+  return { ok: true, unsigned: false, key_id: sig.key_id || 'default', alg: 'hmac-sha256' };
 }
 
 function stableStringify(obj) {

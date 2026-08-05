@@ -11,4 +11,6 @@ Optional CWL bridge (seed / cutover compare) follows [RFC-0022](../../chrysalis-
 
 **Always check `engines/chrysalis-cwl`** as the primary holder of CWL language logic before inventing bridge semantics here.
 
+**Pin (pre-publish):** `"@chrysalis/cwl": "file:../chrysalis-cwl/packages/cwl"` + sibling / `CHRYSALIS_CWL_ROOT` — not npm registry yet. See [CWL-BRIDGE.md](./CWL-BRIDGE.md) pin note and [`chrysalis-cwl/docs/language/CWL-PUBLISH.md`](../../chrysalis-cwl/docs/language/CWL-PUBLISH.md).
+
 Portfolio doc: [`../../../docs/THREE_PILLARS.md`](../../../docs/THREE_PILLARS.md) (from `AgenticOps/docs/`).

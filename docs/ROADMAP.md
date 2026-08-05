@@ -21,14 +21,19 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 ## Done (continued)
 
 - [x] CWL ↔ DNA bridge (RFC-0022): `packages/cwl-bridge` + `seed-cwl` / `compare-cwl` + `cwl-bridge-smoke`  
+- [x] Platform cutover E2E: `cutover-smoke` (CWL gold → strip → promote(+HMAC) → compare → enforce allow/deny)  
+- [x] Ed25519 DNA signatures (optional alg beside hmac-sha256)  
 
 ## Now
 
-- [ ] Mode B L2 / dual-NIC appliance path (beyond userspace spike)  
-- [ ] Ed25519 DNA signatures (optional alg)  
+- [ ] Mode B L2 / dual-NIC appliance path (beyond userspace spike) — design: [MODE-B-L2.md](./MODE-B-L2.md)  
+- [x] UT ↔ CWL spine demo path: `npm run ut-gce-demo` → `UT_GCE_DEMO_OK` (CWL `smoke:ut-spine`; Convert does not own)  
 
 ## Later
 
+- [ ] Mode B L2 **implementation** (design-only until Now clears)  
 - [ ] K8s sidecar  
 - [ ] Optional TLS terminate  
 - [ ] SIEM export  
+
+**Non-goals (locked):** no NGFW TLS dependency (D1); DNA block/alert only (D2); no UEBA/signature-WAF replacement (D3); host augment / no NAT homework (D4).

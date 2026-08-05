@@ -14,11 +14,17 @@ function usage() {
 Usage:
   helix learn      --in <observations.ndjson> --out <dna.json> [--app-id name]
   helix diff       --a <dna.json> --b <dna.json>
-  helix promote    --in <draft.json> --out <certified.json> [--key <secret>|--key-file <path>] [--key-id id]
-  helix verify     --in <certified.json> [--key <secret>|--key-file <path>] [--key-id id] [--require]
+  helix promote    --in <draft.json> --out <certified.json>
+                   [--alg hmac-sha256|ed25519]
+                   [--key <secret|pem>|--key-file <path>] [--key-id id]
+  helix verify     --in <certified.json>
+                   [--alg hmac-sha256|ed25519]
+                   [--key <secret|pem>|--key-file <path>] [--key-id id] [--require]
   helix seed-cwl   --in <routes.cwl> --out <draft.json> [--app-id name] [--host default] [--strip-bridge]
   helix compare-cwl --cwl <routes.cwl|seed.json> --dna <certified.json>
 
+Signing: hmac-sha256 (shared secret) or ed25519 (PEM/raw private promote, public verify).
+Env: HELIX_DNA_KEY, HELIX_DNA_KEY_ID, HELIX_DNA_ALG. Canon: docs/SIGNED-DNA.md
 CWL bridge: RFC-0022 (chrysalis-cwl). Canon: docs/CANON.md
 `);
 }
@@ -44,6 +50,12 @@ function resolveSecret(rest) {
   if (keyFile) return fs.readFileSync(keyFile, 'utf8').trim();
   if (envKey) return envKey;
   return null;
+}
+
+function resolveAlg(rest) {
+  const fromFlag = flag(rest, '--alg');
+  const fromEnv = process.env.HELIX_DNA_ALG || '';
+  return String(fromFlag || fromEnv || 'hmac-sha256').toLowerCase();
 }
 
 const [cmd, ...rest] = process.argv.slice(2);
@@ -100,14 +112,20 @@ if (cmd === 'promote') {
   dna.mode = 'certified';
   dna.created_at = new Date().toISOString();
   const secret = resolveSecret(rest);
+  const alg = resolveAlg(rest);
   if (secret) {
-    dna = signDna(dna, { secret, key_id: flag(rest, '--key-id') || 'default' });
+    dna = signDna(dna, {
+      alg,
+      secret,
+      privateKey: alg === 'ed25519' ? secret : undefined,
+      key_id: flag(rest, '--key-id') || process.env.HELIX_DNA_KEY_ID || 'default',
+    });
   }
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, JSON.stringify(dna, null, 2) + '\n');
   console.log(
     secret
-      ? `Promoted + signed certificate → ${out}`
+      ? `Promoted + signed (${dna.signature?.alg || alg}) certificate → ${out}`
       : `Promoted certificate → ${out}`,
   );
   process.exit(0);
@@ -121,9 +139,11 @@ if (cmd === 'verify') {
   }
   const dna = readJson(input);
   const secret = resolveSecret(rest);
+  const algHint = flag(rest, '--alg') || process.env.HELIX_DNA_ALG || dna?.signature?.alg;
   const result = verifyDna(dna, {
     secret: secret || undefined,
-    key_id: flag(rest, '--key-id'),
+    publicKey: algHint === 'ed25519' || dna?.signature?.alg === 'ed25519' ? secret || undefined : undefined,
+    key_id: flag(rest, '--key-id') || process.env.HELIX_DNA_KEY_ID || undefined,
     require: hasFlag(rest, '--require'),
   });
   console.log(JSON.stringify(result, null, 2));

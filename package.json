@@ -20,6 +20,7 @@
     "bridge-smoke": "node scripts/bridge-smoke.mjs",
     "cwl-bridge-smoke": "node scripts/cwl-bridge-smoke.mjs",
     "cutover-smoke": "node scripts/cutover-smoke.mjs",
+    "ut-gce-demo": "node scripts/ut-gce-demo.mjs",
     "gce-smoke": "node scripts/gce-smoke.mjs",
     "nft-smoke": "bash scripts/gce-nft-smoke.sh",
     "agent": "node packages/helix-agent/bin/helix-agent.mjs",

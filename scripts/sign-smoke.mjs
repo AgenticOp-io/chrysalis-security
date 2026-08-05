@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
 import { fileURLToPath } from 'node:url';
-import { signDna, verifyDna } from '../packages/dna-core/index.mjs';
+import { signDna, verifyDna, generateEd25519KeyPair } from '../packages/dna-core/index.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
@@ -122,7 +122,7 @@ async function main() {
     OBSERVE: observePath,
     PORT: '4086',
   });
-  await sleep(300);
+  await waitPort(4086);
   await get(4086, '/api/health');
   await get(4086, '/api/items');
   await sleep(200);
@@ -157,7 +157,7 @@ async function main() {
     HELIX_DNA_KEY_ID: 'lab',
     HELIX_DNA_REQUIRE: '1',
   });
-  await sleep(400);
+  await waitPort(4086);
   const health = await get(4086, '/api/health');
   if (health.status !== 200) throw new Error(`health ${health.status}`);
   const blocked = await get(4086, '/api/backdoor');
@@ -213,7 +213,76 @@ async function main() {
   console.log('tampered DNA rejected ok');
 
   cleanup();
-  console.log('\nSIGN_SMOKE_OK');
+  kids.length = 0;
+  await sleep(200);
+
+  console.log('=== ed25519 unit sign/verify ===');
+  const pair = generateEd25519KeyPair();
+  const edSample = {
+    schema: 'app-dna-v1',
+    app_id: 'ed25519-unit',
+    created_at: '2026-08-04T00:00:00.000Z',
+    mode: 'certified',
+    parent_hash: null,
+    routes: [],
+    holes: [],
+  };
+  const edSigned = signDna(edSample, {
+    alg: 'ed25519',
+    privateKey: pair.privatePem,
+    key_id: 'ed-lab',
+  });
+  if (edSigned.signature?.alg !== 'ed25519') {
+    throw new Error(`expected ed25519 alg got ${edSigned.signature?.alg}`);
+  }
+  const edOk = verifyDna(edSigned, { publicKey: pair.publicPem, key_id: 'ed-lab' });
+  if (!edOk.ok) throw new Error(`ed25519 verify failed ${JSON.stringify(edOk)}`);
+  const edBad = verifyDna(edSigned, {
+    publicKey: generateEd25519KeyPair().publicPem,
+  });
+  if (edBad.ok || edBad.hole?.code !== 'HX-DNA-BAD-SIG') {
+    throw new Error(`expected HX-DNA-BAD-SIG got ${JSON.stringify(edBad)}`);
+  }
+
+  const privPath = path.join(dataDir, 'ed25519-priv.pem');
+  const pubPath = path.join(dataDir, 'ed25519-pub.pem');
+  const edCertPath = path.join(dataDir, 'ed25519-certified.dna.json');
+  fs.writeFileSync(privPath, pair.privatePem);
+  fs.writeFileSync(pubPath, pair.publicPem);
+
+  console.log('=== ed25519 promote + verify CLI ===');
+  // Reuse HMAC-learned draft if present; else minimal draft
+  let draftForEd = draftPath;
+  if (!fs.existsSync(draftPath)) {
+    draftForEd = path.join(dataDir, 'ed-draft.dna.json');
+    fs.writeFileSync(
+      draftForEd,
+      JSON.stringify({ ...edSample, mode: 'draft', app_id: 'ed25519-cli' }, null, 2),
+    );
+  }
+  await run([
+    'packages/helix-cli/bin/helix.mjs', 'promote',
+    '--in', draftForEd, '--out', edCertPath,
+    '--alg', 'ed25519', '--key-file', privPath, '--key-id', 'ed-lab',
+  ]);
+  await run([
+    'packages/helix-cli/bin/helix.mjs', 'verify',
+    '--in', edCertPath, '--alg', 'ed25519', '--key-file', pubPath, '--key-id', 'ed-lab', '--require',
+  ]);
+  const edCert = JSON.parse(fs.readFileSync(edCertPath, 'utf8'));
+  if (edCert.signature?.alg !== 'ed25519' || !edCert.signature?.value) {
+    throw new Error('missing ed25519 signature after promote');
+  }
+
+  // HMAC path still works (regression)
+  const hmacStill = signDna(edSample, { secret: SECRET, key_id: 'lab' });
+  const hmacOk = verifyDna(hmacStill, { secret: SECRET });
+  if (!hmacOk.ok || hmacStill.signature.alg !== 'hmac-sha256') {
+    throw new Error('hmac regression after ed25519');
+  }
+
+  console.log('\nED25519_SMOKE_OK');
+  console.log('SIGN_SMOKE_OK');
 }
 
 main().catch((err) => {

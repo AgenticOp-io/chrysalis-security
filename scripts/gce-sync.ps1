@@ -6,6 +6,7 @@
   .\scripts\gce-sync.ps1
   .\scripts\gce-sync.ps1 -SkipNft
   .\scripts\gce-sync.ps1 -SiteUp
+  .\scripts\gce-sync.ps1 -WithCwl   # also sync sibling chrysalis-cwl for cutover / CWL bridge
 #>
 param(
   [string] $Project = "chrysalis-dev-f5x6qv",
@@ -14,7 +15,8 @@ param(
   [switch] $SkipNft,
   [switch] $SyncOnly,
   [switch] $SiteUp,
-  [switch] $Relearn
+  [switch] $Relearn,
+  [switch] $WithCwl
 )
 
 $ErrorActionPreference = "Stop"
@@ -38,35 +40,52 @@ Write-Host "SCP → ${Name}:/tmp/chrysalis-security-gce.tgz"
 & gcloud compute scp $tar "${Name}:/tmp/chrysalis-security-gce.tgz" --zone=$Zone --project=$Project
 if ($LASTEXITCODE -ne 0) { throw "scp failed" }
 
-$smokeCmds = @(
-  "set -e",
-  "mkdir -p ~/chrysalis-security",
-  "tar -xzf /tmp/chrysalis-security-gce.tgz -C ~/chrysalis-security",
-  "sed -i 's/\r$//' ~/chrysalis-security/scripts/*.sh",
-  "chmod +x ~/chrysalis-security/scripts/*.sh",
-  "cd ~/chrysalis-security",
-  "node scripts/dna-core-smoke.mjs",
-  "node scripts/smoke.mjs",
-  "node scripts/host-smoke.mjs",
-  "node scripts/static-smoke.mjs",
-  "node scripts/schema-drift-smoke.mjs",
-  "node scripts/sign-smoke.mjs",
-  "node scripts/bridge-smoke.mjs"
-)
-if (-not $SkipNft) { $smokeCmds += "bash scripts/gce-nft-smoke.sh" }
+$cwlRootSibling = Join-Path (Split-Path -Parent $Root) "chrysalis-cwl"
+if ($WithCwl) {
+  if (-not (Test-Path (Join-Path $cwlRootSibling "LANGUAGE_VERSION.md"))) {
+    throw "-WithCwl requires sibling chrysalis-cwl at $cwlRootSibling"
+  }
+  $cwlTar = Join-Path $env:TEMP "chrysalis-cwl-gce.tgz"
+  if (Test-Path $cwlTar) { Remove-Item $cwlTar -Force }
+  Write-Host "Packing CWL pillar $cwlRootSibling → $cwlTar"
+  Push-Location $cwlRootSibling
+  try {
+    tar -czf $cwlTar --exclude=node_modules --exclude=.git --exclude=packages/webir .
+  } finally {
+    Pop-Location
+  }
+  Write-Host "SCP → ${Name}:/tmp/chrysalis-cwl-gce.tgz"
+  & gcloud compute scp $cwlTar "${Name}:/tmp/chrysalis-cwl-gce.tgz" --zone=$Zone --project=$Project
+  if ($LASTEXITCODE -ne 0) { throw "CWL scp failed" }
+}
+
+# DNA + CWL bridge pack: cutover skips honestly if CWL absent
+$smokeCmds = [System.Collections.Generic.List[string]]::new()
+[void]$smokeCmds.Add("set -e")
+[void]$smokeCmds.Add("mkdir -p ~/chrysalis-security")
+[void]$smokeCmds.Add("tar -xzf /tmp/chrysalis-security-gce.tgz -C ~/chrysalis-security")
+[void]$smokeCmds.Add("sed -i 's/\r$//' ~/chrysalis-security/scripts/*.sh")
+[void]$smokeCmds.Add("chmod +x ~/chrysalis-security/scripts/*.sh")
+if ($WithCwl) {
+  [void]$smokeCmds.Add("mkdir -p ~/chrysalis-cwl")
+  [void]$smokeCmds.Add("tar -xzf /tmp/chrysalis-cwl-gce.tgz -C ~/chrysalis-cwl")
+  [void]$smokeCmds.Add('export CHRYSALIS_CWL_ROOT=$HOME/chrysalis-cwl')
+}
+[void]$smokeCmds.Add("cd ~/chrysalis-security")
+[void]$smokeCmds.Add("node scripts/gce-smoke.mjs")
+if (-not $SkipNft) { [void]$smokeCmds.Add("bash scripts/gce-nft-smoke.sh") }
 if ($SiteUp) {
-  if ($Relearn) { $smokeCmds += "RELEARN=1 bash scripts/gce-site-up.sh" }
-  else { $smokeCmds += "bash scripts/gce-site-up.sh" }
+  if ($Relearn) { [void]$smokeCmds.Add("RELEARN=1 bash scripts/gce-site-up.sh") }
+  else { [void]$smokeCmds.Add("bash scripts/gce-site-up.sh") }
 }
 if ($SyncOnly) {
-  $smokeCmds = @(
-    "set -e",
-    "mkdir -p ~/chrysalis-security",
-    "tar -xzf /tmp/chrysalis-security-gce.tgz -C ~/chrysalis-security",
-    "sed -i 's/\r$//' ~/chrysalis-security/scripts/*.sh",
-    "chmod +x ~/chrysalis-security/scripts/*.sh",
-    "echo SYNC_ONLY_OK"
-  )
+  $smokeCmds = [System.Collections.Generic.List[string]]::new()
+  [void]$smokeCmds.Add("set -e")
+  [void]$smokeCmds.Add("mkdir -p ~/chrysalis-security")
+  [void]$smokeCmds.Add("tar -xzf /tmp/chrysalis-security-gce.tgz -C ~/chrysalis-security")
+  [void]$smokeCmds.Add("sed -i 's/\r$//' ~/chrysalis-security/scripts/*.sh")
+  [void]$smokeCmds.Add("chmod +x ~/chrysalis-security/scripts/*.sh")
+  [void]$smokeCmds.Add("echo SYNC_ONLY_OK")
 }
 
 $remote = ($smokeCmds -join "; ")

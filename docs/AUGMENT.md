@@ -65,6 +65,8 @@ NGFW inside port  →  Helix bridge  →  server VLAN
 
 Use when you want one box for many servers and still won’t edit NGFW rules.
 
+Design beyond the userspace spike: [MODE-B-L2.md](./MODE-B-L2.md) (dual-NIC / L2, nft divert, no custom OS).
+
 ## Mode C — Explicit proxy (already shipping)
 
 ```text
@@ -166,7 +168,7 @@ Intercept only answers **how packets arrive**. DNA answers **whether they may pa
 1. **Done:** Mode C explicit reverse proxy + smoke  
 2. **Done (soft Mode A):** `helix-agent` binds public port → app on localhost (NGFW unchanged)  
 3. **Next:** nftables/TPROXY helper on GCE Linux for hard redirect  
-4. **Then:** Mode B bridge image · K8s sidecar  
+4. **Then:** Mode B L2 appliance path ([MODE-B-L2.md](./MODE-B-L2.md)) · K8s sidecar  
 
 Vendor logo slides = “works behind any of these” using Mode A/B — not “certified FortiGate firmware plugin.”
 
