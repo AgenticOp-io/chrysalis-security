@@ -44,6 +44,9 @@ Promote / sign must use `stripBridgeEnvelope` (or `--strip-bridge`) — schema i
 ```bash
 npm run cwl-bridge-smoke   # → CWL_BRIDGE_SMOKE_OK
 npm run cutover-smoke      # → CUTOVER_SMOKE_OK (seed→strip→promote(+HMAC)→compare→enforce allow/deny)
+npm run ut-gce-demo        # → UT_GCE_DEMO_OK (gce-smoke + cutover + CWL smoke:ut-spine when sibling present)
 ```
 
 Uses language gold `fixtures/language-gold/24-dna-bridge/` from chrysalis-cwl.
+
+**CWL spine:** from `chrysalis-cwl`, `npm run smoke:ut-spine` (or `smoke:ut-spine:helix` with Secure sibling). Convert does not own this prove.
