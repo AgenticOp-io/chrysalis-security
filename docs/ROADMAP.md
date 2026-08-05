@@ -18,6 +18,10 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] Signed DNA (`hmac-sha256`) + `sign-smoke` / `helix verify`  
 - [x] Mode B userspace bridge spike (`helix-bridge` + `bridge-smoke`)  
 
+## Done (continued)
+
+- [x] CWL ↔ DNA bridge (RFC-0022): `packages/cwl-bridge` + `seed-cwl` / `compare-cwl` + `cwl-bridge-smoke`  
+
 ## Now
 
 - [ ] Mode B L2 / dual-NIC appliance path (beyond userspace spike)  

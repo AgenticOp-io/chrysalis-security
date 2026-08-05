@@ -27,7 +27,8 @@ Skip HTML body hashes and SQL in v0.
 | Piece | Job |
 |-------|-----|
 | `packages/dna-core` | Template, learn, diff, score |
+| `packages/cwl-bridge` | RFC-0022 CWL surface ↔ DNA seed/compare |
 | `packages/helix-proxy` | Inline proxy + modes |
-| `packages/helix-cli` | learn / diff / promote |
+| `packages/helix-cli` | learn / diff / promote / seed-cwl / compare-cwl |
 | `fixtures/demo-api` | First smoke victim |
 | Container (soon) | Out-of-box run |

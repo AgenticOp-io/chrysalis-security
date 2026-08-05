@@ -2,17 +2,24 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { learnFromObservations, diffDna, signDna, verifyDna } from '../../dna-core/index.mjs';
+import {
+  seedDnaFromCwlFile,
+  stripBridgeEnvelope,
+  compareCwlSurfaceToDna,
+} from '../../cwl-bridge/index.mjs';
 
 function usage() {
   console.log(`Helix CLI — Chrysalis security fork
 
 Usage:
-  helix learn   --in <observations.ndjson> --out <dna.json> [--app-id name]
-  helix diff    --a <dna.json> --b <dna.json>
-  helix promote --in <draft.json> --out <certified.json> [--key <secret>|--key-file <path>] [--key-id id]
-  helix verify  --in <certified.json> [--key <secret>|--key-file <path>] [--key-id id] [--require]
+  helix learn      --in <observations.ndjson> --out <dna.json> [--app-id name]
+  helix diff       --a <dna.json> --b <dna.json>
+  helix promote    --in <draft.json> --out <certified.json> [--key <secret>|--key-file <path>] [--key-id id]
+  helix verify     --in <certified.json> [--key <secret>|--key-file <path>] [--key-id id] [--require]
+  helix seed-cwl   --in <routes.cwl> --out <draft.json> [--app-id name] [--host default] [--strip-bridge]
+  helix compare-cwl --cwl <routes.cwl|seed.json> --dna <certified.json>
 
-Canon: docs/CANON.md
+CWL bridge: RFC-0022 (chrysalis-cwl). Canon: docs/CANON.md
 `);
 }
 
@@ -121,6 +128,49 @@ if (cmd === 'verify') {
   });
   console.log(JSON.stringify(result, null, 2));
   process.exit(result.ok ? 0 : 2);
+}
+
+if (cmd === 'seed-cwl') {
+  const input = flag(rest, '--in');
+  const out = flag(rest, '--out');
+  if (!input || !out) {
+    usage();
+    process.exit(1);
+  }
+  const seeded = await seedDnaFromCwlFile(input, {
+    app_id: flag(rest, '--app-id') || undefined,
+    host: flag(rest, '--host') || 'default',
+    cwlRoot: flag(rest, '--cwl-root') || process.env.CHRYSALIS_CWL_ROOT,
+  });
+  const doc = hasFlag(rest, '--strip-bridge') ? stripBridgeEnvelope(seeded) : seeded;
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  fs.writeFileSync(out, JSON.stringify(doc, null, 2) + '\n');
+  console.log(
+    `Seeded draft DNA from CWL (${doc.routes.length} routes) → ${out}` +
+      (doc.bridge ? ' (bridge envelope included)' : ''),
+  );
+  process.exit(0);
+}
+
+if (cmd === 'compare-cwl') {
+  const cwlIn = flag(rest, '--cwl');
+  const dnaIn = flag(rest, '--dna');
+  if (!cwlIn || !dnaIn) {
+    usage();
+    process.exit(1);
+  }
+  let cwlSide;
+  if (String(cwlIn).endsWith('.json')) {
+    cwlSide = readJson(cwlIn);
+  } else {
+    cwlSide = await seedDnaFromCwlFile(cwlIn, {
+      cwlRoot: flag(rest, '--cwl-root') || process.env.CHRYSALIS_CWL_ROOT,
+    });
+  }
+  const live = readJson(dnaIn);
+  const report = compareCwlSurfaceToDna(cwlSide, live);
+  console.log(JSON.stringify(report, null, 2));
+  process.exit(report.ok ? 0 : 2);
 }
 
 console.error(`Unknown command: ${cmd}`);

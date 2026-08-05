@@ -7,7 +7,7 @@ AgenticOps runs **three interactive components**:
 3. **Secure** — this repo (Helix)
 
 Helix **does not** require CWL to protect an app. Primary artifact: traffic **DNA** (`app-dna-v1`).  
-CWL bridge (import/export / cutover compare) is a later interaction, not the firewall core.
+Optional CWL bridge (seed / cutover compare) follows [RFC-0022](../../chrysalis-cwl/docs/language/CWL-RFC-0022-dna-surface-bridge.md) — see [CWL-BRIDGE.md](./CWL-BRIDGE.md).
 
 **Always check `engines/chrysalis-cwl`** as the primary holder of CWL language logic before inventing bridge semantics here.
 
