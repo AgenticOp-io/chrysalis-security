@@ -14,10 +14,11 @@ From `chrysalis-security`:
 .\scripts\gce-sync.ps1 -SiteUp          # also bring up persistent mini-site
 .\scripts\gce-sync.ps1 -SiteUp -Relearn # re-learn DNA then enforce
 .\scripts\gce-sync.ps1 -WithCwl         # sync sibling chrysalis-cwl → CUTOVER_SMOKE_OK on-box
+.\scripts\gce-sync.ps1 -WithL2          # Mode B L2 netns smoke (root; BRIDGE_L2_SMOKE_OK or SKIP)
 .\scripts\gce-sync.ps1 -SyncOnly        # pack+scp only; no remote smokes
 ```
 
-`gce-sync` packs this repo, SCPs to the VM, then runs the DNA smoke pack + CWL bridge (when CWL is available on-box) + optional nft/site.
+`gce-sync` packs this repo, SCPs to the VM, then runs the DNA smoke pack + CWL bridge (when CWL is available on-box) + optional nft/site/L2.
 
 ## Local prove (desktop / Linux, no GCE)
 

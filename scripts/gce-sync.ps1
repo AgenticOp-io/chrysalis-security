@@ -7,6 +7,7 @@
   .\scripts\gce-sync.ps1 -SkipNft
   .\scripts\gce-sync.ps1 -SiteUp
   .\scripts\gce-sync.ps1 -WithCwl   # also sync sibling chrysalis-cwl for cutover / CWL bridge
+  .\scripts\gce-sync.ps1 -WithL2    # also run Mode B L2 netns smoke (root on GCE)
 #>
 param(
   [string] $Project = "chrysalis-dev-f5x6qv",
@@ -16,7 +17,8 @@ param(
   [switch] $SyncOnly,
   [switch] $SiteUp,
   [switch] $Relearn,
-  [switch] $WithCwl
+  [switch] $WithCwl,
+  [switch] $WithL2
 )
 
 $ErrorActionPreference = "Stop"
@@ -74,6 +76,9 @@ if ($WithCwl) {
 [void]$smokeCmds.Add("cd ~/chrysalis-security")
 [void]$smokeCmds.Add("node scripts/gce-smoke.mjs")
 if (-not $SkipNft) { [void]$smokeCmds.Add("bash scripts/gce-nft-smoke.sh") }
+if ($WithL2) {
+  [void]$smokeCmds.Add("node scripts/bridge-l2-smoke.mjs")
+}
 if ($SiteUp) {
   if ($Relearn) { [void]$smokeCmds.Add("RELEARN=1 bash scripts/gce-site-up.sh") }
   else { [void]$smokeCmds.Add("bash scripts/gce-site-up.sh") }

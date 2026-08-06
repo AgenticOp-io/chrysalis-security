@@ -31,10 +31,11 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [ ] Mode B L2 / dual-NIC appliance path — design: [MODE-B-L2.md](./MODE-B-L2.md); lab entry: `npm run bridge-l2-smoke` (SKIP off Linux/root)  
 - [x] UT ↔ CWL spine demo path: `npm run ut-gce-demo` → `UT_GCE_DEMO_OK` (CWL `smoke:ut-spine`; Convert does not own)  
 - [x] `npm run test:dna` — DNA pack without CWL (BEGINNING / D5)  
+- [x] Docker Compose out-of-box lab (`docker-compose.yml` + `compose-smoke`)  
 
 ## Later
 
-- [ ] Mode B L2 **GCE green** (`BRIDGE_L2_SMOKE_OK` on agenticop-master)  
+- [ ] Mode B L2 **GCE green** (`BRIDGE_L2_SMOKE_OK` on agenticop-master via `gce-sync -WithL2`)  
 - [ ] K8s sidecar  
 - [ ] Optional TLS terminate  
 - [ ] SIEM export  

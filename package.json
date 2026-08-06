@@ -19,6 +19,7 @@
     "sign-smoke": "node scripts/sign-smoke.mjs",
     "bridge-smoke": "node scripts/bridge-smoke.mjs",
     "bridge-l2-smoke": "node scripts/bridge-l2-smoke.mjs",
+    "compose-smoke": "node scripts/compose-smoke.mjs",
     "cwl-bridge-smoke": "node scripts/cwl-bridge-smoke.mjs",
     "cutover-smoke": "node scripts/cutover-smoke.mjs",
     "ut-gce-demo": "node scripts/ut-gce-demo.mjs",
@@ -26,7 +27,7 @@
     "nft-smoke": "bash scripts/gce-nft-smoke.sh",
     "agent": "node packages/helix-agent/bin/helix-agent.mjs",
     "test:dna": "node scripts/dna-core-smoke.mjs && node scripts/smoke.mjs && node scripts/host-smoke.mjs && node scripts/static-smoke.mjs && node scripts/schema-drift-smoke.mjs && node scripts/sign-smoke.mjs && node scripts/bridge-smoke.mjs",
-    "test": "npm run test:dna && node scripts/cwl-bridge-smoke.mjs && node scripts/cutover-smoke.mjs && node scripts/bridge-l2-smoke.mjs"
+    "test": "npm run test:dna && node scripts/cwl-bridge-smoke.mjs && node scripts/cutover-smoke.mjs && node scripts/bridge-l2-smoke.mjs && node scripts/compose-smoke.mjs"
   },
   "dependencies": {
     "@chrysalis/cwl": "file:../chrysalis-cwl/packages/cwl"

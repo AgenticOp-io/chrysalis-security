@@ -69,6 +69,15 @@ Beginning code path is **C**. Out-of-box for real networks converges on **A** (a
 
 Ship form: **one Linux container** (and later one static binary). GCE is where *we* prove it; customers run it anywhere Linux runs.
 
+### Local lab (Docker Compose — no CWL)
+
+```bash
+docker compose up --build
+# Helix :4080 → demo-api :4090
+npm run compose-smoke              # config gate
+HELIX_COMPOSE_FULL=1 npm run compose-smoke   # optional up + /api/health
+```
+
 ## Basic beginning (the only MVP)
 
 One sentence: **HTTP reverse proxy that learns routes and blocks unknown ones.**
