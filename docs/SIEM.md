@@ -25,6 +25,6 @@ Each deny (enforce) or shadow hole appends one NDJSON line:
 }
 ```
 
-Codes: `HX-NO-DNA` · `HX-ROUTE-UNKNOWN` · `HX-SCHEMA-DRIFT` · `HX-REQUEST-SCHEMA-DRIFT` · …
+Codes: `HX-NO-DNA` · `HX-ROUTE-UNKNOWN` · `HX-SCHEMA-DRIFT` · `HX-REQUEST-SCHEMA-DRIFT` · `HX-QUERY-SCHEMA-DRIFT` · `HX-STATUS-DRIFT` · `HX-CONTENT-CLASS-DRIFT` · …
 
 Ship to Splunk/Elastic/Chronicle via filebeat / fluent-bit / sidecar tail — Helix does not ship vendor connectors in v0.

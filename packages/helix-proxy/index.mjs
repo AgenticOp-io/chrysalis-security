@@ -12,6 +12,7 @@ import {
   pathTemplate,
   contentClass,
   responseKeyFingerprint,
+  queryKeyFingerprint,
   verifyDna,
   signDna,
 } from '../dna-core/index.mjs';
@@ -127,6 +128,7 @@ export function createHelixProxy(opts) {
     const method = req.method || 'GET';
     const reqCt = String(req.headers['content-type'] || '');
     const requestBody = parseJsonBody(raw, reqCt);
+    const queryFp = queryKeyFingerprint(pathWithQuery);
 
     if (opts.mode === 'enforce' || opts.mode === 'shadow') {
       dna = dna || reloadDna();
@@ -136,9 +138,10 @@ export function createHelixProxy(opts) {
         host,
         contentType: reqCt,
         body: requestBody,
+        query: pathWithQuery.includes('?') ? pathWithQuery.slice(pathWithQuery.indexOf('?')) : '',
       });
       if (!verdict.allow) {
-        emitHole('request', verdict.hole, { method, path: pathOnly, host });
+        emitHole('request', verdict.hole, { method, path: pathOnly, host, query: queryFp });
         if (opts.mode === 'shadow') {
           res.setHeader('x-helix-shadow-hole', verdict.hole.code);
         } else {
@@ -204,11 +207,16 @@ export function createHelixProxy(opts) {
               body: klass === 'json' ? body : undefined,
               requestContentType: reqCt || undefined,
               requestBody: requestBody,
+              query: pathWithQuery.includes('?') ? pathWithQuery.slice(pathWithQuery.indexOf('?')) : '',
             });
           }
 
           if ((opts.mode === 'enforce' || opts.mode === 'shadow') && req._helixRoute) {
-            const rv = scoreResponse(req._helixRoute, { contentType: ct, body });
+            const rv = scoreResponse(req._helixRoute, {
+              contentType: ct,
+              body,
+              status: pres.statusCode || 0,
+            });
             if (!rv.allow) {
               emitHole('response', rv.hole, { method, path: pathOnly, host });
               if (opts.mode === 'shadow') {
@@ -256,6 +264,7 @@ export {
   pathTemplate,
   contentClass,
   responseKeyFingerprint,
+  queryKeyFingerprint,
   signDna,
   verifyDna,
   HEALTHZ,

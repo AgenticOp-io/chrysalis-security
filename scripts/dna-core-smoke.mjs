@@ -10,6 +10,7 @@ import {
   isStaticAssetPath,
   signDna,
   verifyDna,
+  queryKeyFingerprint,
 } from '../packages/dna-core/index.mjs';
 
 function assert(cond, msg) {
@@ -92,5 +93,24 @@ const reqDrift = scoreRequest(reqDna, {
   body: { a: 1, b: 2, c: 3 },
 });
 assert(reqDrift.allow === false && reqDrift.hole.code === 'HX-REQUEST-SCHEMA-DRIFT', 'request drift');
+
+assert(queryKeyFingerprint('/x?z=1&a=2') === 'a,z', 'query names');
+const qDna = learnFromObservations(
+  [
+    {
+      method: 'GET',
+      path: '/api/y',
+      host: 'h',
+      status: 200,
+      contentType: 'application/json',
+      body: { ok: true },
+      query: '?id=1',
+    },
+  ],
+  { app_id: 'q', mode: 'certified' },
+);
+assert(qDna.routes[0].query_key_fingerprint === 'id', 'query learned');
+const qDrift = scoreRequest(qDna, { method: 'GET', path: '/api/y', host: 'h', query: '?id=1&debug=1' });
+assert(qDrift.allow === false && qDrift.hole.code === 'HX-QUERY-SCHEMA-DRIFT', 'query drift');
 
 console.log('DNA_CORE_OK');

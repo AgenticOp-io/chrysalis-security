@@ -52,6 +52,9 @@ Keep DNA small so it works on WordPress, Rails, Express, PHP, static+API, etc.
 - Unknown `METHOD + host + path_template` → deny  
 - Known route + `Content-Type: json` + **response** key fingerprint mismatch → deny  
 - Known route + learned **request** JSON keys + mismatch → deny (`HX-REQUEST-SCHEMA-DRIFT`)  
+- Known route + learned **query names** + mismatch → deny (`HX-QUERY-SCHEMA-DRIFT`)  
+- Known JSON route + **status class** / **content class** mismatch → deny  
+- Known JSON route + unparseable / missing body when fingerprint certified → deny (fail-closed)  
 - Known HTML/static route → allow if path known (don’t overfit body)
 
 That covers the common internet attack Helix owns: **unauthorized new surface** (backdoors, agent-added admin, surprise API).

@@ -36,11 +36,14 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] `/__helix/healthz` + SIEM NDJSON hole export (`SIEM_LOG`)  
 - [x] Optional TLS terminate (`HELIX_TLS_CERT`/`KEY` + `tls-smoke`)  
 - [x] K8s sidecar sketch (`deploy/k8s/helix-sidecar.yaml`)  
+- [x] Enforce `status_classes` / `content_class` + fail-closed JSON (`status-smoke`)  
+- [x] Query-name fingerprint (`query_key_fingerprint` + `HX-QUERY-SCHEMA-DRIFT`)  
 
 ## Later
 
 - [ ] Mode B L2 **GCE green** (`BRIDGE_L2_SMOKE_OK` on agenticop-master via `gce-sync -WithL2`)  
 - [ ] K8s sidecar **image + prove** (sketch only today)  
 - [ ] SIEM vendor connectors (filebeat recipes beyond NDJSON)  
+- [ ] Nested JSON key fingerprint (depth ≤2)  
 
 **Non-goals (locked):** no NGFW TLS dependency (D1); DNA block/alert only (D2); no UEBA/signature-WAF replacement (D3); host augment / no NAT homework (D4); CWL never required to enforce (D5).
