@@ -68,4 +68,29 @@ const signed = signDna(
 assert(verifyDna(signed, { secret: 'k' }).ok === true, 'sign verify');
 assert(verifyDna(signed, { secret: 'x' }).ok === false, 'bad key');
 
+const reqDna = learnFromObservations(
+  [
+    {
+      method: 'POST',
+      path: '/api/x',
+      host: 'h',
+      status: 200,
+      contentType: 'application/json',
+      body: { ok: true },
+      requestContentType: 'application/json',
+      requestBody: { a: 1, b: 2 },
+    },
+  ],
+  { app_id: 'r', mode: 'certified' },
+);
+assert(reqDna.routes[0].request_key_fingerprint === 'a,b', 'request keys learned');
+const reqDrift = scoreRequest(reqDna, {
+  method: 'POST',
+  path: '/api/x',
+  host: 'h',
+  contentType: 'application/json',
+  body: { a: 1, b: 2, c: 3 },
+});
+assert(reqDrift.allow === false && reqDrift.hole.code === 'HX-REQUEST-SCHEMA-DRIFT', 'request drift');
+
 console.log('DNA_CORE_OK');

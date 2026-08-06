@@ -42,4 +42,4 @@ against a normal HTTP app — not only the toy fixture.
 3. `scripts/gce-smoke.mjs` (DNA pack + `cwl-bridge-smoke` when CWL root present)  
 4. Minimal container env (`UPSTREAM` / `MODE` / `DNA`)  
 
-Later: TLS terminate, signing, SQL, SIEM — after beginning is boring.
+Later: SIEM vendor connectors, L2 GCE green, K8s image prove — after beginning is boring.

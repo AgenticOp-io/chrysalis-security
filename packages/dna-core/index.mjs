@@ -5,8 +5,8 @@
  */
 import crypto from 'node:crypto';
 
-/** @typedef {{ method: string, path: string, host?: string, status?: number, contentType?: string, body?: unknown }} Observation */
-/** @typedef {{ method: string, path_template: string, host: string, content_class: string, status_classes: number[], response_key_fingerprint: string|null }} DnaRoute */
+/** @typedef {{ method: string, path: string, host?: string, status?: number, contentType?: string, body?: unknown, requestContentType?: string, requestBody?: unknown }} Observation */
+/** @typedef {{ method: string, path_template: string, host: string, content_class: string, status_classes: number[], response_key_fingerprint: string|null, request_key_fingerprint?: string|null }} DnaRoute */
 /** @typedef {{ schema: 'app-dna-v1', app_id: string, created_at: string, mode: 'draft'|'certified', parent_hash: string|null, routes: DnaRoute[], holes: object[], signature?: { alg: string, key_id: string, value: string } }} AppDna */
 
 /** File extensions treated as static assets (collapsed in DNA). */
@@ -74,6 +74,7 @@ export function learnFromObservations(observations, opts = {}) {
         content_class: klass,
         status_classes: new Set(),
         response_key_fingerprint: klass === 'json' ? responseKeyFingerprint(obs.body) : null,
+        request_key_fingerprint: null,
       };
       byRoute.set(key, route);
     }
@@ -85,6 +86,11 @@ export function learnFromObservations(observations, opts = {}) {
       const fp = responseKeyFingerprint(obs.body);
       if (fp) route.response_key_fingerprint = fp;
     }
+    const reqKlass = contentClass(obs.requestContentType);
+    if (reqKlass === 'json' && obs.requestBody != null) {
+      const rfp = responseKeyFingerprint(obs.requestBody);
+      if (rfp) route.request_key_fingerprint = rfp;
+    }
   }
 
   const routes = [...byRoute.values()]
@@ -95,6 +101,7 @@ export function learnFromObservations(observations, opts = {}) {
       content_class: r.content_class,
       status_classes: [...r.status_classes].sort((a, b) => a - b),
       response_key_fingerprint: r.content_class === 'json' ? r.response_key_fingerprint : null,
+      request_key_fingerprint: r.request_key_fingerprint || null,
     }))
     .sort((a, b) => routeKey(a).localeCompare(routeKey(b)));
 
@@ -132,6 +139,14 @@ export function diffDna(a, b) {
         to: right.response_key_fingerprint,
       });
     }
+    if ((left.request_key_fingerprint || null) !== (right.request_key_fingerprint || null)) {
+      changed.push({
+        route: k,
+        field: 'request_key_fingerprint',
+        from: left.request_key_fingerprint,
+        to: right.request_key_fingerprint,
+      });
+    }
   }
   return {
     added,
@@ -142,9 +157,9 @@ export function diffDna(a, b) {
 }
 
 /**
- * Request-time check: is this route in DNA?
+ * Request-time check: is this route in DNA? Optional JSON request-key fingerprint.
  * @param {AppDna|null|undefined} dna
- * @param {{ method?: string, path?: string, host?: string }} req
+ * @param {{ method?: string, path?: string, host?: string, contentType?: string, body?: unknown }} req
  */
 export function scoreRequest(dna, req) {
   if (!dna || !Array.isArray(dna.routes)) {
@@ -156,12 +171,12 @@ export function scoreRequest(dna, req) {
   const method = String(req.method || 'GET').toUpperCase();
   const host = String(req.host || 'default').toLowerCase();
   const path_template = pathTemplate(req.path);
-  const route = dna.routes.find(
+  let route = dna.routes.find(
     (r) => r.method === method && r.path_template === path_template && (r.host || 'default') === host,
   );
   if (!route) {
-    const loose = dna.routes.find((r) => r.method === method && r.path_template === path_template);
-    if (!loose) {
+    route = dna.routes.find((r) => r.method === method && r.path_template === path_template);
+    if (!route) {
       return {
         allow: false,
         hole: {
@@ -170,7 +185,22 @@ export function scoreRequest(dna, req) {
         },
       };
     }
-    return { allow: true, hole: null, route: loose };
+  }
+  if (route.request_key_fingerprint) {
+    const klass = contentClass(req.contentType);
+    if (klass === 'json' || (req.body && typeof req.body === 'object')) {
+      const fp = responseKeyFingerprint(req.body);
+      if (fp && fp !== route.request_key_fingerprint) {
+        return {
+          allow: false,
+          hole: {
+            code: 'HX-REQUEST-SCHEMA-DRIFT',
+            reason: `JSON request keys drifted on ${route.method} ${route.path_template}: got ${fp}, expected ${route.request_key_fingerprint}`,
+          },
+          route,
+        };
+      }
+    }
   }
   return { allow: true, hole: null, route };
 }

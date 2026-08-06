@@ -14,6 +14,8 @@ Behavioral DNA firewall. **Trust nothing** that isn’t in certified DNA.
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Proxy + DNA v0 |
 | [ROADMAP.md](./ROADMAP.md) | Straight-line slices |
 | [FORKS.md](./FORKS.md) | Convert vs security |
+| [SIEM.md](./SIEM.md) | NDJSON hole export for SIEM/XDR |
+| [TLS.md](./TLS.md) | Optional Helix TLS terminate (D1) |
 | [PILLARS.md](./PILLARS.md) | CWL · Convert · Secure |
 
 ```bash

@@ -1,5 +1,5 @@
 /**
- * Helix proxy — learn / shadow / enforce in front of an HTTP upstream.
+ * Helix proxy — learn / shadow / enforce in front of an HTTP(S) upstream.
  * Trust nothing: unknown routes denied in enforce; no DNA => fail closed.
  */
 import http from 'node:http';
@@ -15,6 +15,8 @@ import {
   verifyDna,
   signDna,
 } from '../dna-core/index.mjs';
+
+const HEALTHZ = '/__helix/healthz';
 
 function appendNdjson(filePath, obj) {
   if (!filePath) return;
@@ -41,6 +43,16 @@ function requestHost(req) {
   return String(h).split(':')[0].toLowerCase();
 }
 
+function parseJsonBody(raw, contentType) {
+  if (!raw?.length) return undefined;
+  if (contentClass(contentType) !== 'json') return undefined;
+  try {
+    return JSON.parse(raw.toString('utf8'));
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * @param {{
  *   upstream: string,
@@ -48,10 +60,12 @@ function requestHost(req) {
  *   dnaPath?: string,
  *   observePath?: string,
  *   shadowLogPath?: string,
+ *   siemLogPath?: string,
  *   dnaKey?: string,
  *   dnaKeyId?: string,
  *   requireSignedDna?: boolean,
  *   placement?: 'proxy'|'agent'|'bridge',
+ *   tls?: { cert: string|Buffer, key: string|Buffer },
  * }} opts
  */
 export function createHelixProxy(opts) {
@@ -65,42 +79,77 @@ export function createHelixProxy(opts) {
       : null;
 
   let dna = loadDna(opts.dnaPath, verifyOpts);
+  const placement = opts.placement || 'proxy';
 
   function reloadDna() {
     dna = loadDna(opts.dnaPath, verifyOpts);
     return dna;
   }
 
-  const server = http.createServer(async (req, res) => {
+  function emitHole(phase, hole, meta) {
+    const event = {
+      at: new Date().toISOString(),
+      kind: 'helix.hole',
+      mode: opts.mode,
+      placement,
+      phase,
+      hole,
+      ...meta,
+    };
+    if (opts.mode === 'shadow') {
+      appendNdjson(opts.shadowLogPath, event);
+    }
+    appendNdjson(opts.siemLogPath, event);
+  }
+
+  const listener = async (req, res) => {
+    const pathWithQuery = req.url || '/';
+    const pathOnly = pathWithQuery.split('?')[0] || '/';
+
+    // Ops health — never DNA-gated (sidecar probes)
+    if (req.method === 'GET' && pathOnly === HEALTHZ) {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(
+        JSON.stringify({
+          ok: true,
+          mode: opts.mode,
+          placement,
+          dna: Boolean(dna || (opts.dnaPath && fs.existsSync(opts.dnaPath))),
+        }),
+      );
+      return;
+    }
+
     const chunks = [];
     for await (const c of req) chunks.push(c);
     const raw = Buffer.concat(chunks);
     const host = requestHost(req);
     const method = req.method || 'GET';
-    const pathWithQuery = req.url || '/';
-    const pathOnly = pathWithQuery.split('?')[0] || '/';
+    const reqCt = String(req.headers['content-type'] || '');
+    const requestBody = parseJsonBody(raw, reqCt);
 
     if (opts.mode === 'enforce' || opts.mode === 'shadow') {
       dna = dna || reloadDna();
-      const verdict = scoreRequest(dna, { method, path: pathOnly, host });
+      const verdict = scoreRequest(dna, {
+        method,
+        path: pathOnly,
+        host,
+        contentType: reqCt,
+        body: requestBody,
+      });
       if (!verdict.allow) {
+        emitHole('request', verdict.hole, { method, path: pathOnly, host });
         if (opts.mode === 'shadow') {
           res.setHeader('x-helix-shadow-hole', verdict.hole.code);
-          appendNdjson(opts.shadowLogPath, {
-            at: new Date().toISOString(),
-            phase: 'request',
-            hole: verdict.hole,
-            method,
-            path: pathOnly,
-            host,
-          });
         } else {
-          res.writeHead(403, { 'content-type': 'application/json', 'x-helix-hole': verdict.hole.code });
+          res.writeHead(403, {
+            'content-type': 'application/json',
+            'x-helix-hole': verdict.hole.code,
+          });
           res.end(JSON.stringify({ hole: verdict.hole }));
           return;
         }
       }
-      // stash route for response check
       req._helixRoute = verdict.route || null;
     }
 
@@ -115,7 +164,6 @@ export function createHelixProxy(opts) {
 
     const lib = upstreamUrl.protocol === 'https:' ? https : http;
     const headers = { ...req.headers, host: upstreamUrl.host };
-    // Avoid broken hop-by-hop
     delete headers['connection'];
     delete headers['transfer-encoding'];
     delete headers['content-length'];
@@ -154,24 +202,22 @@ export function createHelixProxy(opts) {
               status: pres.statusCode || 0,
               contentType: ct,
               body: klass === 'json' ? body : undefined,
+              requestContentType: reqCt || undefined,
+              requestBody: requestBody,
             });
           }
 
           if ((opts.mode === 'enforce' || opts.mode === 'shadow') && req._helixRoute) {
             const rv = scoreResponse(req._helixRoute, { contentType: ct, body });
             if (!rv.allow) {
+              emitHole('response', rv.hole, { method, path: pathOnly, host });
               if (opts.mode === 'shadow') {
                 res.setHeader('x-helix-shadow-hole', rv.hole.code);
-                appendNdjson(opts.shadowLogPath, {
-                  at: new Date().toISOString(),
-                  phase: 'response',
-                  hole: rv.hole,
-                  method,
-                  path: pathOnly,
-                  host,
-                });
               } else {
-                res.writeHead(403, { 'content-type': 'application/json', 'x-helix-hole': rv.hole.code });
+                res.writeHead(403, {
+                  'content-type': 'application/json',
+                  'x-helix-hole': rv.hole.code,
+                });
                 res.end(JSON.stringify({ hole: rv.hole }));
                 return;
               }
@@ -192,10 +238,25 @@ export function createHelixProxy(opts) {
     });
     if (raw.length) preq.write(raw);
     preq.end();
-  });
+  };
+
+  /** @type {import('node:http').Server} */
+  let server;
+  if (opts.tls?.cert && opts.tls?.key) {
+    server = https.createServer({ cert: opts.tls.cert, key: opts.tls.key }, listener);
+  } else {
+    server = http.createServer(listener);
+  }
 
   server.reloadDna = reloadDna;
   return server;
 }
 
-export { pathTemplate, contentClass, responseKeyFingerprint, signDna, verifyDna };
+export {
+  pathTemplate,
+  contentClass,
+  responseKeyFingerprint,
+  signDna,
+  verifyDna,
+  HEALTHZ,
+};

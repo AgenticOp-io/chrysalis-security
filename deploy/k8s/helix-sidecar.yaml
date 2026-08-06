@@ -1,0 +1,105 @@
+# Helix as Kubernetes sidecar (Mode A host-intercept analogue)
+# DNA-only — no CWL required. Pair with any app container.
+#
+# Apply sketch (edit image/registry first):
+#   kubectl apply -f deploy/k8s/helix-sidecar.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: helix-dna
+data:
+  app.dna.json: |
+    {
+      "schema": "app-dna-v1",
+      "app_id": "k8s-sidecar-demo",
+      "created_at": "2026-08-05T00:00:00.000Z",
+      "mode": "certified",
+      "parent_hash": null,
+      "routes": [
+        {
+          "host": "default",
+          "method": "GET",
+          "path_template": "/api/health",
+          "content_class": "json",
+          "status_classes": [200],
+          "response_key_fingerprint": "ok",
+          "request_key_fingerprint": null
+        }
+      ],
+      "holes": []
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-with-helix
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:
+        app: demo
+    spec:
+      containers:
+        - name: app
+          image: node:20-alpine
+          command: ["node", "-e", "require('http').createServer((q,s)=>s.end(JSON.stringify({ok:true}))).listen(3000,'127.0.0.1')"]
+          ports:
+            - containerPort: 3000
+        - name: helix
+          image: helix:local
+          env:
+            - name: UPSTREAM
+              value: http://127.0.0.1:3000
+            - name: MODE
+              value: enforce
+            - name: DNA
+              value: /dna/app.dna.json
+            - name: PORT
+              value: "4080"
+            - name: SIEM_LOG
+              value: /var/log/helix/siem.ndjson
+            - name: PLACEMENT
+              value: agent
+          ports:
+            - containerPort: 4080
+              name: helix
+          volumeMounts:
+            - name: dna
+              mountPath: /dna
+              readOnly: true
+            - name: siem
+              mountPath: /var/log/helix
+          readinessProbe:
+            httpGet:
+              path: /__helix/healthz
+              port: helix
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /__helix/healthz
+              port: helix
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: dna
+          configMap:
+            name: helix-dna
+        - name: siem
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-helix
+spec:
+  selector:
+    app: demo
+  ports:
+    - name: http
+      port: 80
+      targetPort: helix
