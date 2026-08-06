@@ -20,20 +20,30 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 
 ## Done (continued)
 
-- [x] CWL ↔ DNA bridge (RFC-0022): `packages/cwl-bridge` + `seed-cwl` / `compare-cwl` + `cwl-bridge-smoke`  
+- [x] D5 — CWL never required to learn/enforce (SKIP when pillar absent)  
+- [x] CWL ↔ DNA bridge (RFC-0022): prefers pillar `cwl-dna-seed.mjs` + `packages/cwl-bridge`  
 - [x] Platform cutover E2E: `cutover-smoke` (CWL gold → strip → promote(+HMAC) → compare → enforce allow/deny)  
 - [x] Ed25519 DNA signatures (optional alg beside hmac-sha256)  
+- [x] Chimera + Helix coexistence playbook: [CHIMERA-HELIX-COEXISTENCE.md](./CHIMERA-HELIX-COEXISTENCE.md)  
 
 ## Now
 
-- [ ] Mode B L2 / dual-NIC appliance path (beyond userspace spike) — design: [MODE-B-L2.md](./MODE-B-L2.md)  
+- [ ] Mode B L2 / dual-NIC appliance path — design: [MODE-B-L2.md](./MODE-B-L2.md); lab entry: `npm run bridge-l2-smoke` (SKIP off Linux/root)  
 - [x] UT ↔ CWL spine demo path: `npm run ut-gce-demo` → `UT_GCE_DEMO_OK` (CWL `smoke:ut-spine`; Convert does not own)  
+- [x] `npm run test:dna` — DNA pack without CWL (BEGINNING / D5)  
+- [x] Docker Compose out-of-box lab (`docker-compose.yml` + `compose-smoke`)  
+- [x] Request JSON key fingerprint (`request_key_fingerprint` + `HX-REQUEST-SCHEMA-DRIFT`)  
+- [x] `/__helix/healthz` + SIEM NDJSON hole export (`SIEM_LOG`)  
+- [x] Optional TLS terminate (`HELIX_TLS_CERT`/`KEY` + `tls-smoke`)  
+- [x] K8s sidecar sketch (`deploy/k8s/helix-sidecar.yaml`)  
+- [x] Enforce `status_classes` / `content_class` + fail-closed JSON (`status-smoke`)  
+- [x] Query-name fingerprint (`query_key_fingerprint` + `HX-QUERY-SCHEMA-DRIFT`)  
 
 ## Later
 
-- [ ] Mode B L2 **implementation** (design-only until Now clears)  
-- [ ] K8s sidecar  
-- [ ] Optional TLS terminate  
-- [ ] SIEM export  
+- [ ] Mode B L2 **GCE green** (`BRIDGE_L2_SMOKE_OK` on agenticop-master via `gce-sync -WithL2`)  
+- [ ] K8s sidecar **image + prove** (sketch only today)  
+- [ ] SIEM vendor connectors (filebeat recipes beyond NDJSON)  
+- [ ] Nested JSON key fingerprint (depth ≤2)  
 
-**Non-goals (locked):** no NGFW TLS dependency (D1); DNA block/alert only (D2); no UEBA/signature-WAF replacement (D3); host augment / no NAT homework (D4).
+**Non-goals (locked):** no NGFW TLS dependency (D1); DNA block/alert only (D2); no UEBA/signature-WAF replacement (D3); host augment / no NAT homework (D4); CWL never required to enforce (D5).

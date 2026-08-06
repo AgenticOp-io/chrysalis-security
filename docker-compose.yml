@@ -1,0 +1,40 @@
+# Helix out-of-box lab — BEGINNING path (no CWL required)
+# Usage:
+#   docker compose up --build
+#   # traffic → http://localhost:4080  (Helix) → demo-api
+#   docker compose run --rm helix node packages/helix-cli/bin/helix.mjs learn --in /data/observations.ndjson --out /data/app.dna.json
+#
+# Prove: npm run compose-smoke   (SKIP if docker unavailable)
+
+services:
+  demo-api:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./fixtures/demo-api:/app:ro
+    command: ["node", "server.mjs"]
+    environment:
+      PORT: "4090"
+      HOST: "0.0.0.0"
+    expose:
+      - "4090"
+
+  helix:
+    build: .
+    ports:
+      - "4080:4080"
+    environment:
+      UPSTREAM: http://demo-api:4090
+      MODE: ${HELIX_MODE:-learn}
+      DNA: /data/app.dna.json
+      OBSERVE: /data/observations.ndjson
+      SHADOW_LOG: /data/shadow.ndjson
+      PORT: "4080"
+      APP_ID: compose-demo
+    volumes:
+      - helix-data:/data
+    depends_on:
+      - demo-api
+
+volumes:
+  helix-data:

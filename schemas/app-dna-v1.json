@@ -25,7 +25,15 @@
             "type": "array",
             "items": { "type": "integer" }
           },
-          "response_key_fingerprint": { "type": ["string", "null"] }
+          "response_key_fingerprint": { "type": ["string", "null"] },
+          "request_key_fingerprint": {
+            "type": ["string", "null"],
+            "description": "Sorted top-level JSON request body keys (POST/PUT/PATCH). Null when not learned."
+          },
+          "query_key_fingerprint": {
+            "type": ["string", "null"],
+            "description": "Sorted unique query parameter names (values ignored). Empty string = no query names learned. Null = do not enforce (legacy DNA)."
+          }
         }
       }
     },

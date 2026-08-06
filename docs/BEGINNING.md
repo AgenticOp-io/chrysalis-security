@@ -50,7 +50,11 @@ Keep DNA small so it works on WordPress, Rails, Express, PHP, static+API, etc.
 **v0 enforce rule (simple):**
 
 - Unknown `METHOD + host + path_template` → deny  
-- Known route + `Content-Type: json` + key fingerprint mismatch → deny  
+- Known route + `Content-Type: json` + **response** key fingerprint mismatch → deny  
+- Known route + learned **request** JSON keys + mismatch → deny (`HX-REQUEST-SCHEMA-DRIFT`)  
+- Known route + learned **query names** + mismatch → deny (`HX-QUERY-SCHEMA-DRIFT`)  
+- Known JSON route + **status class** / **content class** mismatch → deny  
+- Known JSON route + unparseable / missing body when fingerprint certified → deny (fail-closed)  
 - Known HTML/static route → allow if path known (don’t overfit body)
 
 That covers the common internet attack Helix owns: **unauthorized new surface** (backdoors, agent-added admin, surprise API).
@@ -68,6 +72,15 @@ That covers the common internet attack Helix owns: **unauthorized new surface** 
 Beginning code path is **C**. Out-of-box for real networks converges on **A** (agent on the host or sidecar).
 
 Ship form: **one Linux container** (and later one static binary). GCE is where *we* prove it; customers run it anywhere Linux runs.
+
+### Local lab (Docker Compose — no CWL)
+
+```bash
+docker compose up --build
+# Helix :4080 → demo-api :4090
+npm run compose-smoke              # config gate
+HELIX_COMPOSE_FULL=1 npm run compose-smoke   # optional up + /api/health
+```
 
 ## Basic beginning (the only MVP)
 

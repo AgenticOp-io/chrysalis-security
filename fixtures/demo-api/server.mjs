@@ -21,6 +21,22 @@ const server = http.createServer((req, res) => {
     res.end(JSON.stringify({ items: [{ id: 1, name: 'alpha' }] }));
     return;
   }
+  if (url.pathname === '/api/items' && req.method === 'POST') {
+    let body = '';
+    req.on('data', (c) => {
+      body += c;
+    });
+    req.on('end', () => {
+      try {
+        const parsed = JSON.parse(body || '{}');
+        res.end(JSON.stringify({ ok: true, echo: Object.keys(parsed).sort() }));
+      } catch {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ error: 'bad_json' }));
+      }
+    });
+    return;
+  }
   if (url.pathname === '/api/backdoor' && req.method === 'GET') {
     res.end(JSON.stringify({ pwned: true, secret: 'exfil' }));
     return;

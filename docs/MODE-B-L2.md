@@ -162,7 +162,15 @@ Preferred host: **agenticop-master** ([GCE.md](./GCE.md)). Do not delete protect
 
 ### Phase 1 — namespace dual-NIC simulation (recommended next prove)
 
-On GCE Linux, **no second VM required**:
+On GCE Linux, **no second VM required**. Entry points:
+
+```bash
+# Local Windows / no root → BRIDGE_L2_SMOKE_SKIP (honest)
+npm run bridge-l2-smoke
+
+# GCE Linux as root (after gce-sync):
+bash scripts/gce-bridge-l2-smoke.sh   # → BRIDGE_L2_SMOKE_OK
+```
 
 ```text
 ns-a (NGFW side)  --veth--  br0 in helix-ns  --veth--  ns-b (server)

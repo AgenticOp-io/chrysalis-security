@@ -5,8 +5,8 @@
  */
 import crypto from 'node:crypto';
 
-/** @typedef {{ method: string, path: string, host?: string, status?: number, contentType?: string, body?: unknown }} Observation */
-/** @typedef {{ method: string, path_template: string, host: string, content_class: string, status_classes: number[], response_key_fingerprint: string|null }} DnaRoute */
+/** @typedef {{ method: string, path: string, host?: string, status?: number, contentType?: string, body?: unknown, requestContentType?: string, requestBody?: unknown, query?: string|Record<string, unknown>|null }} Observation */
+/** @typedef {{ method: string, path_template: string, host: string, content_class: string, status_classes: number[], response_key_fingerprint: string|null, request_key_fingerprint?: string|null, query_key_fingerprint?: string|null }} DnaRoute */
 /** @typedef {{ schema: 'app-dna-v1', app_id: string, created_at: string, mode: 'draft'|'certified', parent_hash: string|null, routes: DnaRoute[], holes: object[], signature?: { alg: string, key_id: string, value: string } }} AppDna */
 
 /** File extensions treated as static assets (collapsed in DNA). */
@@ -43,6 +43,45 @@ export function responseKeyFingerprint(body) {
   return Object.keys(body).sort().join(',');
 }
 
+/**
+ * Sorted unique query *names* (values ignored). From path `?a=1&b=`, search string, or object keys.
+ * @param {string|Record<string, unknown>|URLSearchParams|null|undefined} input
+ * @returns {string} comma-joined names (possibly empty)
+ */
+export function queryKeyFingerprint(input) {
+  const names = new Set();
+  if (input == null || input === '') return '';
+  if (typeof input === 'object' && !(input instanceof URLSearchParams) && !Array.isArray(input)) {
+    for (const k of Object.keys(input)) names.add(k);
+    return [...names].sort().join(',');
+  }
+  if (input instanceof URLSearchParams) {
+    for (const k of input.keys()) names.add(k);
+    return [...names].sort().join(',');
+  }
+  let search = String(input);
+  if (search.includes('?')) {
+    search = search.slice(search.indexOf('?') + 1);
+  } else if (search.startsWith('/')) {
+    // Path without query string — no names
+    return '';
+  }
+  if (search.includes('#')) search = search.slice(0, search.indexOf('#'));
+  if (!search) return '';
+  for (const part of search.split('&')) {
+    if (!part) continue;
+    const eq = part.indexOf('=');
+    const raw = eq === -1 ? part : part.slice(0, eq);
+    try {
+      const k = decodeURIComponent(raw.replace(/\+/g, ' '));
+      if (k) names.add(k);
+    } catch {
+      if (raw) names.add(raw);
+    }
+  }
+  return [...names].sort().join(',');
+}
+
 export function routeKey(routeOrParts) {
   const host = routeOrParts.host || 'default';
   const method = String(routeOrParts.method || 'GET').toUpperCase();
@@ -74,6 +113,8 @@ export function learnFromObservations(observations, opts = {}) {
         content_class: klass,
         status_classes: new Set(),
         response_key_fingerprint: klass === 'json' ? responseKeyFingerprint(obs.body) : null,
+        request_key_fingerprint: null,
+        query_names: new Set(),
       };
       byRoute.set(key, route);
     }
@@ -83,7 +124,17 @@ export function learnFromObservations(observations, opts = {}) {
     if (klass === 'json') {
       route.content_class = 'json';
       const fp = responseKeyFingerprint(obs.body);
-      if (fp) route.response_key_fingerprint = fp;
+      if (fp != null) route.response_key_fingerprint = fp;
+    }
+    const reqKlass = contentClass(obs.requestContentType);
+    if (reqKlass === 'json' && obs.requestBody != null) {
+      const rfp = responseKeyFingerprint(obs.requestBody);
+      if (rfp != null) route.request_key_fingerprint = rfp;
+    }
+    const qSrc = obs.query != null ? obs.query : obs.path;
+    const qfp = queryKeyFingerprint(qSrc);
+    if (qfp) {
+      for (const n of qfp.split(',')) route.query_names.add(n);
     }
   }
 
@@ -95,6 +146,8 @@ export function learnFromObservations(observations, opts = {}) {
       content_class: r.content_class,
       status_classes: [...r.status_classes].sort((a, b) => a - b),
       response_key_fingerprint: r.content_class === 'json' ? r.response_key_fingerprint : null,
+      request_key_fingerprint: r.request_key_fingerprint || null,
+      query_key_fingerprint: [...r.query_names].sort().join(','),
     }))
     .sort((a, b) => routeKey(a).localeCompare(routeKey(b)));
 
@@ -132,6 +185,22 @@ export function diffDna(a, b) {
         to: right.response_key_fingerprint,
       });
     }
+    if ((left.request_key_fingerprint || null) !== (right.request_key_fingerprint || null)) {
+      changed.push({
+        route: k,
+        field: 'request_key_fingerprint',
+        from: left.request_key_fingerprint,
+        to: right.request_key_fingerprint,
+      });
+    }
+    if ((left.query_key_fingerprint || null) !== (right.query_key_fingerprint || null)) {
+      changed.push({
+        route: k,
+        field: 'query_key_fingerprint',
+        from: left.query_key_fingerprint,
+        to: right.query_key_fingerprint,
+      });
+    }
   }
   return {
     added,
@@ -142,9 +211,9 @@ export function diffDna(a, b) {
 }
 
 /**
- * Request-time check: is this route in DNA?
+ * Request-time check: route in DNA? Optional query-name + JSON request-key fingerprints.
  * @param {AppDna|null|undefined} dna
- * @param {{ method?: string, path?: string, host?: string }} req
+ * @param {{ method?: string, path?: string, host?: string, contentType?: string, body?: unknown, query?: string|Record<string, unknown>|null }} req
  */
 export function scoreRequest(dna, req) {
   if (!dna || !Array.isArray(dna.routes)) {
@@ -156,12 +225,12 @@ export function scoreRequest(dna, req) {
   const method = String(req.method || 'GET').toUpperCase();
   const host = String(req.host || 'default').toLowerCase();
   const path_template = pathTemplate(req.path);
-  const route = dna.routes.find(
+  let route = dna.routes.find(
     (r) => r.method === method && r.path_template === path_template && (r.host || 'default') === host,
   );
   if (!route) {
-    const loose = dna.routes.find((r) => r.method === method && r.path_template === path_template);
-    if (!loose) {
+    route = dna.routes.find((r) => r.method === method && r.path_template === path_template);
+    if (!route) {
       return {
         allow: false,
         hole: {
@@ -170,33 +239,86 @@ export function scoreRequest(dna, req) {
         },
       };
     }
-    return { allow: true, hole: null, route: loose };
+  }
+  if (route.query_key_fingerprint != null) {
+    const qSrc = req.query != null ? req.query : req.path;
+    const qfp = queryKeyFingerprint(qSrc);
+    if (qfp !== route.query_key_fingerprint) {
+      return {
+        allow: false,
+        hole: {
+          code: 'HX-QUERY-SCHEMA-DRIFT',
+          reason: `Query names drifted on ${route.method} ${route.path_template}: got ${qfp || '(none)'}, expected ${route.query_key_fingerprint || '(none)'}`,
+        },
+        route,
+      };
+    }
+  }
+  if (route.request_key_fingerprint != null && route.request_key_fingerprint !== '') {
+    const klass = contentClass(req.contentType);
+    if (klass === 'json' || (req.body && typeof req.body === 'object')) {
+      const fp = responseKeyFingerprint(req.body);
+      if (fp == null || fp !== route.request_key_fingerprint) {
+        return {
+          allow: false,
+          hole: {
+            code: 'HX-REQUEST-SCHEMA-DRIFT',
+            reason: `JSON request keys drifted on ${route.method} ${route.path_template}: got ${fp ?? '(none)'}, expected ${route.request_key_fingerprint}`,
+          },
+          route,
+        };
+      }
+    }
   }
   return { allow: true, hole: null, route };
 }
 
 /**
- * Response-time check: JSON key drift only (never HTML/static bodies).
+ * Response-time check: status class, content class, JSON key fingerprint (fail-closed on certified json).
  * @param {DnaRoute} route
- * @param {{ contentType?: string, body?: unknown }} res
+ * @param {{ contentType?: string, body?: unknown, status?: number }} res
  */
 export function scoreResponse(route, res) {
+  if (Array.isArray(route.status_classes) && route.status_classes.length > 0 && res.status != null) {
+    const sc = Math.floor(Number(res.status) / 100) * 100;
+    if (!route.status_classes.includes(sc)) {
+      return {
+        allow: false,
+        hole: {
+          code: 'HX-STATUS-DRIFT',
+          reason: `Status class drifted on ${route.method} ${route.path_template}: got ${sc}, expected one of [${route.status_classes.join(',')}]`,
+        },
+      };
+    }
+  }
+
   const klass = contentClass(res.contentType);
   if (klass !== 'json' && route.content_class !== 'json') {
     return { allow: true, hole: null };
   }
-  if (route.content_class !== 'json' || !route.response_key_fingerprint) {
-    return { allow: true, hole: null };
-  }
-  const fp = responseKeyFingerprint(res.body);
-  if (fp && fp !== route.response_key_fingerprint) {
-    return {
-      allow: false,
-      hole: {
-        code: 'HX-SCHEMA-DRIFT',
-        reason: `JSON keys drifted on ${route.method} ${route.path_template}: got ${fp}, expected ${route.response_key_fingerprint}`,
-      },
-    };
+
+  if (route.content_class === 'json') {
+    if (klass !== 'json') {
+      return {
+        allow: false,
+        hole: {
+          code: 'HX-CONTENT-CLASS-DRIFT',
+          reason: `Content class drifted on ${route.method} ${route.path_template}: got ${klass}, expected json`,
+        },
+      };
+    }
+    if (route.response_key_fingerprint != null) {
+      const fp = responseKeyFingerprint(res.body);
+      if (fp == null || fp !== route.response_key_fingerprint) {
+        return {
+          allow: false,
+          hole: {
+            code: 'HX-SCHEMA-DRIFT',
+            reason: `JSON keys drifted on ${route.method} ${route.path_template}: got ${fp ?? '(none/unparseable)'}, expected ${route.response_key_fingerprint}`,
+          },
+        };
+      }
+    }
   }
   return { allow: true, hole: null };
 }

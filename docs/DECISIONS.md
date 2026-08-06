@@ -36,3 +36,11 @@ Helix asks only: **is this still the certified app?**
 ## D4 — Augment firewalls without NAT homework
 
 Prefer **Mode A host intercept** ([AUGMENT.md](./AUGMENT.md)): NGFW VIP/NAT unchanged; Helix on the host covers external + internal hits to that app. Explicit proxy (Mode C) remains for labs.
+
+## D5 — CWL never required to learn/enforce
+
+Out-of-box Helix is traffic DNA only. CWL bridge (`cwl-bridge-smoke`, `cutover-smoke`, `gce-sync -WithCwl`) is **optional**.
+
+- Missing `chrysalis-cwl` / `CHRYSALIS_CWL_ROOT` → honest **SKIP** tokens (exit 0), DNA pack still gates.
+- Do not invent a Helix DSL; do not enforce CWL as the firewall.
+- UT↔Helix spine prove is owned by **CWL** (`npm run smoke:ut-spine`), not Convert.

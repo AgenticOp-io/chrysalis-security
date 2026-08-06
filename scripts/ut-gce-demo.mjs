@@ -47,10 +47,28 @@ if (!pack.ok) {
 }
 steps.push({ id: 'cutover-smoke', ...run('scripts/cutover-smoke.mjs') });
 
-const cwlSpine = path.resolve(ROOT, '../chrysalis-cwl/scripts/smoke-ut-spine.mjs');
-if (fs.existsSync(cwlSpine)) {
-  const r = spawnSync(process.execPath, [cwlSpine, '--require-helix'], {
-    cwd: path.dirname(cwlSpine) + '/..',
+// Prefer CWL ut-evidence pack (0.1.7+) when present; else smoke:ut-spine:helix
+const cwlRoot = path.resolve(ROOT, '../chrysalis-cwl');
+const evidence = path.join(cwlRoot, 'scripts', 'ut-evidence-pack.mjs');
+const spine = path.join(cwlRoot, 'scripts', 'smoke-ut-spine.mjs');
+if (fs.existsSync(evidence)) {
+  const r = spawnSync(process.execPath, [evidence, '--require-helix'], {
+    cwd: cwlRoot,
+    encoding: 'utf8',
+    env: { ...process.env, CHRYSALIS_SECURITY_ROOT: ROOT },
+    timeout: 180_000,
+    maxBuffer: 10 * 1024 * 1024,
+  });
+  const out = `${r.stdout || ''}${r.stderr || ''}`;
+  steps.push({
+    id: 'cwl-ut-evidence',
+    ok: r.status === 0 && /UT_EVIDENCE_OK|UT_SPINE_OK/.test(out),
+    status: r.status,
+    stdoutTail: out.slice(-300),
+  });
+} else if (fs.existsSync(spine)) {
+  const r = spawnSync(process.execPath, [spine, '--require-helix'], {
+    cwd: cwlRoot,
     encoding: 'utf8',
     env: { ...process.env, CHRYSALIS_SECURITY_ROOT: ROOT },
     timeout: 180_000,

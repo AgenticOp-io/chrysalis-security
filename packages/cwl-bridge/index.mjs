@@ -20,13 +20,20 @@ export function resolveCwlRoot(override) {
   if (override) return path.resolve(override);
   if (process.env.CHRYSALIS_CWL_ROOT) return path.resolve(process.env.CHRYSALIS_CWL_ROOT);
 
-  // Prefer @chrysalis/cwl pin (file: or registry) → pillar root
+  // Prefer @chrysalis/cwl pin → pillarRoot() (CWL 0.1.7+)
   try {
     const pkgJson = requireFromHere.resolve('@chrysalis/cwl/package.json');
-    const fromPin = path.resolve(path.dirname(pkgJson), '../..');
+    const pkgDir = path.dirname(pkgJson);
+    const indexPath = path.join(pkgDir, 'index.mjs');
+    // Sync resolve via package.json parent: packages/cwl → pillar
+    const fromPin = path.resolve(pkgDir, '../..');
     if (fs.existsSync(path.join(fromPin, 'scripts', 'hub-ingest', 'cwl-parser.mjs'))) {
       return fromPin;
     }
+    if (fs.existsSync(path.join(fromPin, 'LANGUAGE_VERSION.md'))) {
+      return fromPin;
+    }
+    void indexPath;
   } catch {
     /* not installed */
   }
