@@ -14,8 +14,10 @@ One upstream. One DNA file. No convert dependency. No custom OS.
 ## Loop every slice
 
 ```
-change → sync to GCE → smoke (learn/promote/backdoor 403) → only then next slice
+fetch CWL tip (npm run cwl-sync-check) → change → sync to GCE → smoke → next slice
 ```
+
+**Always check `engines/chrysalis-cwl` first** before bridge/cutover/language work. DNA learn/enforce never requires CWL (D5); bridge must match the language pillar.
 
 ## Modes
 

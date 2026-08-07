@@ -25,10 +25,13 @@
             "type": "array",
             "items": { "type": "integer" }
           },
-          "response_key_fingerprint": { "type": ["string", "null"] },
+          "response_key_fingerprint": {
+            "type": ["string", "null"],
+            "description": "Sorted JSON response key paths depth≤2 (e.g. data.role). Flat objects stay top-level only."
+          },
           "request_key_fingerprint": {
             "type": ["string", "null"],
-            "description": "Sorted top-level JSON request body keys (POST/PUT/PATCH). Null when not learned."
+            "description": "Sorted JSON request key paths depth≤2 (e.g. data.role). Null when not learned."
           },
           "query_key_fingerprint": {
             "type": ["string", "null"],

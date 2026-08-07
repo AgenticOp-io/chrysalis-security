@@ -85,8 +85,7 @@ DNA stays small so it works on WordPress, Rails, Express, PHP, static+API — th
 | `METHOD` + `host` + `path_template` | Primary identity. Numeric IDs / UUIDs / hashed static assets collapse (`/api/items/:id`, `/**/*.js`). |
 | `content_class` | `json` / `html` / `other` |
 | `status_classes` | e.g. learned `200` — surprise `5xx` class on a certified route is drift |
-| `response_key_fingerprint` | Sorted top-level JSON **response** keys |
-| `request_key_fingerprint` | Sorted top-level JSON **request** keys (POST/PUT/PATCH) |
+| `response_key_fingerprint` / `request_key_fingerprint` | Sorted JSON key paths depth≤2 (e.g. `data.role`) |
 | `query_key_fingerprint` | Sorted unique query **names** (values ignored) |
 
 **Deliberately not in v0:** HTML body hashes (CMS churn → false positives), SQL/DB fingerprints, deep authz logic. Those stay WAF/app problems ([BEGINNING.md](./BEGINNING.md)).

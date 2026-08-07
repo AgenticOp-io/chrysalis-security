@@ -38,12 +38,14 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] K8s sidecar sketch (`deploy/k8s/helix-sidecar.yaml`)  
 - [x] Enforce `status_classes` / `content_class` + fail-closed JSON (`status-smoke`)  
 - [x] Query-name fingerprint (`query_key_fingerprint` + `HX-QUERY-SCHEMA-DRIFT`)  
+- [x] Nested JSON key fingerprint depth≤2 (`nested-drift-smoke`)  
+- [x] CWL tip sync check (`cwl-sync-check` → `CWL_SYNC_OK`)  
+- [x] Filebeat SIEM recipe ([FILEBEAT.md](./FILEBEAT.md))  
 
 ## Later
 
 - [ ] Mode B L2 **GCE green** (`BRIDGE_L2_SMOKE_OK` on agenticop-master via `gce-sync -WithL2`)  
 - [ ] K8s sidecar **image + prove** (sketch only today)  
-- [ ] SIEM vendor connectors (filebeat recipes beyond NDJSON)  
-- [ ] Nested JSON key fingerprint (depth ≤2)  
+- [ ] More SIEM vendor connectors beyond Filebeat NDJSON  
 
 **Non-goals (locked):** no NGFW TLS dependency (D1); DNA block/alert only (D2); no UEBA/signature-WAF replacement (D3); host augment / no NAT homework (D4); CWL never required to enforce (D5).

@@ -11,6 +11,7 @@ import {
   signDna,
   verifyDna,
   queryKeyFingerprint,
+  responseKeyFingerprint,
 } from '../packages/dna-core/index.mjs';
 
 function assert(cond, msg) {
@@ -61,6 +62,8 @@ const stable = scoreResponse(jsonRoute, {
   body: { service: 'x', ok: true },
 });
 assert(stable.allow === true, 'stable keys allow');
+
+assert(responseKeyFingerprint({ wrap: { a: 1, b: 2 } }) === 'wrap,wrap.a,wrap.b', 'nested depth-2');
 
 const signed = signDna(
   { schema: 'app-dna-v1', app_id: 'u', created_at: 't', mode: 'certified', parent_hash: null, routes: [], holes: [] },

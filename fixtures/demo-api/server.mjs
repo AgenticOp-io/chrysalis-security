@@ -37,6 +37,24 @@ const server = http.createServer((req, res) => {
     });
     return;
   }
+  if (url.pathname === '/api/profile' && req.method === 'GET') {
+    if (process.env.NESTED_DRIFT === '1' || process.env.NESTED_DRIFT === 'true') {
+      res.end(
+        JSON.stringify({
+          ok: true,
+          data: { user: { id: 1, name: 'a' }, role: 'user', exfil: 'secret' },
+        }),
+      );
+      return;
+    }
+    res.end(
+      JSON.stringify({
+        ok: true,
+        data: { user: { id: 1, name: 'a' }, role: 'user' },
+      }),
+    );
+    return;
+  }
   if (url.pathname === '/api/backdoor' && req.method === 'GET') {
     res.end(JSON.stringify({ pwned: true, secret: 'exfil' }));
     return;

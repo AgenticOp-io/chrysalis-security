@@ -37,10 +37,39 @@ export function contentClass(contentType) {
   return 'other';
 }
 
-export function responseKeyFingerprint(body) {
+/**
+ * Sorted JSON key paths (depth ≤ 2). Arrays/scalars are leaves (not descended).
+ * Flat `{a,b}` → `a,b` (unchanged). Nested `{data:{x:1}}` → `data,data.x`.
+ * @param {unknown} body
+ * @param {{ maxDepth?: number }} [opts]
+ * @returns {string|null}
+ */
+export function responseKeyFingerprint(body, opts = {}) {
   if (body == null) return null;
   if (typeof body !== 'object' || Array.isArray(body)) return 'scalar';
-  return Object.keys(body).sort().join(',');
+  const maxDepth = opts.maxDepth == null ? 2 : Number(opts.maxDepth);
+  const paths = [];
+  collectKeyPaths(body, '', 1, maxDepth, paths);
+  return paths.sort().join(',');
+}
+
+/**
+ * @param {Record<string, unknown>} obj
+ * @param {string} prefix
+ * @param {number} depth 1 = top-level
+ * @param {number} maxDepth
+ * @param {string[]} out
+ */
+function collectKeyPaths(obj, prefix, depth, maxDepth, out) {
+  for (const k of Object.keys(obj)) {
+    const path = prefix ? `${prefix}.${k}` : k;
+    out.push(path);
+    if (depth >= maxDepth) continue;
+    const v = obj[k];
+    if (v != null && typeof v === 'object' && !Array.isArray(v)) {
+      collectKeyPaths(v, path, depth + 1, maxDepth, out);
+    }
+  }
 }
 
 /**

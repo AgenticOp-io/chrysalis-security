@@ -51,4 +51,6 @@ npm run ut-gce-demo        # → UT_GCE_DEMO_OK (gce-smoke + cutover + CWL smoke
 
 Uses language gold `fixtures/language-gold/24-dna-bridge/` from chrysalis-cwl.
 
-**CWL spine:** from `chrysalis-cwl`, `npm run smoke:ut-spine` (or `smoke:ut-spine:helix` with Secure sibling). Convert does not own this prove.
+**CWL spine:** from `chrysalis-cwl`, `npm run smoke:ut-spine` / `smoke:ut-evidence` (or `:helix` with Secure sibling). Convert does not own this prove.
+
+**Before Secure bridge work:** `npm run cwl-sync-check` → `CWL_SYNC_OK` (fetches origin; notes if tip behind).

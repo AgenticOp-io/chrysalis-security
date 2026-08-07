@@ -42,7 +42,7 @@ Keep DNA small so it works on WordPress, Rails, Express, PHP, static+API, etc.
 | Method + path template | **Yes — primary** | Normalize numeric IDs, UUIDs; strip query *values* |
 | Host | **Yes** | Multi-site / vhost safe |
 | Content-Type class | **Yes** | `json` / `html` / `other` |
-| JSON top-level keys | **Yes — JSON only** | Drift detection for APIs |
+| JSON key paths (depth ≤2) | **Yes — JSON only** | Drift detection for APIs (`data.role`, not full HTML) |
 | HTML body fingerprint | **No (v0)** | CMS pages change constantly → false positives |
 | SQL / DB | **No (v0)** | Needs app instrumentation; later optional |
 | Auth deep logic | **No (v0)** | In-DNA abuse stays a WAF/app problem |
