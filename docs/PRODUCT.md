@@ -22,24 +22,20 @@ That is a category shift only if operators can run it **Monday morning** without
 | Optional CWL cutover | Platform path without requiring CWL (D5) |
 | Whitepaper + threat model | Story is honest |
 
-**Verdict today:** strong **engine + canon**. Not yet a **product that changes how teams buy/run security**.
+**Verdict today:** engine + operator path + install sketches are in place. Remaining for full “changed security” credibility is **GCE L2 green on agenticop-master** and living with real customer traffic — not more core fingerprints.
 
 ---
 
 ## Gap map — how much more (honest)
 
-Rough product maturity: **~40–50%** of “changes security for real orgs.”  
-The remaining half is mostly **operator journey, install, and proof on boring real apps** — not more fingerprint cleverness.
+Rough product maturity: **~70%** of the *shippable* bar (engine + operator path + install/image recipes). Remaining: **GCE L2 green** + real customer shadow soak.
 
-### Tier 1 — must ship to change buyer behavior (~ next 2–4 slices)
+### Tier 1 — must ship to change buyer behavior
 
-Without these, Helix stays a clever proxy:
-
-1. **Operator readiness gate** — “am I safe to leave learn / enter shadow / flip enforce?”  
-   Coverage report from DNA + observations; explicit next step. *(building now)*
-2. **One install story** — systemd (or container) Mode A soft intercept: public port → Helix → app on localhost; NGFW untouched. *(building now)*
-3. **Shadow→enforce checklist** — min learn window / min routes / optional “zero unexpected in shadow log” tip (honest, not magic).
-4. **Real-app prove pack** — one static site + one JSON API beyond `demo-api`, documented as the beginning bar on GCE.
+1. **Operator readiness gate** — `helix report` / `helix ready` (+ `--shadow-log`) — **done**  
+2. **One install story** — systemd Mode A — **done**  
+3. **Shadow→enforce checklist** — shadow hole count gate — **done**  
+4. **Real-app prove pack** — `real-site-smoke` — **done**
 
 ### Tier 2 — makes it stick in production (~ following quarter)
 
@@ -83,9 +79,10 @@ That sentence is only credible with Tier 1 install + readiness + real-app prove.
 |----------|-------|--------|
 | P0 | `helix report` / `helix ready` + smoke | **done** |
 | P0 | systemd Mode A unit + install notes | **done** |
-| P1 | Shadow log “unexpected count” helper | next |
-| P1 | GCE real-site beginning pack | next |
-| P2 | K8s image prove | later |
-| P2 | Mode B L2 GCE | later |
+| P1 | Shadow log “unexpected count” helper | **done** (`--shadow-log`) |
+| P1 | Real-site beginning pack | **done** (`real-site-smoke`) |
+| P2 | K8s image prove | **done** (`k8s-image-smoke`, SKIP without docker) |
+| P2 | Mode B L2 GCE | **runbook** ([GCE-L2.md](./GCE-L2.md); green only on agenticop-master) |
+| P2 | Splunk HEC recipe | **done** ([SPLUNK.md](./SPLUNK.md)) |
 
 Related: [WHITEPAPER.md](./WHITEPAPER.md) · [MODES.md](./MODES.md) · [BEGINNING.md](./BEGINNING.md) · [ROADMAP.md](./ROADMAP.md)

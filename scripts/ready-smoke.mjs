@@ -1,9 +1,15 @@
 #!/usr/bin/env node
 /**
- * Operator readiness: report + ready gates.
+ * Operator readiness: report + ready gates + shadow-log counter.
  * Token: READY_SMOKE_OK
  */
-import { learnFromObservations, reportDna, assessReadiness, signDna } from '../packages/dna-core/index.mjs';
+import {
+  learnFromObservations,
+  reportDna,
+  assessReadiness,
+  signDna,
+  countShadowHoleEvents,
+} from '../packages/dna-core/index.mjs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -51,11 +57,23 @@ assert(enforceOk.ok === true, 'enforce ready');
 const dirty = assessReadiness('enforce', cert, { minRoutes: 3, shadowHoles: 2, maxShadowHoles: 0 });
 assert(dirty.ok === false, 'shadow holes block enforce');
 
+const counted = countShadowHoleEvents([
+  JSON.stringify({ kind: 'helix.hole', hole: { code: 'HX-ROUTE-UNKNOWN' } }),
+  JSON.stringify({ kind: 'helix.hole', hole: { code: 'HX-SCHEMA-DRIFT' } }),
+  '{"noise":true}',
+]);
+assert(counted.count === 2 && counted.byCode['HX-ROUTE-UNKNOWN'] === 1, 'count shadow holes');
+
 const dataDir = path.join(root, 'data', 'ready-smoke');
 fs.rmSync(dataDir, { recursive: true, force: true });
 fs.mkdirSync(dataDir, { recursive: true });
 const dnaPath = path.join(dataDir, 'app.dna.json');
+const shadowPath = path.join(dataDir, 'shadow.ndjson');
 fs.writeFileSync(dnaPath, JSON.stringify(cert, null, 2));
+fs.writeFileSync(
+  shadowPath,
+  JSON.stringify({ kind: 'helix.hole', hole: { code: 'HX-ROUTE-UNKNOWN' } }) + '\n',
+);
 
 const cli = path.join(root, 'packages/helix-cli/bin/helix.mjs');
 const r1 = spawnSync(process.execPath, [cli, 'report', '--in', dnaPath], { encoding: 'utf8' });
@@ -64,5 +82,20 @@ const r2 = spawnSync(process.execPath, [cli, 'ready', '--in', dnaPath, '--target
   encoding: 'utf8',
 });
 assert(r2.status === 0 && r2.stdout.includes('"ok": true'), `ready shadow: ${r2.stdout}`);
+const r3 = spawnSync(
+  process.execPath,
+  [cli, 'ready', '--in', dnaPath, '--target', 'enforce', '--shadow-log', shadowPath, '--min-routes', '3'],
+  { encoding: 'utf8' },
+);
+assert(r3.status === 2, 'dirty shadow log blocks enforce');
+assert(r3.stdout.includes('shadow_log'), 'includes shadow_log meta');
+
+fs.writeFileSync(shadowPath, '');
+const r4 = spawnSync(
+  process.execPath,
+  [cli, 'ready', '--in', dnaPath, '--target', 'enforce', '--shadow-log', shadowPath, '--min-routes', '3'],
+  { encoding: 'utf8' },
+);
+assert(r4.status === 0, `clean shadow log allows enforce: ${r4.stdout}`);
 
 console.log('READY_SMOKE_OK');

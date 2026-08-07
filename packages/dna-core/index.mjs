@@ -4,6 +4,7 @@
  * Static assets collapse by extension (double-star glob) so learn stays quiet on hashed bundles.
  */
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 
 /** @typedef {{ method: string, path: string, host?: string, status?: number, contentType?: string, body?: unknown, requestContentType?: string, requestBody?: unknown, query?: string|Record<string, unknown>|null }} Observation */
 /** @typedef {{ method: string, path_template: string, host: string, content_class: string, status_classes: number[], response_key_fingerprint: string|null, request_key_fingerprint?: string|null, query_key_fingerprint?: string|null }} DnaRoute */
@@ -741,6 +742,52 @@ export function assessReadiness(target, dna, opts = {}) {
         : 'Set MODE=enforce; keep DNA signed if required; POST /__helix/reload after promote'
       : 'Stay in learn/shadow until checks pass — see docs/MODES.md and docs/PRODUCT.md',
   };
+}
+
+/**
+ * Count helix.hole events from NDJSON text, lines, or objects.
+ * @param {string|string[]|object[]} input
+ */
+export function countShadowHoleEvents(input) {
+  let lines = [];
+  if (typeof input === 'string') {
+    lines = input
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+  } else if (Array.isArray(input)) {
+    lines = input;
+  }
+  const byCode = {};
+  let count = 0;
+  for (const row of lines) {
+    let obj = row;
+    if (typeof row === 'string') {
+      try {
+        obj = JSON.parse(row);
+      } catch {
+        continue;
+      }
+    }
+    if (!obj || typeof obj !== 'object') continue;
+    if (obj.kind === 'helix.hole' || obj.hole?.code) {
+      count += 1;
+      const code = obj.hole?.code || 'UNKNOWN';
+      byCode[code] = (byCode[code] || 0) + 1;
+    }
+  }
+  return { count, byCode, missing: false };
+}
+
+/**
+ * Count helix.hole events in a shadow/SIEM NDJSON file.
+ * @param {string} filePath
+ */
+export function countShadowHoles(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) {
+    return { count: 0, byCode: {}, missing: true };
+  }
+  return countShadowHoleEvents(fs.readFileSync(filePath, 'utf8'));
 }
 
 function stableStringify(obj) {

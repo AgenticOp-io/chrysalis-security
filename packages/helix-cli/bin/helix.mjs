@@ -10,6 +10,7 @@ import {
   reportDna,
   assessReadiness,
   dnaSigningPayload,
+  countShadowHoles,
 } from '../../dna-core/index.mjs';
 import {
   seedDnaFromCwlFile,
@@ -24,7 +25,8 @@ Usage:
   helix learn      --in <observations.ndjson> --out <dna.json> [--app-id name]
   helix report     --in <dna.json> [--observations <n>] [--shadow-holes <n>]
   helix ready      --in <dna.json> --target shadow|enforce
-                   [--min-routes n] [--require-signed] [--shadow-holes n] [--max-shadow-holes n]
+                   [--min-routes n] [--require-signed]
+                   [--shadow-log <shadow.ndjson>] [--shadow-holes n] [--max-shadow-holes n]
   helix diff       --a <dna.json> --b <dna.json>
   helix promote    --in <draft.json> --out <certified.json> [--from <prev-certified.json>]
                    [--alg hmac-sha256|ed25519]
@@ -129,12 +131,20 @@ if (cmd === 'ready') {
   const holes = flag(rest, '--shadow-holes');
   const maxHoles = flag(rest, '--max-shadow-holes');
   const minRoutes = flag(rest, '--min-routes');
+  const shadowLog = flag(rest, '--shadow-log');
+  let shadowHoles = holes != null ? Number(holes) : undefined;
+  let shadowMeta = null;
+  if (shadowLog) {
+    shadowMeta = countShadowHoles(shadowLog);
+    if (shadowHoles == null) shadowHoles = shadowMeta.count;
+  }
   const result = assessReadiness(target, readJson(input), {
     minRoutes: minRoutes != null ? Number(minRoutes) : undefined,
     requireSigned: hasFlag(rest, '--require-signed'),
-    shadowHoles: holes != null ? Number(holes) : undefined,
-    maxShadowHoles: maxHoles != null ? Number(maxHoles) : undefined,
+    shadowHoles,
+    maxShadowHoles: maxHoles != null ? Number(maxHoles) : target === 'enforce' && shadowHoles != null ? 0 : undefined,
   });
+  if (shadowMeta) result.shadow_log = shadowMeta;
   console.log(JSON.stringify(result, null, 2));
   process.exit(result.ok ? 0 : 2);
 }
