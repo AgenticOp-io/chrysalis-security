@@ -22,7 +22,7 @@ That is a category shift only if operators can run it **Monday morning** without
 | Optional CWL cutover | Platform path without requiring CWL (D5) |
 | Whitepaper + threat model | Story is honest |
 
-**Verdict today:** engine + operator path + install sketches are in place. Remaining for full “changed security” credibility is **GCE L2 green on agenticop-master** and living with real customer traffic — not more core fingerprints.
+**Verdict today:** shippable engine + operator path + Mode A install + **L2 GCE green**. Remaining for full “changed security” credibility is **living with real customer traffic** (shadow soak → enforce) — not more core fingerprints.
 
 ---
 
@@ -82,7 +82,8 @@ That sentence is only credible with Tier 1 install + readiness + real-app prove.
 | P1 | Shadow log “unexpected count” helper | **done** (`--shadow-log`) |
 | P1 | Real-site beginning pack | **done** (`real-site-smoke`) |
 | P2 | K8s image prove | **done** (`k8s-image-smoke`, SKIP without docker) |
-| P2 | Mode B L2 GCE | **runbook** ([GCE-L2.md](./GCE-L2.md); green only on agenticop-master) |
+| P2 | Mode B L2 GCE | **done** (`BRIDGE_L2_SMOKE_OK` on agenticop-master) |
 | P2 | Splunk HEC recipe | **done** ([SPLUNK.md](./SPLUNK.md)) |
+| Ops | Customer shadow soak | **runbook** ([SOAK.md](./SOAK.md)) — live traffic only |
 
 Related: [WHITEPAPER.md](./WHITEPAPER.md) · [MODES.md](./MODES.md) · [BEGINNING.md](./BEGINNING.md) · [ROADMAP.md](./ROADMAP.md)

@@ -202,31 +202,81 @@ export function stripBridgeEnvelope(seed) {
 }
 
 /**
+ * Load RFC-0023 deploy profile (cwl-deploy-profile-v1) if present.
+ * @param {string} profilePath
+ * @returns {object|null}
+ */
+export function loadDeployProfile(profilePath) {
+  if (!profilePath || !fs.existsSync(profilePath)) return null;
+  const p = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+  if (p?.schema !== 'cwl-deploy-profile-v1') {
+    throw new Error(`Expected schema cwl-deploy-profile-v1, got ${p?.schema}`);
+  }
+  return p;
+}
+
+/**
+ * Resolve deploy profile beside a CWL fixture or via explicit path / CHRYSALIS_DEPLOY_PROFILE.
+ * @param {string} cwlPath
+ * @param {string} [explicit]
+ */
+export function resolveDeployProfilePath(cwlPath, explicit) {
+  if (explicit) return path.resolve(explicit);
+  if (process.env.CHRYSALIS_DEPLOY_PROFILE) return path.resolve(process.env.CHRYSALIS_DEPLOY_PROFILE);
+  const beside = path.join(path.dirname(path.resolve(cwlPath)), 'deploy-profile.json');
+  if (fs.existsSync(beside)) return beside;
+  return null;
+}
+
+/**
  * Parse a .cwl file via chrysalis-cwl and seed draft DNA.
  * Prefers the language-pillar seeder (`cwl-dna-seed.mjs`) when present — no mapping fork.
+ * Applies RFC-0023 deploy profile for host/app_id when found.
  * @param {string} cwlPath
  * @param {object} [opts]
  */
 export async function seedDnaFromCwlFile(cwlPath, opts = {}) {
   const root = resolveCwlRoot(opts.cwlRoot);
+  const profilePath = resolveDeployProfilePath(cwlPath, opts.deployProfile);
+  const profile = profilePath ? loadDeployProfile(profilePath) : null;
+  const merged = {
+    ...opts,
+    app_id: opts.app_id || profile?.app_id,
+    host: opts.host || profile?.host || 'default',
+    deployProfilePath: profilePath,
+  };
+
   const seedMod = path.join(root, 'scripts', 'hub-ingest', 'cwl-dna-seed.mjs');
+  let seeded;
   if (fs.existsSync(seedMod)) {
     const { seedDraftDnaFromCwlPath } = await import(pathToFileUrl(seedMod));
-    return seedDraftDnaFromCwlPath(cwlPath, {
-      app_id: opts.app_id,
-      host: opts.host,
+    seeded = seedDraftDnaFromCwlPath(cwlPath, {
+      app_id: merged.app_id,
+      host: merged.host,
       created_at: opts.created_at,
       fixture: opts.fixture,
     });
+  } else {
+    const { parseCwlModule } = await loadCwlParser(opts.cwlRoot);
+    const abs = path.resolve(cwlPath);
+    const source = fs.readFileSync(abs, 'utf8');
+    const parsed = parseCwlModule(source, path.basename(abs));
+    seeded = cwlSurfaceToDraftDna(parsed, {
+      ...merged,
+      fixture: opts.fixture || abs,
+    });
   }
-  const { parseCwlModule } = await loadCwlParser(opts.cwlRoot);
-  const abs = path.resolve(cwlPath);
-  const source = fs.readFileSync(abs, 'utf8');
-  const parsed = parseCwlModule(source, path.basename(abs));
-  return cwlSurfaceToDraftDna(parsed, {
-    ...opts,
-    fixture: opts.fixture || abs,
-  });
+
+  if (profile && seeded?.bridge && typeof seeded.bridge === 'object') {
+    seeded.bridge.deploy_profile = {
+      schema: profile.schema,
+      path: profilePath,
+      host: profile.host,
+      rfc: '0023',
+    };
+    if (profile.rfc) seeded.bridge.rfc = `0022+0023`;
+  }
+  return seeded;
 }
 
 /**
@@ -238,7 +288,12 @@ export async function seedDnaFromCwlFile(cwlPath, opts = {}) {
  * @param {{ ignoreHost?: boolean }} [opts]
  */
 export function compareCwlSurfaceToDna(cwlDnaOrSeed, liveDna, opts = {}) {
-  const ignoreHost = opts.ignoreHost !== false; // default true for authoring-time CWL
+  const profile = opts.deployProfile || null;
+  const pathShape = profile?.path_shape_equality !== false;
+  const ignoreHost =
+    opts.ignoreHost !== undefined
+      ? opts.ignoreHost !== false
+      : true; // authoring-time CWL default; profile.host is for seed, not strict host match
   const cwlRoutes = cwlDnaOrSeed?.routes || [];
   const liveRoutes = liveDna?.routes || [];
 
@@ -250,7 +305,10 @@ export function compareCwlSurfaceToDna(cwlDnaOrSeed, liveDna, opts = {}) {
     const method = String(c.method || 'GET').toUpperCase();
     const hit = liveRoutes.find((l) => {
       if (String(l.method || '').toUpperCase() !== method) return false;
-      if (!pathTemplateShapeEqual(c.path_template, l.path_template)) return false;
+      const pathOk = pathShape
+        ? pathTemplateShapeEqual(c.path_template, l.path_template)
+        : String(c.path_template) === String(l.path_template);
+      if (!pathOk) return false;
       if (ignoreHost) return true;
       return String(l.host || 'default') === String(c.host || 'default');
     });
@@ -273,7 +331,9 @@ export function compareCwlSurfaceToDna(cwlDnaOrSeed, liveDna, opts = {}) {
     const method = String(l.method || 'GET').toUpperCase();
     const hit = cwlRoutes.find((c) => {
       if (String(c.method || '').toUpperCase() !== method) return false;
-      return pathTemplateShapeEqual(c.path_template, l.path_template);
+      return pathShape
+        ? pathTemplateShapeEqual(c.path_template, l.path_template)
+        : String(c.path_template) === String(l.path_template);
     });
     if (!hit) {
       extra_notes.push({
@@ -290,6 +350,9 @@ export function compareCwlSurfaceToDna(cwlDnaOrSeed, liveDna, opts = {}) {
     matched,
     missing_in_dna,
     in_dna_not_cwl: extra_notes,
+    deploy_profile: profile
+      ? { schema: profile.schema, host: profile.host, path_shape_equality: pathShape }
+      : null,
     cutover: missing_in_dna.length === 0
       ? 'cwl_surface_subseteq_dna'
       : 'cwl_surface_not_covered',

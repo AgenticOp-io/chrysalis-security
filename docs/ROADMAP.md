@@ -50,10 +50,13 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] K8s image smoke (`k8s-image-smoke` → `helix:local`)  
 - [x] Splunk HEC recipe ([SPLUNK.md](./SPLUNK.md))  
 - [x] Mode B L2 GCE runbook ([GCE-L2.md](./GCE-L2.md))  
+- [x] RFC-0023 deploy profile apply at seed/compare (Secure consumes CWL gold profile)  
+- [x] Shadow soak runbook ([SOAK.md](./SOAK.md))  
+- [x] GCE sync DNA pack + nft green (`GCE_SYNC_OK` / `NFT_SMOKE_OK`) — L2 via `sudo` on sync  
+- [x] Mode B L2 **GCE green** (`BRIDGE_L2_SMOKE_OK` via `gce-sync -WithL2` + sudo)  
 
 ## Later
 
-- [ ] Mode B L2 **GCE green** on agenticop-master (`gce-sync -WithL2` → `BRIDGE_L2_SMOKE_OK`)  
-- [ ] Customer traffic soak (shadow weeks → enforce)  
+- [ ] Customer traffic soak (operational — follow [SOAK.md](./SOAK.md))  
 
 **Non-goals (locked):** no NGFW TLS dependency (D1); DNA block/alert only (D2); no UEBA/signature-WAF replacement (D3); host augment / no NAT homework (D4); CWL never required to enforce (D5).

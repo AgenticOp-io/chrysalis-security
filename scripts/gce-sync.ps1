@@ -77,7 +77,8 @@ if ($WithCwl) {
 [void]$smokeCmds.Add("node scripts/gce-smoke.mjs")
 if (-not $SkipNft) { [void]$smokeCmds.Add("bash scripts/gce-nft-smoke.sh") }
 if ($WithL2) {
-  [void]$smokeCmds.Add("node scripts/bridge-l2-smoke.mjs")
+  # netns/nft need root; gcloud SSH user is typically non-root
+  [void]$smokeCmds.Add("sudo -n node scripts/bridge-l2-smoke.mjs || sudo node scripts/bridge-l2-smoke.mjs")
 }
 if ($SiteUp) {
   if ($Relearn) { [void]$smokeCmds.Add("RELEARN=1 bash scripts/gce-site-up.sh") }

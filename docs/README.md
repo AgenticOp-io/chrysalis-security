@@ -7,6 +7,7 @@ Behavioral DNA firewall. **Trust nothing** that isn’t in certified DNA.
 | [BEGINNING.md](./BEGINNING.md) | **Basic beginning** — internet out of the box |
 | [PRODUCT.md](./PRODUCT.md) | **Gap to “changes security” + build order** |
 | [INSTALL-MODE-A.md](./INSTALL-MODE-A.md) | systemd Mode A soft intercept |
+| [SOAK.md](./SOAK.md) | Shadow soak before enforce |
 | [GCE-L2.md](./GCE-L2.md) | Mode B L2 prove on GCE |
 | [SPLUNK.md](./SPLUNK.md) | SIEM NDJSON → Splunk HEC |
 | [WHITEPAPER.md](./WHITEPAPER.md) | **How Helix works and protects** |

@@ -12,6 +12,8 @@ import {
   seedDnaFromCwlFile,
   stripBridgeEnvelope,
   compareCwlSurfaceToDna,
+  loadDeployProfile,
+  resolveDeployProfilePath,
 } from '../packages/cwl-bridge/index.mjs';
 import { scoreRequest, signDna, verifyDna } from '../packages/dna-core/index.mjs';
 
@@ -44,17 +46,26 @@ fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
 
 console.log('=== cutover: seed draft DNA from CWL gold ===');
+const profilePath = resolveDeployProfilePath(goldCwl);
+const deployProfile = profilePath ? loadDeployProfile(profilePath) : null;
+if (deployProfile) {
+  console.log(`=== cutover: RFC-0023 deploy profile ${profilePath} host=${deployProfile.host} ===`);
+}
 const seeded = await seedDnaFromCwlFile(goldCwl, {
   app_id: 'cutover-smoke',
-  host: 'default',
+  host: deployProfile?.host || 'default',
   mode: 'draft',
   fixture: 'fixtures/language-gold/24-dna-bridge/routes.cwl',
   cwlRoot,
+  deployProfile: profilePath || undefined,
 });
 assert(seeded.schema === 'app-dna-v1', 'schema');
 assert(seeded.mode === 'draft', 'mode draft');
 assert(seeded.bridge?.kind === 'cwl-surface-seed', 'bridge envelope present');
 assert(seeded.routes.length >= 1, 'seeded routes');
+if (deployProfile) {
+  assert(seeded.bridge?.deploy_profile?.rfc === '0023' || seeded.bridge?.deploy_profile?.schema === 'cwl-deploy-profile-v1', 'profile annotated');
+}
 fs.writeFileSync(path.join(outDir, 'seeded.dna.json'), JSON.stringify(seeded, null, 2) + '\n');
 
 console.log('=== cutover: strip bridge envelope ===');
@@ -76,7 +87,7 @@ assert(verified.ok === true, `verify: ${JSON.stringify(verified)}`);
 fs.writeFileSync(path.join(outDir, 'certified.dna.json'), JSON.stringify(certified, null, 2) + '\n');
 
 console.log('=== cutover: compareCwlSurfaceToDna ===');
-const cmp = compareCwlSurfaceToDna(seeded, certified);
+const cmp = compareCwlSurfaceToDna(seeded, certified, { deployProfile });
 assert(cmp.ok === true, `cutover compare failed: ${JSON.stringify(cmp.missing_in_dna)}`);
 assert(cmp.cutover === 'cwl_surface_subseteq_dna', 'cutover label');
 

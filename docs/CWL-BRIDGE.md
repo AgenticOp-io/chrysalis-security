@@ -54,3 +54,5 @@ Uses language gold `fixtures/language-gold/24-dna-bridge/` from chrysalis-cwl.
 **CWL spine:** from `chrysalis-cwl`, `npm run smoke:ut-spine` / `smoke:ut-evidence` (or `:helix` with Secure sibling). Convert does not own this prove.
 
 **Before Secure bridge work:** `npm run cwl-sync-check` → `CWL_SYNC_OK` (fetches origin; notes if tip behind).
+
+**RFC-0023:** if `deploy-profile.json` sits beside the `.cwl` (gold `24-dna-bridge`), seed annotates `bridge.deploy_profile` and uses profile `host` / `app_id`. Profile schema owned by CWL; Helix only applies it.
