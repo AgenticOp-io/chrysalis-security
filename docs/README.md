@@ -5,6 +5,7 @@ Behavioral DNA firewall. **Trust nothing** that isn’t in certified DNA.
 | Doc | What |
 |-----|------|
 | [BEGINNING.md](./BEGINNING.md) | **Basic beginning** — internet out of the box |
+| [WHITEPAPER.md](./WHITEPAPER.md) | **How Helix works and protects** |
 | [DECISIONS.md](./DECISIONS.md) | Locked D1–D4 (TLS, block/alert, no UEBA, augment) |
 | [AUGMENT.md](./AUGMENT.md) | Augment any NGFW — no NAT rewrite; internal + external |
 | [GCE.md](./GCE.md) | Sync + prove on agenticop-master |
