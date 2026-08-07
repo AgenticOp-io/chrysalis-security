@@ -43,11 +43,15 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] Filebeat SIEM recipe ([FILEBEAT.md](./FILEBEAT.md))  
 - [x] DNA hot reload (`POST /__helix/reload` + SIGHUP) — [MODES.md](./MODES.md)  
 - [x] `HELIX_MAX_BODY_BYTES` → `HX-BODY-TOO-LARGE`  
+- [x] Product gap map ([PRODUCT.md](./PRODUCT.md)) + `helix report` / `helix ready`  
+- [x] Mode A systemd install sketch ([INSTALL-MODE-A.md](./INSTALL-MODE-A.md))  
 
 ## Later
 
 - [ ] Mode B L2 **GCE green** (`BRIDGE_L2_SMOKE_OK` on agenticop-master via `gce-sync -WithL2`)  
 - [ ] K8s sidecar **image + prove** (sketch only today)  
 - [ ] More SIEM vendor connectors beyond Filebeat NDJSON  
+- [ ] GCE real-site beginning pack (beyond demo-api)  
+- [ ] Shadow-log unexpected counter wired into `helix ready` by default  
 
 **Non-goals (locked):** no NGFW TLS dependency (D1); DNA block/alert only (D2); no UEBA/signature-WAF replacement (D3); host augment / no NAT homework (D4); CWL never required to enforce (D5).

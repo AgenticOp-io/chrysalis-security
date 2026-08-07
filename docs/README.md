@@ -5,6 +5,8 @@ Behavioral DNA firewall. **Trust nothing** that isn’t in certified DNA.
 | Doc | What |
 |-----|------|
 | [BEGINNING.md](./BEGINNING.md) | **Basic beginning** — internet out of the box |
+| [PRODUCT.md](./PRODUCT.md) | **Gap to “changes security” + build order** |
+| [INSTALL-MODE-A.md](./INSTALL-MODE-A.md) | systemd Mode A soft intercept |
 | [WHITEPAPER.md](./WHITEPAPER.md) | **How Helix works and protects** |
 | [MODES.md](./MODES.md) | Allow while securing — learn/shadow/enforce + reload |
 | [FILEBEAT.md](./FILEBEAT.md) | SIEM NDJSON → Filebeat recipe |

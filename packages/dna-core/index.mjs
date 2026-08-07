@@ -634,6 +634,115 @@ export function verifyDna(dna, opts = {}) {
   return { ok: true, unsigned: false, key_id: sig.key_id || 'default', alg: 'hmac-sha256' };
 }
 
+/**
+ * Operator coverage report from DNA (and optional observation count).
+ * @param {AppDna|null|undefined} dna
+ * @param {{ observations?: number, shadowHoles?: number }} [extra]
+ */
+export function reportDna(dna, extra = {}) {
+  const routes = Array.isArray(dna?.routes) ? dna.routes : [];
+  const byClass = { json: 0, html: 0, other: 0 };
+  let withRequestFp = 0;
+  let withQueryFp = 0;
+  let withResponseFp = 0;
+  for (const r of routes) {
+    const c = r.content_class || 'other';
+    byClass[c] = (byClass[c] || 0) + 1;
+    if (r.response_key_fingerprint) withResponseFp += 1;
+    if (r.request_key_fingerprint) withRequestFp += 1;
+    if (r.query_key_fingerprint != null && r.query_key_fingerprint !== '') withQueryFp += 1;
+  }
+  const signed = Boolean(dna?.signature?.value);
+  const mode = dna?.mode || null;
+  let next = 'learn';
+  if (routes.length === 0) next = 'learn';
+  else if (mode !== 'certified') next = 'promote';
+  else next = 'shadow';
+
+  return {
+    kind: 'helix.report',
+    app_id: dna?.app_id || null,
+    mode,
+    signed,
+    routes: routes.length,
+    by_content_class: byClass,
+    fingerprints: {
+      response: withResponseFp,
+      request: withRequestFp,
+      query_named: withQueryFp,
+    },
+    observations: extra.observations ?? null,
+    shadow_holes: extra.shadowHoles ?? null,
+    next_step: next,
+    product_bar:
+      routes.length >= 3 && mode === 'certified'
+        ? 'ready_for_shadow'
+        : routes.length >= 1
+          ? 'thin_dna_continue_learn_or_promote'
+          : 'no_dna_keep_learning',
+  };
+}
+
+/**
+ * Gate before flipping modes. Exit semantics for CLI: ok → 0, not ready → 2.
+ * @param {'shadow'|'enforce'} target
+ * @param {AppDna|null|undefined} dna
+ * @param {{ minRoutes?: number, requireSigned?: boolean, shadowHoles?: number, maxShadowHoles?: number }} [opts]
+ */
+export function assessReadiness(target, dna, opts = {}) {
+  const minRoutes = opts.minRoutes != null ? Number(opts.minRoutes) : target === 'enforce' ? 3 : 1;
+  const requireSigned = Boolean(opts.requireSigned);
+  const maxShadowHoles = opts.maxShadowHoles != null ? Number(opts.maxShadowHoles) : Infinity;
+  const shadowHoles = opts.shadowHoles != null ? Number(opts.shadowHoles) : null;
+  const checks = [];
+  const fail = (id, reason) => {
+    checks.push({ id, ok: false, reason });
+  };
+  const pass = (id, detail) => {
+    checks.push({ id, ok: true, detail });
+  };
+
+  if (!dna || !Array.isArray(dna.routes)) {
+    fail('dna_present', 'No DNA loaded');
+  } else {
+    pass('dna_present', `${dna.routes.length} routes`);
+    if (dna.mode !== 'certified') fail('certified', `mode=${dna.mode}`);
+    else pass('certified', 'certified');
+    if (dna.routes.length < minRoutes) {
+      fail('min_routes', `have ${dna.routes.length}, need >= ${minRoutes}`);
+    } else {
+      pass('min_routes', `${dna.routes.length} >= ${minRoutes}`);
+    }
+    if (requireSigned) {
+      if (!dna.signature?.value) fail('signed', 'HELIX_DNA_REQUIRE / --require-signed but DNA unsigned');
+      else pass('signed', dna.signature.alg || 'signed');
+    } else {
+      pass('signed', dna.signature?.value ? dna.signature.alg : 'optional_unsigned_ok');
+    }
+  }
+
+  if (target === 'enforce' && shadowHoles != null) {
+    if (shadowHoles > maxShadowHoles) {
+      fail('shadow_clean', `${shadowHoles} shadow holes > max ${maxShadowHoles}`);
+    } else {
+      pass('shadow_clean', `${shadowHoles} <= ${maxShadowHoles}`);
+    }
+  }
+
+  const ok = checks.every((c) => c.ok);
+  return {
+    kind: 'helix.ready',
+    target,
+    ok,
+    checks,
+    advice: ok
+      ? target === 'shadow'
+        ? 'Set MODE=shadow; watch SIEM_LOG / SHADOW_LOG; then helix ready --target enforce'
+        : 'Set MODE=enforce; keep DNA signed if required; POST /__helix/reload after promote'
+      : 'Stay in learn/shadow until checks pass — see docs/MODES.md and docs/PRODUCT.md',
+  };
+}
+
 function stableStringify(obj) {
   return JSON.stringify(sortKeysDeep(obj));
 }

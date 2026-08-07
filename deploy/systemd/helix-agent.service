@@ -1,0 +1,24 @@
+[Unit]
+Description=Helix DNA firewall (Mode A host agent)
+Documentation=https://github.com/AgenticOp-io/chrysalis-security
+After=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/helix/helix-agent.env
+WorkingDirectory=/opt/helix
+ExecStart=/usr/bin/node /opt/helix/packages/helix-agent/bin/helix-agent.mjs
+Restart=on-failure
+RestartSec=3
+# Promote without downtime: systemctl kill -s SIGUSR2 helix-agent
+# or: curl -X POST http://127.0.0.1:${LISTEN_PORT}/__helix/reload
+
+# Hardening (adjust for your distro)
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/helix /etc/helix
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
