@@ -41,6 +41,8 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] Nested JSON key fingerprint depth≤2 (`nested-drift-smoke`)  
 - [x] CWL tip sync check (`cwl-sync-check` → `CWL_SYNC_OK`)  
 - [x] Filebeat SIEM recipe ([FILEBEAT.md](./FILEBEAT.md))  
+- [x] DNA hot reload (`POST /__helix/reload` + SIGHUP) — [MODES.md](./MODES.md)  
+- [x] `HELIX_MAX_BODY_BYTES` → `HX-BODY-TOO-LARGE`  
 
 ## Later
 

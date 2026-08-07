@@ -11,6 +11,7 @@
  *   PORT=4080
  *   HELIX_DNA_KEY=… / HELIX_DNA_REQUIRE=1
  *   HELIX_TLS_CERT=… / HELIX_TLS_KEY=…   (optional terminate)
+ *   HELIX_MAX_BODY_BYTES=1048576        (optional; 413 HX-BODY-TOO-LARGE)
  *   PLACEMENT=proxy|bridge
  */
 import fs from 'node:fs';
@@ -29,6 +30,7 @@ const requireSignedDna = process.env.HELIX_DNA_REQUIRE === '1' || process.env.HE
 const placement = process.env.PLACEMENT || 'proxy';
 const tlsCertPath = process.env.HELIX_TLS_CERT || '';
 const tlsKeyPath = process.env.HELIX_TLS_KEY || '';
+const maxBodyBytes = Number(process.env.HELIX_MAX_BODY_BYTES || 0) || 0;
 
 if (!['learn', 'shadow', 'enforce'].includes(mode)) {
   console.error(`Invalid MODE=${mode}`);
@@ -64,14 +66,26 @@ try {
     requireSignedDna,
     placement,
     tls,
+    maxBodyBytes: maxBodyBytes || undefined,
   });
 } catch (err) {
   console.error(err.hole ? JSON.stringify(err.hole) : String(err.message || err));
   process.exit(1);
 }
 
+function onReloadSignal() {
+  try {
+    server.reloadDna();
+    console.log('helix-proxy DNA reloaded (SIGHUP/SIGUSR2)');
+  } catch (err) {
+    console.error('helix-proxy DNA reload failed', err.hole || err.message || err);
+  }
+}
+process.on('SIGHUP', onReloadSignal);
+process.on('SIGUSR2', onReloadSignal);
+
 server.listen(port, () => {
   console.log(
-    `helix-proxy mode=${mode} placement=${placement} port=${port} tls=${tls ? 'on' : 'off'} upstream=${upstream} dna=${dnaPath || '(none)'} siem=${siemLogPath || '(off)'}`,
+    `helix-proxy mode=${mode} placement=${placement} port=${port} tls=${tls ? 'on' : 'off'} upstream=${upstream} dna=${dnaPath || '(none)'} siem=${siemLogPath || '(off)'} maxBody=${maxBodyBytes || '(off)'}`,
   );
 });

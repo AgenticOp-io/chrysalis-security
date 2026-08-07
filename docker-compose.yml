@@ -29,12 +29,19 @@ services:
       DNA: /data/app.dna.json
       OBSERVE: /data/observations.ndjson
       SHADOW_LOG: /data/shadow.ndjson
+      SIEM_LOG: /data/siem.ndjson
       PORT: "4080"
       APP_ID: compose-demo
+      HELIX_MAX_BODY_BYTES: ${HELIX_MAX_BODY_BYTES:-1048576}
     volumes:
       - helix-data:/data
     depends_on:
       - demo-api
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4080/__helix/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
 volumes:
   helix-data:

@@ -13,7 +13,10 @@ ENV UPSTREAM=http://127.0.0.1:4090 \
     DNA=/data/app.dna.json \
     OBSERVE=/data/observations.ndjson \
     SHADOW_LOG=/data/shadow.ndjson \
+    SIEM_LOG=/data/siem.ndjson \
     PORT=4080 \
     APP_ID=app
 EXPOSE 4080
+HEALTHCHECK --interval=10s --timeout=3s --retries=5 \
+  CMD node -e "fetch('http://127.0.0.1:4080/__helix/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 CMD ["node", "packages/helix-proxy/server.mjs"]

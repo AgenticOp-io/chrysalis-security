@@ -17,6 +17,7 @@
  *   SIEM_LOG=/data/siem.ndjson
  *   HELIX_DNA_KEY=… / HELIX_DNA_REQUIRE=1
  *   HELIX_TLS_CERT=… / HELIX_TLS_KEY=…
+ *   HELIX_MAX_BODY_BYTES=…
  *
  * Same engine as helix-proxy; this entrypoint is the host-install story.
  */
@@ -36,6 +37,7 @@ const dnaKeyId = process.env.HELIX_DNA_KEY_ID || '';
 const requireSignedDna = process.env.HELIX_DNA_REQUIRE === '1' || process.env.HELIX_DNA_REQUIRE === 'true';
 const tlsCertPath = process.env.HELIX_TLS_CERT || '';
 const tlsKeyPath = process.env.HELIX_TLS_KEY || '';
+const maxBodyBytes = Number(process.env.HELIX_MAX_BODY_BYTES || 0) || 0;
 
 if (!['learn', 'shadow', 'enforce'].includes(mode)) {
   console.error(`Invalid MODE=${mode}`);
@@ -68,15 +70,27 @@ try {
     requireSignedDna,
     placement: 'agent',
     tls,
+    maxBodyBytes: maxBodyBytes || undefined,
   });
 } catch (err) {
   console.error(err.hole ? JSON.stringify(err.hole) : String(err.message || err));
   process.exit(1);
 }
 
+function onReloadSignal() {
+  try {
+    server.reloadDna();
+    console.log('helix-agent DNA reloaded (SIGHUP/SIGUSR2)');
+  } catch (err) {
+    console.error('helix-agent DNA reload failed', err.hole || err.message || err);
+  }
+}
+process.on('SIGHUP', onReloadSignal);
+process.on('SIGUSR2', onReloadSignal);
+
 server.listen(listenPort, listenHost, () => {
   console.log(
-    `helix-agent mode=${mode} listen=${listenHost}:${listenPort} tls=${tls ? 'on' : 'off'} app=${upstream} dna=${dnaPath || '(none)'} siem=${siemLogPath || '(off)'}`,
+    `helix-agent mode=${mode} listen=${listenHost}:${listenPort} tls=${tls ? 'on' : 'off'} app=${upstream} dna=${dnaPath || '(none)'} siem=${siemLogPath || '(off)'} maxBody=${maxBodyBytes || '(off)'}`,
   );
   console.log('Mode A soft intercept: point app at localhost only; NGFW keeps this host IP.');
 });

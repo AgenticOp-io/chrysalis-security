@@ -18,6 +18,8 @@ import {
 } from '../dna-core/index.mjs';
 
 const HEALTHZ = '/__helix/healthz';
+const RELOAD = '/__helix/reload';
+const STATUS = '/__helix/status';
 
 function appendNdjson(filePath, obj) {
   if (!filePath) return;
@@ -67,6 +69,7 @@ function parseJsonBody(raw, contentType) {
  *   requireSignedDna?: boolean,
  *   placement?: 'proxy'|'agent'|'bridge',
  *   tls?: { cert: string|Buffer, key: string|Buffer },
+ *   maxBodyBytes?: number,
  * }} opts
  */
 export function createHelixProxy(opts) {
@@ -81,10 +84,24 @@ export function createHelixProxy(opts) {
 
   let dna = loadDna(opts.dnaPath, verifyOpts);
   const placement = opts.placement || 'proxy';
+  const maxBodyBytes =
+    opts.maxBodyBytes != null && Number(opts.maxBodyBytes) > 0 ? Number(opts.maxBodyBytes) : 0;
 
   function reloadDna() {
     dna = loadDna(opts.dnaPath, verifyOpts);
     return dna;
+  }
+
+  function dnaStatus() {
+    return {
+      ok: true,
+      mode: opts.mode,
+      placement,
+      dna: Boolean(dna),
+      dnaPath: opts.dnaPath || null,
+      routes: Array.isArray(dna?.routes) ? dna.routes.length : 0,
+      maxBodyBytes: maxBodyBytes || null,
+    };
   }
 
   function emitHole(phase, hole, meta) {
@@ -107,22 +124,80 @@ export function createHelixProxy(opts) {
     const pathWithQuery = req.url || '/';
     const pathOnly = pathWithQuery.split('?')[0] || '/';
 
-    // Ops health — never DNA-gated (sidecar probes)
+    // Ops — never DNA-gated (sidecar probes / promote without downtime)
     if (req.method === 'GET' && pathOnly === HEALTHZ) {
       res.writeHead(200, { 'content-type': 'application/json' });
-      res.end(
-        JSON.stringify({
-          ok: true,
-          mode: opts.mode,
-          placement,
-          dna: Boolean(dna || (opts.dnaPath && fs.existsSync(opts.dnaPath))),
-        }),
-      );
+      res.end(JSON.stringify(dnaStatus()));
+      return;
+    }
+    if (req.method === 'GET' && pathOnly === STATUS) {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify(dnaStatus()));
+      return;
+    }
+    if (req.method === 'POST' && pathOnly === RELOAD) {
+      try {
+        reloadDna();
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ reloaded: true, ...dnaStatus() }));
+      } catch (err) {
+        const hole = err.hole || { code: 'HX-DNA-RELOAD', reason: String(err.message || err) };
+        res.writeHead(500, { 'content-type': 'application/json', 'x-helix-hole': hole.code });
+        res.end(JSON.stringify({ reloaded: false, hole }));
+      }
       return;
     }
 
+    const cl = Number(req.headers['content-length'] || 0);
+    if (maxBodyBytes && cl > maxBodyBytes) {
+      const hole = {
+        code: 'HX-BODY-TOO-LARGE',
+        reason: `Request Content-Length ${cl} exceeds HELIX_MAX_BODY_BYTES ${maxBodyBytes}`,
+      };
+      emitHole('request', hole, { method: req.method, path: pathOnly });
+      if (opts.mode === 'shadow') {
+        res.setHeader('x-helix-shadow-hole', hole.code);
+      } else if (opts.mode === 'enforce') {
+        res.writeHead(413, { 'content-type': 'application/json', 'x-helix-hole': hole.code });
+        res.end(JSON.stringify({ hole }));
+        return;
+      } else {
+        // learn: still reject oversized bodies (DoS / DNA poison) — allow-while-secure does not mean unbounded
+        res.writeHead(413, { 'content-type': 'application/json', 'x-helix-hole': hole.code });
+        res.end(JSON.stringify({ hole }));
+        return;
+      }
+    }
+
     const chunks = [];
-    for await (const c of req) chunks.push(c);
+    let size = 0;
+    let oversize = false;
+    for await (const c of req) {
+      size += c.length;
+      if (maxBodyBytes && size > maxBodyBytes) {
+        oversize = true;
+        break;
+      }
+      chunks.push(c);
+    }
+    if (oversize) {
+      const hole = {
+        code: 'HX-BODY-TOO-LARGE',
+        reason: `Request body exceeds HELIX_MAX_BODY_BYTES ${maxBodyBytes}`,
+      };
+      emitHole('request', hole, { method: req.method || 'GET', path: pathOnly });
+      req.resume?.();
+      if (opts.mode === 'shadow') {
+        // drain already stopped; still pass empty? Better 413 in shadow too for body limit — D2 is DNA; body limit is ops protect
+        res.writeHead(413, { 'content-type': 'application/json', 'x-helix-shadow-hole': hole.code });
+        res.end(JSON.stringify({ hole }));
+        return;
+      }
+      res.writeHead(413, { 'content-type': 'application/json', 'x-helix-hole': hole.code });
+      res.end(JSON.stringify({ hole }));
+      return;
+    }
+
     const raw = Buffer.concat(chunks);
     const host = requestHost(req);
     const method = req.method || 'GET';
@@ -268,4 +343,6 @@ export {
   signDna,
   verifyDna,
   HEALTHZ,
+  RELOAD,
+  STATUS,
 };

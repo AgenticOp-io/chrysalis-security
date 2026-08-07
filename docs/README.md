@@ -6,6 +6,7 @@ Behavioral DNA firewall. **Trust nothing** that isn’t in certified DNA.
 |-----|------|
 | [BEGINNING.md](./BEGINNING.md) | **Basic beginning** — internet out of the box |
 | [WHITEPAPER.md](./WHITEPAPER.md) | **How Helix works and protects** |
+| [MODES.md](./MODES.md) | Allow while securing — learn/shadow/enforce + reload |
 | [FILEBEAT.md](./FILEBEAT.md) | SIEM NDJSON → Filebeat recipe |
 | [DECISIONS.md](./DECISIONS.md) | Locked D1–D4 (TLS, block/alert, no UEBA, augment) |
 | [AUGMENT.md](./AUGMENT.md) | Augment any NGFW — no NAT rewrite; internal + external |
