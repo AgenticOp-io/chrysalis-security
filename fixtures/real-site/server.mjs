@@ -21,7 +21,15 @@ const server = http.createServer((req, res) => {
   }
   if (url.pathname === '/api/items' && req.method === 'GET') {
     res.setHeader('content-type', 'application/json');
-    res.end(JSON.stringify({ items: [{ id: 1, name: 'widget' }] }));
+    res.end(
+      JSON.stringify({
+        items: [
+          { id: 1, name: 'Widget' },
+          { id: 2, name: 'Bracket' },
+          { id: 3, name: 'Relay' },
+        ],
+      }),
+    );
     return;
   }
   if (url.pathname === '/api/backdoor' && req.method === 'GET') {

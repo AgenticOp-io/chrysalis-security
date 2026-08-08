@@ -77,7 +77,15 @@ start([path.join(root, 'packages/helix-proxy/server.mjs')], {
 });
 await sleep(400);
 
-for (const p of ['/', '/assets/site.css', '/assets/app.aaaa1111.js', '/api/health', '/api/items']) {
+for (const p of [
+  '/',
+  '/catalog.html',
+  '/about.html',
+  '/assets/site.css',
+  '/assets/app.aaaa1111.js',
+  '/api/health',
+  '/api/items',
+]) {
   const r = await get(helixPort, p);
   assert(r.status === 200, `${p} learn ${r.status}`);
 }
