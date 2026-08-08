@@ -38,8 +38,9 @@ try {
   Pop-Location
 }
 
-Write-Host "SCP → ${Name}:/tmp/chrysalis-security-gce.tgz"
-& gcloud compute scp $tar "${Name}:/tmp/chrysalis-security-gce.tgz" --zone=$Zone --project=$Project
+# Relative to remote $HOME (pscp does not expand ~)
+Write-Host "SCP → ${Name}:chrysalis-security-gce.tgz"
+& gcloud compute scp $tar "${Name}:chrysalis-security-gce.tgz" --zone=$Zone --project=$Project
 if ($LASTEXITCODE -ne 0) { throw "scp failed" }
 
 $cwlRootSibling = Join-Path (Split-Path -Parent $Root) "chrysalis-cwl"
@@ -56,8 +57,8 @@ if ($WithCwl) {
   } finally {
     Pop-Location
   }
-  Write-Host "SCP → ${Name}:/tmp/chrysalis-cwl-gce.tgz"
-  & gcloud compute scp $cwlTar "${Name}:/tmp/chrysalis-cwl-gce.tgz" --zone=$Zone --project=$Project
+  Write-Host "SCP → ${Name}:chrysalis-cwl-gce.tgz"
+  & gcloud compute scp $cwlTar "${Name}:chrysalis-cwl-gce.tgz" --zone=$Zone --project=$Project
   if ($LASTEXITCODE -ne 0) { throw "CWL scp failed" }
 }
 
@@ -65,12 +66,12 @@ if ($WithCwl) {
 $smokeCmds = [System.Collections.Generic.List[string]]::new()
 [void]$smokeCmds.Add("set -e")
 [void]$smokeCmds.Add("mkdir -p ~/chrysalis-security")
-[void]$smokeCmds.Add("tar -xzf /tmp/chrysalis-security-gce.tgz -C ~/chrysalis-security")
+[void]$smokeCmds.Add("tar -xzf ~/chrysalis-security-gce.tgz -C ~/chrysalis-security")
 [void]$smokeCmds.Add("sed -i 's/\r$//' ~/chrysalis-security/scripts/*.sh")
 [void]$smokeCmds.Add("chmod +x ~/chrysalis-security/scripts/*.sh")
 if ($WithCwl) {
   [void]$smokeCmds.Add("mkdir -p ~/chrysalis-cwl")
-  [void]$smokeCmds.Add("tar -xzf /tmp/chrysalis-cwl-gce.tgz -C ~/chrysalis-cwl")
+  [void]$smokeCmds.Add("tar -xzf ~/chrysalis-cwl-gce.tgz -C ~/chrysalis-cwl")
   [void]$smokeCmds.Add('export CHRYSALIS_CWL_ROOT=$HOME/chrysalis-cwl')
 }
 [void]$smokeCmds.Add("cd ~/chrysalis-security")
@@ -88,7 +89,7 @@ if ($SyncOnly) {
   $smokeCmds = [System.Collections.Generic.List[string]]::new()
   [void]$smokeCmds.Add("set -e")
   [void]$smokeCmds.Add("mkdir -p ~/chrysalis-security")
-  [void]$smokeCmds.Add("tar -xzf /tmp/chrysalis-security-gce.tgz -C ~/chrysalis-security")
+  [void]$smokeCmds.Add("tar -xzf ~/chrysalis-security-gce.tgz -C ~/chrysalis-security")
   [void]$smokeCmds.Add("sed -i 's/\r$//' ~/chrysalis-security/scripts/*.sh")
   [void]$smokeCmds.Add("chmod +x ~/chrysalis-security/scripts/*.sh")
   [void]$smokeCmds.Add("echo SYNC_ONLY_OK")
@@ -96,6 +97,7 @@ if ($SyncOnly) {
 
 $remote = ($smokeCmds -join "; ")
 Write-Host "SSH smokes on $Name ..."
-& gcloud compute ssh $Name --zone=$Zone --project=$Project --command=$remote
+# Pass --command as a single argv so PowerShell does not expand $HOME / $USER inside the remote script
+& gcloud compute ssh $Name --zone=$Zone --project=$Project --command="$remote"
 if ($LASTEXITCODE -ne 0) { throw "remote smokes failed" }
 Write-Host "GCE_SYNC_OK"
