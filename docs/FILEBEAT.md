@@ -53,4 +53,11 @@ Or ship to Logstash / Kafka / Splunk HEC with the same filestream NDJSON input.
 }
 ```
 
+## Kibana dashboard
+
+Saved-objects NDJSON: [deploy/siem/helix-holes.kibana.ndjson](../deploy/siem/helix-holes.kibana.ndjson)  
+Stack Management → Saved Objects → Import. Point the index pattern at your Filebeat index (adjust `helix-holes*` if needed).
+
+Sample events: [fixtures/siem/sample-holes.ndjson](../fixtures/siem/sample-holes.ndjson)
+
 Prove Helix emission: `npm run request-drift-smoke` / `query-drift-smoke` (assert SIEM lines).

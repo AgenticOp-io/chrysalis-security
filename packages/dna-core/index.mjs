@@ -369,6 +369,75 @@ export function dnaSigningPayload(dna) {
   return stableStringify(rest);
 }
 
+/**
+ * SHA-256 of the signing payload (used as parent_hash lineage).
+ * @param {AppDna} dna
+ * @returns {string} hex digest
+ */
+export function hashDna(dna) {
+  return crypto.createHash('sha256').update(dnaSigningPayload(dna)).digest('hex');
+}
+
+/**
+ * Verify child.parent_hash === hashDna(parent).
+ * @param {AppDna} child
+ * @param {AppDna} parent
+ */
+export function verifyParentChain(child, parent) {
+  if (!parent) {
+    return {
+      ok: false,
+      hole: { code: 'HX-DNA-PARENT', reason: 'Parent DNA required for chain verify' },
+    };
+  }
+  const expected = hashDna(parent);
+  const got = child?.parent_hash;
+  if (!got) {
+    return {
+      ok: false,
+      hole: { code: 'HX-DNA-PARENT', reason: 'Child missing parent_hash' },
+    };
+  }
+  if (String(got) !== expected) {
+    return {
+      ok: false,
+      hole: {
+        code: 'HX-DNA-PARENT',
+        reason: 'parent_hash does not match parent certificate',
+      },
+    };
+  }
+  return { ok: true, parent_hash: expected };
+}
+
+/**
+ * Promote a draft to certified DNA (optional lineage + sign).
+ * @param {AppDna} draft
+ * @param {{
+ *   from?: AppDna|null,
+ *   sign?: Parameters<typeof signDna>[1]|null,
+ * }} [opts]
+ * @returns {{ dna: AppDna, diff: ReturnType<typeof diffDna>|null }}
+ */
+export function promoteDna(draft, opts = {}) {
+  const from = opts.from || null;
+  /** @type {AppDna} */
+  let dna = {
+    ...draft,
+    mode: 'certified',
+    created_at: new Date().toISOString(),
+    parent_hash: from ? hashDna(from) : draft.parent_hash ?? null,
+  };
+  delete dna.signature;
+
+  const diff = from ? diffDna(from, { ...draft, mode: draft.mode || 'draft' }) : null;
+
+  if (opts.sign) {
+    dna = signDna(dna, opts.sign);
+  }
+  return { dna, diff };
+}
+
 /** Supported DNA signature algorithms. */
 export const DNA_SIG_ALGS = Object.freeze(['hmac-sha256', 'ed25519']);
 

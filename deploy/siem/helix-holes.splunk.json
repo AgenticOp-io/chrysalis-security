@@ -1,0 +1,32 @@
+{
+  "label": "Helix DNA holes",
+  "description": "Import via Splunk Dashboard Studio or convert to classic XML. Expects sourcetype=helix:hole (see docs/SPLUNK.md).",
+  "version": "1",
+  "visualizations": [
+    {
+      "id": "helix_hole_codes",
+      "type": "pie",
+      "title": "Hole codes",
+      "search": "sourcetype=helix:hole OR kind=helix.hole | stats count by hole.code"
+    },
+    {
+      "id": "helix_hole_paths",
+      "type": "table",
+      "title": "Recent holes",
+      "search": "sourcetype=helix:hole OR kind=helix.hole | table _time host path method hole.code mode phase | sort -_time | head 50"
+    },
+    {
+      "id": "helix_unknown_routes",
+      "type": "singlevalue",
+      "title": "HX-ROUTE-UNKNOWN (24h)",
+      "search": "sourcetype=helix:hole hole.code=HX-ROUTE-UNKNOWN earliest=-24h | stats count"
+    }
+  ],
+  "layout": {
+    "rows": [
+      ["helix_unknown_routes", "helix_hole_codes"],
+      ["helix_hole_paths"]
+    ]
+  },
+  "notes": "Helix is not a SIEM (D3). Pair with shadow soak then helix ready --shadow-log."
+}

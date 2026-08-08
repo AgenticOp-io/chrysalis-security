@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Helix · Prove the block</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet" />
+  <style>
+    :root { --bg:#0f1419; --ink:#e8eef4; --muted:#8b9aab; --ok:#3db89a; --bad:#e85d5d; --line:rgba(232,238,244,.12); }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; color: var(--ink);
+      font-family: "IBM Plex Sans", sans-serif;
+      background: linear-gradient(160deg, #0f1419, #1a2330 50%, #121820);
+      display: flex; align-items: center; justify-content: center; padding: 1.5rem;
+    }
+    .card {
+      width: min(560px, 100%);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 1.75rem 1.5rem;
+      background: rgba(26,35,48,.95);
+    }
+    h1 { margin: 0 0 .35rem; font-size: 1.6rem; }
+    p { color: var(--muted); line-height: 1.45; }
+    .result {
+      margin: 1.25rem 0;
+      padding: 1rem 1.1rem;
+      border-radius: 8px;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: .95rem;
+      white-space: pre-wrap;
+      border: 1px solid var(--line);
+      min-height: 4.5rem;
+    }
+    .result.ok { border-color: var(--ok); color: var(--ok); }
+    .result.bad { border-color: var(--bad); color: var(--bad); }
+    a.btn, button {
+      display: inline-block;
+      margin: .35rem .35rem 0 0;
+      padding: .65rem 1rem;
+      border-radius: 6px;
+      border: 1px solid var(--bad);
+      background: var(--bad);
+      color: #1a0a0a;
+      font: inherit; font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    a.secondary, button.secondary {
+      background: transparent; color: var(--ink); border-color: var(--line);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Prove Helix is gating</h1>
+    <p>
+      This page is on your machine behind Helix (enforce).
+      The link below requests <code>/api/backdoor</code> — a route
+      <strong>not</strong> in your DNA certificate. Helix should block it before the demo app runs.
+    </p>
+    <div class="result" id="out">Running proof…</div>
+    <a class="btn" href="/api/backdoor">Open /api/backdoor</a>
+    <button type="button" class="secondary" id="retry">Run again</button>
+    <a class="btn secondary" href="/">Back to panel</a>
+    <p style="margin-top:1.25rem;font-size:.85rem">
+      Bypass check (app without Helix):
+      <a href="http://127.0.0.1:4090/api/backdoor" style="color:var(--ok)">http://127.0.0.1:4090/api/backdoor</a>
+      should still return the secret JSON.
+    </p>
+  </div>
+  <script>
+    async function run() {
+      const out = document.getElementById("out");
+      out.className = "result";
+      out.textContent = "GET /api/backdoor …";
+      try {
+        const res = await fetch("/api/backdoor", { cache: "no-store" });
+        const text = await res.text();
+        let body = text;
+        try { body = JSON.stringify(JSON.parse(text), null, 2); } catch { /* raw */ }
+        if (res.status === 403 && text.includes("HX-ROUTE-UNKNOWN")) {
+          out.className = "result ok";
+          out.textContent = "WORKING — Helix blocked the request\n\nHTTP " + res.status + "\n" + body;
+        } else {
+          out.className = "result bad";
+          out.textContent = "NOT BLOCKED — expected 403 HX-ROUTE-UNKNOWN\n\nHTTP " + res.status + "\n" + body;
+        }
+      } catch (e) {
+        out.className = "result bad";
+        out.textContent = "Request failed: " + (e.message || e);
+      }
+    }
+    document.getElementById("retry").onclick = run;
+    run();
+  </script>
+</body>
+</html>

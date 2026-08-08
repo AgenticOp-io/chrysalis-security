@@ -2,7 +2,11 @@ node_modules/
 data/
 certificates/demo-draft.json
 reports/
+deploy/k8s/helix-sidecar.rendered.yaml
 .DS_Store
 *.log
 .env
 .env.*
+
+tools/cloudflared/
+

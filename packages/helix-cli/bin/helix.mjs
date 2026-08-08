@@ -1,15 +1,14 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
-import crypto from 'node:crypto';
 import {
   learnFromObservations,
   diffDna,
-  signDna,
   verifyDna,
+  verifyParentChain,
+  promoteDna,
   reportDna,
   assessReadiness,
-  dnaSigningPayload,
   countShadowHoles,
 } from '../../dna-core/index.mjs';
 import {
@@ -28,10 +27,12 @@ Usage:
                    [--min-routes n] [--require-signed]
                    [--shadow-log <shadow.ndjson>] [--shadow-holes n] [--max-shadow-holes n]
   helix diff       --a <dna.json> --b <dna.json>
-  helix promote    --in <draft.json> --out <certified.json> [--from <prev-certified.json>]
+  helix promote    --in <draft.json> --out <certified.json>
+                   [--from <prev-certified.json>]   # default: --out if it already exists
+                   [--require-from] [--no-diff]
                    [--alg hmac-sha256|ed25519]
                    [--key <secret|pem>|--key-file <path>] [--key-id id]
-  helix verify     --in <certified.json>
+  helix verify     --in <certified.json> [--parent <prev-certified.json>]
                    [--alg hmac-sha256|ed25519]
                    [--key <secret|pem>|--key-file <path>] [--key-id id] [--require]
   helix seed-cwl   --in <routes.cwl> --out <draft.json> [--app-id name] [--host default] [--strip-bridge]
@@ -39,7 +40,7 @@ Usage:
 
 Signing: hmac-sha256 (shared secret) or ed25519 (PEM/raw private promote, public verify).
 Env: HELIX_DNA_KEY, HELIX_DNA_KEY_ID, HELIX_DNA_ALG. Canon: docs/SIGNED-DNA.md
-Product bar: docs/PRODUCT.md · modes: docs/MODES.md
+Lifecycle: docs/CERT-LIFECYCLE.md · Product: docs/PRODUCT.md · Modes: docs/MODES.md
 CWL bridge: RFC-0022 (chrysalis-cwl). Canon: docs/CANON.md
 `);
 }
@@ -168,39 +169,49 @@ if (cmd === 'promote') {
     usage();
     process.exit(1);
   }
-  let dna = readJson(input);
-  const fromPath = flag(rest, '--from');
-  if (fromPath) {
-    const d = diffDna(readJson(fromPath), { ...dna, mode: dna.mode || 'draft' });
-    console.log('Promote diff vs --from:');
-    console.log(JSON.stringify(d, null, 2));
+  const draft = readJson(input);
+  let fromPath = flag(rest, '--from');
+  // Re-promote UX: if --out already exists and --from omitted, diff against current cert
+  if (!fromPath && fs.existsSync(out) && path.resolve(input) !== path.resolve(out)) {
+    fromPath = out;
   }
-  dna.mode = 'certified';
-  dna.created_at = new Date().toISOString();
-  if (fromPath) {
-    try {
-      const prev = readJson(fromPath);
-      dna.parent_hash = crypto.createHash('sha256').update(dnaSigningPayload(prev)).digest('hex');
-    } catch {
-      dna.parent_hash = null;
-    }
+  if (hasFlag(rest, '--require-from') && !fromPath) {
+    console.error('promote --require-from needs --from (or an existing --out to replace)');
+    process.exit(1);
   }
+  const from = fromPath ? readJson(fromPath) : null;
   const secret = resolveSecret(rest);
   const alg = resolveAlg(rest);
-  if (secret) {
-    dna = signDna(dna, {
-      alg,
-      secret,
-      privateKey: alg === 'ed25519' ? secret : undefined,
-      key_id: flag(rest, '--key-id') || process.env.HELIX_DNA_KEY_ID || 'default',
-    });
+  const { dna, diff } = promoteDna(draft, {
+    from,
+    sign: secret
+      ? {
+          alg,
+          secret,
+          privateKey: alg === 'ed25519' ? secret : undefined,
+          key_id: flag(rest, '--key-id') || process.env.HELIX_DNA_KEY_ID || 'default',
+        }
+      : null,
+  });
+  if (diff && !hasFlag(rest, '--no-diff')) {
+    console.log(fromPath ? `Promote diff vs ${fromPath}:` : 'Promote diff:');
+    console.log(JSON.stringify(diff, null, 2));
+  }
+  if (from) {
+    const chain = verifyParentChain(dna, from);
+    if (!chain.ok) {
+      console.error(JSON.stringify(chain, null, 2));
+      process.exit(2);
+    }
   }
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, JSON.stringify(dna, null, 2) + '\n');
   console.log(
     secret
-      ? `Promoted + signed (${dna.signature?.alg || alg}) certificate → ${out}`
-      : `Promoted certificate → ${out}`,
+      ? `Promoted + signed (${dna.signature?.alg || alg}) certificate → ${out}` +
+          (dna.parent_hash ? ` parent_hash=${dna.parent_hash.slice(0, 12)}…` : '')
+      : `Promoted certificate → ${out}` +
+          (dna.parent_hash ? ` parent_hash=${dna.parent_hash.slice(0, 12)}…` : ''),
   );
   process.exit(0);
 }
@@ -220,6 +231,12 @@ if (cmd === 'verify') {
     key_id: flag(rest, '--key-id') || process.env.HELIX_DNA_KEY_ID || undefined,
     require: hasFlag(rest, '--require'),
   });
+  const parentPath = flag(rest, '--parent');
+  if (parentPath) {
+    const chain = verifyParentChain(dna, readJson(parentPath));
+    result.parent_chain = chain;
+    if (!chain.ok) result.ok = false;
+  }
   console.log(JSON.stringify(result, null, 2));
   process.exit(result.ok ? 0 : 2);
 }

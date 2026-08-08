@@ -1,8 +1,11 @@
 # Helix as Kubernetes sidecar (Mode A host-intercept analogue)
 # DNA-only — no CWL required. Pair with any app container.
 #
-# Apply sketch (edit image/registry first):
-#   kubectl apply -f deploy/k8s/helix-sidecar.yaml
+# Local image: npm run k8s-image-smoke
+# Registry tag + rendered YAML: HELIX_IMAGE_REGISTRY=… npm run k8s-push
+# Docs: docs/K8S.md
+#
+#   kubectl apply -f deploy/k8s/helix-sidecar.rendered.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:

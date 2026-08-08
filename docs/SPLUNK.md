@@ -30,4 +30,9 @@ index=security sourcetype=helix:hole hole.code=HX-ROUTE-UNKNOWN
 | stats count by host path hole.code
 ```
 
+## Dashboard (import)
+
+Studio-oriented search pack: [deploy/siem/helix-holes.splunk.json](../deploy/siem/helix-holes.splunk.json)  
+Sample events: [fixtures/siem/sample-holes.ndjson](../fixtures/siem/sample-holes.ndjson)
+
 Pair with shadow mode first: alert on holes, then `helix ready --target enforce --shadow-log …`.

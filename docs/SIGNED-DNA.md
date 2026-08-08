@@ -46,12 +46,17 @@ node -e "const c=require('crypto');const{privateKey,publicKey}=c.generateKeyPair
 helix promote --in draft.json --out cert.json --key "$HELIX_DNA_KEY" --key-id lab
 helix verify  --in cert.json --key "$HELIX_DNA_KEY" --require
 
+# Re-promote: diff + parent_hash (auto --from when --out exists)
+helix promote --in draft.json --out cert.json --key "$HELIX_DNA_KEY" --key-id lab
+helix verify  --in cert.json --parent prev.json --key "$HELIX_DNA_KEY" --require
+
 # Ed25519
 helix promote --in draft.json --out cert.json --alg ed25519 --key-file priv.pem --key-id lab
 helix verify  --in cert.json --alg ed25519 --key-file pub.pem --require
 ```
 
-Env aliases: `HELIX_DNA_KEY`, `HELIX_DNA_KEY_ID`, `HELIX_DNA_ALG`, `--key-file`.
+Env aliases: `HELIX_DNA_KEY`, `HELIX_DNA_KEY_ID`, `HELIX_DNA_ALG`, `--key-file`.  
+Lifecycle / revoke-replace: [CERT-LIFECYCLE.md](./CERT-LIFECYCLE.md).
 
 ## Runtime
 
