@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>About · Northline</title>
+    <link rel="stylesheet" href="/assets/site.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="top">
+        <a class="brand" href="/">Northline</a>
+        <nav>
+          <a href="/">Home</a>
+          <a href="/catalog.html">Catalog</a>
+          <a href="/about.html" aria-current="page">About</a>
+          <a class="danger" href="/api/backdoor">Hidden admin</a>
+        </nav>
+      </header>
+      <main>
+        <h1>About this lab</h1>
+        <p class="lede">
+          Northline is a fixture app in <code>fixtures/real-site</code> — not a
+          customer product. It exists so Helix can learn a homepage, static
+          assets, and JSON APIs, then block unauthorized surface.
+        </p>
+        <ul class="bullets">
+          <li>Allowed: <code>/</code>, <code>/catalog.html</code>, <code>/about.html</code>, <code>/api/health</code>, <code>/api/items</code>, hashed CSS/JS</li>
+          <li>Blocked in enforce: <code>/api/backdoor</code> (Hidden admin)</li>
+          <li>Ops: <a href="/__helix/">/__helix/</a> · <a href="/__helix/attack">proof page</a></li>
+        </ul>
+      </main>
+    </div>
+    <script src="/assets/app.aaaa1111.js"></script>
+  </body>
+</html>

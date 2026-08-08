@@ -2,12 +2,36 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Helix real-site</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Northline Catalog</title>
     <link rel="stylesheet" href="/assets/site.css" />
   </head>
   <body>
-    <h1>Helix real-site</h1>
-    <p>Boring HTML + API for beginning prove.</p>
+    <div class="shell">
+      <header class="top">
+        <a class="brand" href="/">Northline</a>
+        <nav>
+          <a href="/">Home</a>
+          <a href="/catalog.html">Catalog</a>
+          <a href="/about.html">About</a>
+          <a class="danger" href="/api/backdoor" title="Not in DNA — Helix should block">Hidden admin</a>
+        </nav>
+      </header>
+
+      <main class="hero">
+        <p class="eyebrow">Lab storefront</p>
+        <h1>Northline Catalog</h1>
+        <p class="lede">
+          A small HTML + JSON app used to prove Helix: certified routes pass;
+          anything outside DNA (like Hidden admin) does not.
+        </p>
+        <div class="actions">
+          <a class="btn" href="/catalog.html">Browse catalog</a>
+          <a class="btn ghost" href="/__helix/">Helix panel</a>
+        </div>
+        <p class="status" id="health">Checking API…</p>
+      </main>
+    </div>
     <script src="/assets/app.aaaa1111.js"></script>
   </body>
 </html>

@@ -48,7 +48,15 @@ function appSpec(name) {
     return {
       name: 'real-site',
       script: 'fixtures/real-site/server.mjs',
-      learnPaths: ['/', '/api/health', '/api/items', '/assets/site.css', '/assets/app.aaaa1111.js'],
+      learnPaths: [
+        '/',
+        '/catalog.html',
+        '/about.html',
+        '/api/health',
+        '/api/items',
+        '/assets/site.css',
+        '/assets/app.aaaa1111.js',
+      ],
     };
   }
   return {
