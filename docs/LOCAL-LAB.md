@@ -58,10 +58,31 @@ npm run local-lab-tunnel
 
 Quick tunnels have no SLA; stop when done. For a durable public prove, run Helix on GCE ([GCE.md](./GCE.md)).
 
+## Closer-to-real app (HTML + static + API)
+
+```bash
+npm run local-lab -- bootstrap-real
+# Helix in enforce in front of fixtures/real-site
+# Site:  http://127.0.0.1:4080/
+# Proof: http://127.0.0.1:4080/__helix/attack
+```
+
+Or: `npm run local-lab -- start --mode learn --app real-site --kill` then promote as usual.
+
+## Durable public prove (GCE)
+
+After `gcloud auth login`:
+
+```powershell
+.\scripts\gce-sync.ps1 -SiteUp
+# then (project admin once): open tcp:18085 — see docs/GCE.md
+# Public: http://35.224.146.25:18085/
+```
+
 ## CI / automated full path
 
 `npm run smoke` and `npm run local-lab-smoke` prove learn → promote → enforce backdoor 403 without depending on your long-lived `:4080` lab.
 
 ## Not a customer soak
 
-This lab is synthetic. Real “implement fully” on a production app follows [SOAK.md](./SOAK.md). Same modes — different traffic.
+`real-site` is still a fixture. Production credibility needs your real app’s traffic per [SOAK.md](./SOAK.md).

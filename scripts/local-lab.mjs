@@ -34,12 +34,28 @@ function usage() {
 
   npm run local-lab -- status
   npm run local-lab -- promote [--key <secret>] [--key-id lab]
-  npm run local-lab -- start --mode learn|shadow|enforce [--kill]
+  npm run local-lab -- start --mode learn|shadow|enforce [--app demo|real-site] [--kill]
+  npm run local-lab -- bootstrap-real   # learn real-site → promote → enforce (fresh DNA)
   npm run local-lab -- prove
 
 Data: ${dir}
 Panel: http://127.0.0.1:${listenPort}/
 `);
+}
+
+function appSpec(name) {
+  if (name === 'real-site') {
+    return {
+      name: 'real-site',
+      script: 'fixtures/real-site/server.mjs',
+      learnPaths: ['/', '/api/health', '/api/items', '/assets/site.css', '/assets/app.aaaa1111.js'],
+    };
+  }
+  return {
+    name: 'demo',
+    script: 'fixtures/demo-api/server.mjs',
+    learnPaths: ['/api/health', '/api/items'],
+  };
 }
 
 function flag(argv, name) {
@@ -205,12 +221,13 @@ if (cmd === 'start') {
     console.error(`MODE=${mode} needs ${dnaPath} — run: npm run local-lab -- promote`);
     process.exit(1);
   }
+  const app = appSpec(flag(rest, '--app') || process.env.HELIX_LOCAL_APP || 'demo');
   if (hasFlag(rest, '--kill')) {
     killPortListeners([listenPort, demoPort]);
     await new Promise((r) => setTimeout(r, 500));
   }
 
-  const demo = spawn(process.execPath, ['fixtures/demo-api/server.mjs'], {
+  const demo = spawn(process.execPath, [app.script], {
     cwd: root,
     env: { ...process.env, PORT: String(demoPort), HOST: '127.0.0.1' },
     stdio: 'ignore',
@@ -226,7 +243,8 @@ if (cmd === 'start') {
     OBSERVE: obsPath,
     SIEM_LOG: siemPath,
     SHADOW_LOG: shadowPath,
-    HELIX_ROOT_PANEL: '1',
+    // Panel at / steals the real site homepage — only enable for demo-api labs
+    HELIX_ROOT_PANEL: app.name === 'demo' ? '1' : '0',
     HELIX_DNA_KEY: process.env.HELIX_DNA_KEY || 'local-lab-key',
     HELIX_DNA_KEY_ID: process.env.HELIX_DNA_KEY_ID || 'local-lab',
   };
@@ -244,7 +262,14 @@ if (cmd === 'start') {
   fs.writeFileSync(
     pidPath,
     JSON.stringify(
-      { at: new Date().toISOString(), mode, demo: demo.pid, helix: proxy.pid, dna: env.DNA || null },
+      {
+        at: new Date().toISOString(),
+        mode,
+        app: app.name,
+        demo: demo.pid,
+        helix: proxy.pid,
+        dna: env.DNA || null,
+      },
       null,
       2,
     ) + '\n',
@@ -261,6 +286,7 @@ if (cmd === 'start') {
       {
         started: Boolean(hz.ok),
         mode,
+        app: app.name,
         panel: `http://127.0.0.1:${listenPort}/`,
         healthz: hz.json || hz,
         pids: { demo: demo.pid, helix: proxy.pid },
@@ -270,6 +296,73 @@ if (cmd === 'start') {
     ),
   );
   process.exit(hz.ok ? 0 : 1);
+}
+
+if (cmd === 'bootstrap-real') {
+  // Fresh real-site DNA (HTML + static + API), then enforce — closer to a real app than demo-api.
+  fs.rmSync(obsPath, { force: true });
+  fs.rmSync(draftPath, { force: true });
+  // keep siem history unless wiped
+  const appFlag = ['--app', 'real-site'];
+  const startLearn = spawnSync(
+    process.execPath,
+    ['scripts/local-lab.mjs', 'start', '--mode', 'learn', '--kill', ...appFlag],
+    { cwd: root, env: process.env, encoding: 'utf8' },
+  );
+  process.stdout.write(startLearn.stdout || '');
+  process.stderr.write(startLearn.stderr || '');
+  if (startLearn.status !== 0) process.exit(startLearn.status ?? 1);
+
+  const paths = appSpec('real-site').learnPaths;
+  for (const p of paths) {
+    for (let i = 0; i < 3; i++) {
+      await get(p);
+    }
+  }
+  helixCli(['learn', '--in', obsPath, '--out', draftPath, '--app-id', 'local-real-site']);
+  const key = process.env.HELIX_DNA_KEY || 'local-lab-key';
+  const keyId = process.env.HELIX_DNA_KEY_ID || 'local-lab';
+  helixCli([
+    'promote',
+    '--in',
+    draftPath,
+    '--out',
+    dnaPath,
+    '--key',
+    key,
+    '--key-id',
+    keyId,
+    '--no-diff',
+  ]);
+  const startEnf = spawnSync(
+    process.execPath,
+    ['scripts/local-lab.mjs', 'start', '--mode', 'enforce', '--kill', ...appFlag],
+    { cwd: root, env: process.env, encoding: 'utf8' },
+  );
+  process.stdout.write(startEnf.stdout || '');
+  process.stderr.write(startEnf.stderr || '');
+  if (startEnf.status !== 0) process.exit(startEnf.status ?? 1);
+  const prove = spawnSync(process.execPath, ['scripts/local-lab.mjs', 'prove'], {
+    cwd: root,
+    env: process.env,
+    encoding: 'utf8',
+  });
+  process.stdout.write(prove.stdout || '');
+  process.stderr.write(prove.stderr || '');
+  console.log(
+    JSON.stringify(
+      {
+        bootstrap: 'real-site',
+        site: `http://127.0.0.1:${listenPort}/`,
+        panel: `http://127.0.0.1:${listenPort}/__helix/`,
+        proof: `http://127.0.0.1:${listenPort}/__helix/attack`,
+        block: `http://127.0.0.1:${listenPort}/api/backdoor`,
+      },
+      null,
+      2,
+    ),
+  );
+  process.exit(prove.status ?? 1);
 }
 
 if (cmd === 'prove') {
