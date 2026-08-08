@@ -77,7 +77,7 @@ Requires a target change on the NGFW/LB. Keep for demos, simple SaaS, and operat
 
 ---
 
-## “All possible” firewalls — same augment recipe
+Full vendor survey (add-in vs augment vs API glue): [NGFW-TIE-IN.md](./NGFW-TIE-IN.md).
 
 We don’t write a special Fortinet module per vendor. We classify by **role**, then attach Helix with A or B.
 

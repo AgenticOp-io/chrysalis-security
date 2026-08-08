@@ -15,6 +15,7 @@ Behavioral DNA firewall. **Trust nothing** that isn’t in certified DNA.
 | [FILEBEAT.md](./FILEBEAT.md) | SIEM NDJSON → Filebeat recipe |
 | [DECISIONS.md](./DECISIONS.md) | Locked D1–D4 (TLS, block/alert, no UEBA, augment) |
 | [AUGMENT.md](./AUGMENT.md) | Augment any NGFW — no NAT rewrite; internal + external |
+| [NGFW-TIE-IN.md](./NGFW-TIE-IN.md) | Can Helix be a firewall add-in? Vendor survey |
 | [GCE.md](./GCE.md) | Sync + prove on agenticop-master |
 | [PROCESS.md](./PROCESS.md) | Desktop edit, GCE prove |
 | [CANON.md](./CANON.md) | Three rules only |
