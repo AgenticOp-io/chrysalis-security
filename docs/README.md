@@ -7,6 +7,7 @@ Behavioral DNA firewall. **Trust nothing** that isn’t in certified DNA.
 | [BEGINNING.md](./BEGINNING.md) | **Basic beginning** — internet out of the box |
 | [PRODUCT.md](./PRODUCT.md) | **Gap to “changes security” + build order** |
 | [CERT-LIFECYCLE.md](./CERT-LIFECYCLE.md) | Promote / parent_hash / revoke-replace |
+| [LOCAL-LAB.md](./LOCAL-LAB.md) | Desktop learn → promote → enforce flip |
 | [INSTALL-MODE-A.md](./INSTALL-MODE-A.md) | systemd Mode A soft intercept |
 | [K8S.md](./K8S.md) | Sidecar image build / push / apply |
 | [SOAK.md](./SOAK.md) | Shadow soak before enforce |

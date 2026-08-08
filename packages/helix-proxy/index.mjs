@@ -16,6 +16,8 @@ import {
   queryKeyFingerprint,
   verifyDna,
   signDna,
+  reportDna,
+  assessReadiness,
 } from '../dna-core/index.mjs';
 
 const HEALTHZ = '/__helix/healthz';
@@ -186,13 +188,61 @@ export function createHelixProxy(opts) {
     if (req.method === 'GET' && pathOnly === SNAPSHOT) {
       const obs = readRecentNdjson(opts.observePath, 15);
       const siem = readRecentNdjson(opts.siemLogPath || opts.shadowLogPath, 15);
+      const st = dnaStatus();
+      let report = null;
+      let ready = null;
+      let next = null;
+      if (dna) {
+        report = reportDna(dna, {
+          observations: obs.count,
+          shadowHoles: siem.count,
+        });
+        ready = {
+          shadow: assessReadiness('shadow', dna, { minRoutes: 1 }),
+          enforce: assessReadiness('enforce', dna, {
+            minRoutes: 1,
+            shadowHoles: siem.count,
+            maxShadowHoles: 0,
+          }),
+        };
+      }
+      if (st.mode === 'learn' && !st.dna) {
+        next =
+          obs.count >= 2
+            ? {
+                code: 'promote',
+                hint: 'npm run local-lab -- promote',
+              }
+            : {
+                code: 'keep_learning',
+                hint: 'Probe /api/health and /api/items, then promote',
+              };
+      } else if (st.mode === 'learn' && st.dna) {
+        next = {
+          code: 'restart_shadow',
+          hint: 'npm run local-lab -- start --mode shadow --kill',
+        };
+      } else if (st.mode === 'shadow') {
+        next = {
+          code: 'soak_then_enforce',
+          hint: 'When holes are explained: npm run local-lab -- start --mode enforce --kill',
+        };
+      } else if (st.mode === 'enforce') {
+        next = {
+          code: 'gated',
+          hint: 'npm run local-lab -- prove  (expect backdoor 403)',
+        };
+      }
       res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
       res.end(
         JSON.stringify({
           at: new Date().toISOString(),
-          ...dnaStatus(),
+          ...st,
           observations: obs,
           siem,
+          report,
+          ready,
+          next,
         }),
       );
       return;

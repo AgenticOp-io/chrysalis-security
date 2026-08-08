@@ -58,6 +58,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] SIEM dashboards — `deploy/siem/helix-holes.{kibana.ndjson,splunk.json}`  
 - [x] K8s push/render — `k8s-push` + [K8S.md](./K8S.md)  
 - [x] Control panel — `/__helix/` + `panel-smoke`  
+- [x] Local lab flip — `npm run local-lab` + [LOCAL-LAB.md](./LOCAL-LAB.md)  
 
 ## Later
 

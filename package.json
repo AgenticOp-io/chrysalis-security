@@ -26,6 +26,8 @@
     "k8s-push": "node scripts/k8s-push.mjs",
     "promote-chain-smoke": "node scripts/promote-chain-smoke.mjs",
     "panel-smoke": "node scripts/panel-smoke.mjs",
+    "local-lab": "node scripts/local-lab.mjs",
+    "local-lab-smoke": "node scripts/local-lab-smoke.mjs",
     "reload-smoke": "node scripts/reload-smoke.mjs",
     "body-limit-smoke": "node scripts/body-limit-smoke.mjs",
     "cwl-sync-check": "node scripts/cwl-sync-check.mjs",
@@ -40,7 +42,7 @@
     "gce-smoke": "node scripts/gce-smoke.mjs",
     "nft-smoke": "bash scripts/gce-nft-smoke.sh",
     "agent": "node packages/helix-agent/bin/helix-agent.mjs",
-    "test:dna": "node scripts/cwl-sync-check.mjs && node scripts/dna-core-smoke.mjs && node scripts/smoke.mjs && node scripts/host-smoke.mjs && node scripts/static-smoke.mjs && node scripts/schema-drift-smoke.mjs && node scripts/request-drift-smoke.mjs && node scripts/query-drift-smoke.mjs && node scripts/status-smoke.mjs && node scripts/nested-drift-smoke.mjs && node scripts/reload-smoke.mjs && node scripts/body-limit-smoke.mjs && node scripts/ready-smoke.mjs && node scripts/real-site-smoke.mjs && node scripts/sign-smoke.mjs && node scripts/promote-chain-smoke.mjs && node scripts/panel-smoke.mjs && node scripts/bridge-smoke.mjs && node scripts/tls-smoke.mjs",
+    "test:dna": "node scripts/cwl-sync-check.mjs && node scripts/dna-core-smoke.mjs && node scripts/smoke.mjs && node scripts/host-smoke.mjs && node scripts/static-smoke.mjs && node scripts/schema-drift-smoke.mjs && node scripts/request-drift-smoke.mjs && node scripts/query-drift-smoke.mjs && node scripts/status-smoke.mjs && node scripts/nested-drift-smoke.mjs && node scripts/reload-smoke.mjs && node scripts/body-limit-smoke.mjs && node scripts/ready-smoke.mjs && node scripts/real-site-smoke.mjs && node scripts/sign-smoke.mjs && node scripts/promote-chain-smoke.mjs && node scripts/panel-smoke.mjs && node scripts/local-lab-smoke.mjs && node scripts/bridge-smoke.mjs && node scripts/tls-smoke.mjs",
     "test": "npm run test:dna && node scripts/cwl-bridge-smoke.mjs && node scripts/cutover-smoke.mjs && node scripts/bridge-l2-smoke.mjs && node scripts/compose-smoke.mjs && node scripts/k8s-image-smoke.mjs && node scripts/k8s-push.mjs"
   },
   "dependencies": {

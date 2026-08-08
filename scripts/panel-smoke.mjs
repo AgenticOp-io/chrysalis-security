@@ -95,6 +95,9 @@ const j = JSON.parse(snap.body);
 if (!j.ok || j.mode !== 'learn' || !j.observations) {
   throw new Error(`snapshot bad: ${snap.body}`);
 }
+if (!j.next?.code) {
+  throw new Error('snapshot missing next step');
+}
 
 cleanup();
 console.log('PANEL_SMOKE_OK');

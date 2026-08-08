@@ -32,6 +32,7 @@ services:
       SIEM_LOG: /data/siem.ndjson
       PORT: "4080"
       APP_ID: compose-demo
+      HELIX_ROOT_PANEL: ${HELIX_ROOT_PANEL:-1}
       HELIX_MAX_BODY_BYTES: ${HELIX_MAX_BODY_BYTES:-1048576}
     volumes:
       - helix-data:/data

@@ -79,6 +79,7 @@ Ship form: **one Linux container** (and later one static binary). GCE is where *
 docker compose up --build
 # Helix :4080 → demo-api :4090
 # Control panel: http://127.0.0.1:4080/__helix/  (or / with HELIX_ROOT_PANEL=1)
+# Desktop flip: docs/LOCAL-LAB.md · npm run local-lab -- status
 npm run compose-smoke              # config gate
 HELIX_COMPOSE_FULL=1 npm run compose-smoke   # optional up + /api/health
 ```
