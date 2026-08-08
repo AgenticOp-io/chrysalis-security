@@ -27,6 +27,8 @@ const PANEL = '/__helix';
 const PANEL_SLASH = '/__helix/';
 const SNAPSHOT = '/__helix/api/snapshot';
 const PANEL_HTML_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), 'panel.html');
+const ATTACK_HTML_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), 'attack.html');
+const ATTACK_PAGE = '/__helix/attack';
 
 function readRecentNdjson(filePath, limit = 12) {
   if (!filePath || !fs.existsSync(filePath)) return { count: 0, recent: [] };
@@ -68,6 +70,55 @@ function loadDna(dnaPath, verifyOpts) {
 function requestHost(req) {
   const h = req.headers.host || 'default';
   return String(h).split(':')[0].toLowerCase();
+}
+
+function wantsHtml(req) {
+  const accept = String(req.headers.accept || '');
+  // Browsers send text/html. API clients / curl default */* → keep JSON.
+  return /text\/html/i.test(accept);
+}
+
+function escapeHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/** Enforce hole response — HTML for browsers, JSON for API clients. */
+function writeHole(res, req, status, hole) {
+  const code = hole?.code || 'HX-HOLE';
+  const reason = hole?.reason || 'Denied by Helix DNA';
+  if (wantsHtml(req)) {
+    const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Blocked · Helix</title>
+<style>
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+font-family:system-ui,sans-serif;background:#0f1419;color:#e8eef4;padding:1.5rem}
+.box{max-width:32rem;border:1px solid rgba(232,238,244,.15);border-radius:12px;padding:1.5rem;background:#1a2330}
+h1{margin:0 0 .5rem;font-size:1.4rem;color:#e85d5d}code{font-family:ui-monospace,monospace}
+p{color:#8b9aab;line-height:1.45}a{color:#3db89a}
+</style></head><body><div class="box">
+<h1>Blocked by Helix</h1>
+<p>This request is outside the certified DNA certificate.</p>
+<p><code>${escapeHtml(code)}</code><br/>${escapeHtml(reason)}</p>
+<p><a href="/__helix/">Control panel</a> · <a href="/__helix/attack">Proof page</a></p>
+</div></body></html>`;
+    res.writeHead(status, {
+      'content-type': 'text/html; charset=utf-8',
+      'x-helix-hole': code,
+      'cache-control': 'no-store',
+    });
+    res.end(html);
+    return;
+  }
+  res.writeHead(status, {
+    'content-type': 'application/json',
+    'x-helix-hole': code,
+  });
+  res.end(JSON.stringify({ hole }));
 }
 
 function parseJsonBody(raw, contentType) {
@@ -132,9 +183,9 @@ export function createHelixProxy(opts) {
     };
   }
 
-  function servePanel(res) {
+  function serveHtmlFile(res, filePath, holeCode) {
     try {
-      const html = fs.readFileSync(PANEL_HTML_PATH, 'utf8');
+      const html = fs.readFileSync(filePath, 'utf8');
       res.writeHead(200, {
         'content-type': 'text/html; charset=utf-8',
         'cache-control': 'no-store',
@@ -142,8 +193,16 @@ export function createHelixProxy(opts) {
       res.end(html);
     } catch (err) {
       res.writeHead(500, { 'content-type': 'application/json' });
-      res.end(JSON.stringify({ hole: { code: 'HX-PANEL', reason: String(err.message || err) } }));
+      res.end(JSON.stringify({ hole: { code: holeCode, reason: String(err.message || err) } }));
     }
+  }
+
+  function servePanel(res) {
+    serveHtmlFile(res, PANEL_HTML_PATH, 'HX-PANEL');
+  }
+
+  function serveAttackPage(res) {
+    serveHtmlFile(res, ATTACK_HTML_PATH, 'HX-ATTACK-PAGE');
   }
 
   function emitHole(phase, hole, meta) {
@@ -169,6 +228,10 @@ export function createHelixProxy(opts) {
     // Ops — never DNA-gated (sidecar probes / promote without downtime)
     if (req.method === 'GET' && (pathOnly === PANEL || pathOnly === PANEL_SLASH || pathOnly === '/__helix/panel')) {
       servePanel(res);
+      return;
+    }
+    if (req.method === 'GET' && pathOnly === ATTACK_PAGE) {
+      serveAttackPage(res);
       return;
     }
     if (req.method === 'GET' && rootPanel && pathOnly === '/') {
@@ -332,11 +395,7 @@ export function createHelixProxy(opts) {
         if (opts.mode === 'shadow') {
           res.setHeader('x-helix-shadow-hole', verdict.hole.code);
         } else {
-          res.writeHead(403, {
-            'content-type': 'application/json',
-            'x-helix-hole': verdict.hole.code,
-          });
-          res.end(JSON.stringify({ hole: verdict.hole }));
+          writeHole(res, req, 403, verdict.hole);
           return;
         }
       }
@@ -409,11 +468,7 @@ export function createHelixProxy(opts) {
               if (opts.mode === 'shadow') {
                 res.setHeader('x-helix-shadow-hole', rv.hole.code);
               } else {
-                res.writeHead(403, {
-                  'content-type': 'application/json',
-                  'x-helix-hole': rv.hole.code,
-                });
-                res.end(JSON.stringify({ hole: rv.hole }));
+                writeHole(res, req, 403, rv.hole);
                 return;
               }
             }

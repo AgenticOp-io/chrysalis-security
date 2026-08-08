@@ -259,8 +259,11 @@
           <a class="btn secondary" href="/api/items" target="_blank" rel="noopener">Probe /api/items</a>
           <a class="btn secondary" href="/__helix/healthz" target="_blank" rel="noopener">Helix healthz</a>
           <button type="button" class="secondary" id="btnRefresh">Refresh now</button>
+          <button type="button" id="btnAttack" title="GET /api/backdoor — should 403 in enforce">Simulate attack</button>
+          <a class="btn secondary" href="/__helix/attack">Proof page</a>
         </div>
         <p class="hint" id="reloadNote"></p>
+        <p class="hint" id="attackNote"></p>
       </section>
       <section class="tile">
         <p class="label">Holes (SIEM)</p>
@@ -378,6 +381,24 @@
     }
 
     $("btnRefresh").addEventListener("click", () => refresh());
+    $("btnAttack").addEventListener("click", async () => {
+      const note = $("attackNote");
+      note.textContent = "Hitting /api/backdoor…";
+      try {
+        const res = await fetch("/api/backdoor", { cache: "no-store" });
+        const body = await res.json().catch(() => ({}));
+        if (res.status === 403 && body.hole?.code) {
+          note.textContent = `Blocked · ${res.status} ${body.hole.code} — ${body.hole.reason || "not in DNA"}`;
+          toast("Protection fired · " + body.hole.code);
+        } else {
+          note.textContent = `Not blocked · ${res.status} (expected 403 in enforce; shadow/learn allow)`;
+          toast("No block — mode may not be enforce");
+        }
+        await refresh();
+      } catch (err) {
+        note.textContent = "Request failed: " + (err.message || err);
+      }
+    });
     $("btnReload").addEventListener("click", async () => {
       const btn = $("btnReload");
       btn.disabled = true;

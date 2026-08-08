@@ -28,6 +28,7 @@
     "panel-smoke": "node scripts/panel-smoke.mjs",
     "local-lab": "node scripts/local-lab.mjs",
     "local-lab-smoke": "node scripts/local-lab-smoke.mjs",
+    "local-lab-tunnel": "node scripts/local-lab-tunnel.mjs",
     "reload-smoke": "node scripts/reload-smoke.mjs",
     "body-limit-smoke": "node scripts/body-limit-smoke.mjs",
     "cwl-sync-check": "node scripts/cwl-sync-check.mjs",

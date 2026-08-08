@@ -98,6 +98,10 @@ if (!j.ok || j.mode !== 'learn' || !j.observations) {
 if (!j.next?.code) {
   throw new Error('snapshot missing next step');
 }
+const attack = await get(proxyPort, '/__helix/attack');
+if (attack.status !== 200 || !attack.body.includes('Prove Helix')) {
+  throw new Error('attack proof page missing');
+}
 
 cleanup();
 console.log('PANEL_SMOKE_OK');

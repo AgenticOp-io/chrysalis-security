@@ -59,6 +59,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] K8s push/render — `k8s-push` + [K8S.md](./K8S.md)  
 - [x] Control panel — `/__helix/` + `panel-smoke`  
 - [x] Local lab flip — `npm run local-lab` + [LOCAL-LAB.md](./LOCAL-LAB.md)  
+- [x] Browser HTML 403 + `/__helix/attack` proof page + `local-lab-tunnel`  
 
 ## Later
 

@@ -47,7 +47,10 @@ function countLines(p) {
 
 const hz = await get('/__helix/healthz');
 const api = await get('/api/health');
-const backdoor = await get('/api/backdoor'); // learn allows; useful later for enforce
+// Only probe backdoor in shadow/enforce (avoids poisoning learn observations)
+const mode = hz.json?.mode || null;
+const backdoor =
+  mode === 'shadow' || mode === 'enforce' ? await get('/api/backdoor') : { status: null };
 const obs = countLines(obsPath);
 const siem = countLines(siemPath);
 
@@ -61,7 +64,8 @@ const status = {
   siem_holes: siem,
   listen: 'http://127.0.0.1:4080',
   panel: 'http://127.0.0.1:4080/',
-  mode: hz.json?.mode || null,
+  proof: 'http://127.0.0.1:4080/__helix/attack',
+  mode,
 };
 
 fs.mkdirSync(dir, { recursive: true });

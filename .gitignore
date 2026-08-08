@@ -7,3 +7,6 @@ deploy/k8s/helix-sidecar.rendered.yaml
 *.log
 .env
 .env.*
+
+tools/cloudflared/
+
