@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Persistent mini-site behind helix-agent on GCE (high ports).
 # App: 127.0.0.1:APP_PORT  ·  Helix public: 0.0.0.0:LISTEN_PORT
+# Default app: fixtures/real-site (Northline catalog)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -9,6 +10,8 @@ APP_PORT="${APP_PORT:-18091}"
 LISTEN_PORT="${LISTEN_PORT:-18085}"
 MODE="${MODE:-enforce}"
 EXTERNAL_IP="${EXTERNAL_IP:-}"
+APP_SCRIPT="${APP_SCRIPT:-fixtures/real-site/server.mjs}"
+APP_ID="${APP_ID:-gce-real-site}"
 
 mkdir -p "$DATA"
 OBSERVE="$DATA/observations.ndjson"
@@ -36,14 +39,24 @@ kill_pidfile() {
 echo "=== gce-site-up: stop previous ==="
 kill_pidfile "$AGENT_PID"
 kill_pidfile "$APP_PID"
-# also clear anything still bound (best-effort)
-fuser -k "${APP_PORT}/tcp" 2>/dev/null || true
-fuser -k "${LISTEN_PORT}/tcp" 2>/dev/null || true
-sleep 0.4
+# Prior enforce agent can linger and answer with empty DNA (403 on learn probes)
+pkill -f "helix-agent.mjs" 2>/dev/null || true
+pkill -f "fixtures/real-site/server.mjs" 2>/dev/null || true
+pkill -f "fixtures/static-site/server.mjs" 2>/dev/null || true
+sudo fuser -k "${APP_PORT}/tcp" 2>/dev/null || fuser -k "${APP_PORT}/tcp" 2>/dev/null || true
+sudo fuser -k "${LISTEN_PORT}/tcp" 2>/dev/null || fuser -k "${LISTEN_PORT}/tcp" 2>/dev/null || true
+sleep 1
+for i in $(seq 1 20); do
+  if ! ss -ltn | grep -q ":${LISTEN_PORT} "; then
+    break
+  fi
+  sudo fuser -k "${LISTEN_PORT}/tcp" 2>/dev/null || fuser -k "${LISTEN_PORT}/tcp" 2>/dev/null || true
+  sleep 0.25
+done
 
-echo "=== start static-site on 127.0.0.1:${APP_PORT} ==="
+echo "=== start app (${APP_SCRIPT}) on 127.0.0.1:${APP_PORT} ==="
 cd "$ROOT"
-PORT="$APP_PORT" HOST=127.0.0.1 nohup node fixtures/static-site/server.mjs \
+PORT="$APP_PORT" HOST=127.0.0.1 nohup node "$APP_SCRIPT" \
   >"$APP_LOG" 2>&1 &
 echo $! >"$APP_PID"
 
@@ -61,14 +74,33 @@ learn_and_promote() {
     MODE=learn OBSERVE="$OBSERVE" \
     nohup node packages/helix-agent/bin/helix-agent.mjs >"$AGENT_LOG" 2>&1 &
   echo $! >"$AGENT_PID"
-  sleep 0.5
-  curl -sf "http://127.0.0.1:${LISTEN_PORT}/" >/dev/null
-  curl -sf "http://127.0.0.1:${LISTEN_PORT}/assets/site.css" >/dev/null
-  curl -sf "http://127.0.0.1:${LISTEN_PORT}/assets/app.7f3a9c.js" >/dev/null
-  curl -sf "http://127.0.0.1:${LISTEN_PORT}/api/health" >/dev/null
-  sleep 0.3
-  node packages/helix-cli/bin/helix.mjs learn --in "$OBSERVE" --out "$DRAFT" --app-id gce-static-site
-  node packages/helix-cli/bin/helix.mjs promote --in "$DRAFT" --out "$CERT"
+  for i in $(seq 1 40); do
+    if curl -sf "http://127.0.0.1:${LISTEN_PORT}/__helix/healthz" >/dev/null; then break; fi
+    sleep 0.15
+  done
+  # Cover real-site surface (never hit /api/backdoor while learning)
+  for path in / /catalog.html /about.html /assets/site.css /assets/app.aaaa1111.js /api/health /api/items; do
+    code="$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${LISTEN_PORT}${path}" || true)"
+    if [[ "$code" != "200" ]]; then
+      echo "learn probe ${path} expected 200 got ${code}" >&2
+      tail -n 40 "$AGENT_LOG" >&2 || true
+      exit 1
+    fi
+  done
+  sleep 0.4
+  lines="$(grep -c . "$OBSERVE" 2>/dev/null || echo 0)"
+  if [[ "${lines}" -lt 3 ]]; then
+    echo "learn produced too few observations (${lines}) at $OBSERVE" >&2
+    tail -n 40 "$AGENT_LOG" >&2 || true
+    exit 1
+  fi
+  node packages/helix-cli/bin/helix.mjs learn --in "$OBSERVE" --out "$DRAFT" --app-id "$APP_ID"
+  routes="$(node -e "const d=require('$DRAFT'); if(!d.routes||!d.routes.length) process.exit(2)")" || {
+    echo "draft DNA has zero routes" >&2
+    cat "$DRAFT" >&2
+    exit 1
+  }
+  node packages/helix-cli/bin/helix.mjs promote --in "$DRAFT" --out "$CERT" --no-diff
   kill_pidfile "$AGENT_PID"
   sleep 0.3
 }
@@ -76,6 +108,12 @@ learn_and_promote() {
 if [[ ! -f "$CERT" || "${RELEARN:-}" == "1" ]]; then
   learn_and_promote
 fi
+
+# Refuse empty / broken certs
+node -e "const d=require(process.argv[1]); if(!d.routes||d.routes.length<2) process.exit(2)" "$CERT" || {
+  echo "certified DNA missing routes — set RELEARN=1" >&2
+  exit 1
+}
 
 if [[ "$MODE" != "enforce" && "$MODE" != "shadow" && "$MODE" != "learn" ]]; then
   echo "Invalid MODE=$MODE" >&2
@@ -116,6 +154,7 @@ cat >"$DATA/status.json" <<EOF
   "mode": "$MODE",
   "listen_port": $LISTEN_PORT,
   "app_port": $APP_PORT,
+  "app": "$APP_SCRIPT",
   "dna": "$CERT",
   "url": "http://${EXTERNAL_IP:-127.0.0.1}:${LISTEN_PORT}/",
   "pid_app": $(cat "$APP_PID"),
