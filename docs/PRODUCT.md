@@ -22,13 +22,13 @@ That is a category shift only if operators can run it **Monday morning** without
 | Optional CWL cutover | Platform path without requiring CWL (D5) |
 | Whitepaper + threat model | Story is honest |
 
-**Verdict today:** shippable engine + operator path + Mode A install + **L2 GCE green**. Remaining for full “changed security” credibility is **living with real customer traffic** (shadow soak → enforce) — not more core fingerprints.
+**Verdict today:** shippable engine + operator path + Mode A/K8s recipes + **L2 GCE green**. Remaining for full “changed security” credibility is **living with real customer traffic** (shadow soak → enforce) — not more core fingerprints.
 
 ---
 
 ## Gap map — how much more (honest)
 
-Rough product maturity: **~70%** of the *shippable* bar (engine + operator path + install/image recipes). Remaining: **GCE L2 green** + real customer shadow soak.
+Rough product maturity: **~85%** of the *shippable* bar. Remaining: real customer shadow soak (ops).
 
 ### Tier 1 — must ship to change buyer behavior
 
@@ -37,12 +37,12 @@ Rough product maturity: **~70%** of the *shippable* bar (engine + operator path 
 3. **Shadow→enforce checklist** — shadow hole count gate — **done**  
 4. **Real-app prove pack** — `real-site-smoke` — **done**
 
-### Tier 2 — makes it stick in production (~ following quarter)
+### Tier 2 — makes it stick in production
 
-5. **K8s sidecar image + prove** — sketch exists; need build/push/smoke.  
-6. **Certificate lifecycle UX** — parent_hash chain, promote-with-diff printed by default, revoke/replace runbook.  
-7. **SIEM that ops already open** — Filebeat recipe exists; add one Splunk/Elastic dashboard JSON.  
-8. **L2/GCE Mode B green** — only for segment buyers; not required for host Mode A product.
+5. **K8s sidecar image + prove** — **done** (`k8s-image-smoke` + `k8s-push` + [K8S.md](./K8S.md))  
+6. **Certificate lifecycle UX** — **done** (`promoteDna` / parent_hash / [CERT-LIFECYCLE.md](./CERT-LIFECYCLE.md) + `promote-chain-smoke`)  
+7. **SIEM that ops already open** — **done** (Kibana NDJSON + Splunk pack under `deploy/siem/`)  
+8. **L2/GCE Mode B green** — **done** (segment buyers; Mode A remains the host path)
 
 ### Tier 3 — do **not** chase (would un-change the category)
 
@@ -81,9 +81,10 @@ That sentence is only credible with Tier 1 install + readiness + real-app prove.
 | P0 | systemd Mode A unit + install notes | **done** |
 | P1 | Shadow log “unexpected count” helper | **done** (`--shadow-log`) |
 | P1 | Real-site beginning pack | **done** (`real-site-smoke`) |
-| P2 | K8s image prove | **done** (`k8s-image-smoke`, SKIP without docker) |
+| P2 | K8s image prove + push/render | **done** (`k8s-image-smoke`, `k8s-push`, [K8S.md](./K8S.md)) |
 | P2 | Mode B L2 GCE | **done** (`BRIDGE_L2_SMOKE_OK` on agenticop-master) |
-| P2 | Splunk HEC recipe | **done** ([SPLUNK.md](./SPLUNK.md)) |
+| P2 | Splunk HEC + dashboards | **done** ([SPLUNK.md](./SPLUNK.md) · `deploy/siem/`) |
+| P2 | Cert lifecycle UX | **done** ([CERT-LIFECYCLE.md](./CERT-LIFECYCLE.md) · `promote-chain-smoke`) |
 | Ops | Customer shadow soak | **runbook** ([SOAK.md](./SOAK.md)) — live traffic only |
 
 Related: [WHITEPAPER.md](./WHITEPAPER.md) · [MODES.md](./MODES.md) · [BEGINNING.md](./BEGINNING.md) · [ROADMAP.md](./ROADMAP.md)

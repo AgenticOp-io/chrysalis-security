@@ -20,8 +20,11 @@ learn → promote → shadow → enforce
 
 Ops (never DNA-gated):
 
+- `GET /__helix/` — control / monitor panel  
+- `GET /__helix/api/snapshot` — panel JSON  
 - `GET /__helix/healthz` · `GET /__helix/status`  
 - `POST /__helix/reload`  
+- Optional: `HELIX_ROOT_PANEL=1` serves the panel at `/` for local labs  
 
 Prove: `npm run reload-smoke` → `RELOAD_SMOKE_OK`
 

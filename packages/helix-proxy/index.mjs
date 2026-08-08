@@ -6,6 +6,7 @@ import http from 'node:http';
 import https from 'node:https';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   scoreRequest,
   scoreResponse,
@@ -20,7 +21,28 @@ import {
 const HEALTHZ = '/__helix/healthz';
 const RELOAD = '/__helix/reload';
 const STATUS = '/__helix/status';
+const PANEL = '/__helix';
+const PANEL_SLASH = '/__helix/';
+const SNAPSHOT = '/__helix/api/snapshot';
+const PANEL_HTML_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), 'panel.html');
 
+function readRecentNdjson(filePath, limit = 12) {
+  if (!filePath || !fs.existsSync(filePath)) return { count: 0, recent: [] };
+  const lines = fs
+    .readFileSync(filePath, 'utf8')
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const recent = [];
+  for (let i = lines.length - 1; i >= 0 && recent.length < limit; i--) {
+    try {
+      recent.push(JSON.parse(lines[i]));
+    } catch {
+      /* skip bad line */
+    }
+  }
+  return { count: lines.length, recent };
+}
 function appendNdjson(filePath, obj) {
   if (!filePath) return;
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -86,6 +108,10 @@ export function createHelixProxy(opts) {
   const placement = opts.placement || 'proxy';
   const maxBodyBytes =
     opts.maxBodyBytes != null && Number(opts.maxBodyBytes) > 0 ? Number(opts.maxBodyBytes) : 0;
+  const rootPanel =
+    opts.rootPanel === true ||
+    process.env.HELIX_ROOT_PANEL === '1' ||
+    process.env.HELIX_ROOT_PANEL === 'true';
 
   function reloadDna() {
     dna = loadDna(opts.dnaPath, verifyOpts);
@@ -102,6 +128,20 @@ export function createHelixProxy(opts) {
       routes: Array.isArray(dna?.routes) ? dna.routes.length : 0,
       maxBodyBytes: maxBodyBytes || null,
     };
+  }
+
+  function servePanel(res) {
+    try {
+      const html = fs.readFileSync(PANEL_HTML_PATH, 'utf8');
+      res.writeHead(200, {
+        'content-type': 'text/html; charset=utf-8',
+        'cache-control': 'no-store',
+      });
+      res.end(html);
+    } catch (err) {
+      res.writeHead(500, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ hole: { code: 'HX-PANEL', reason: String(err.message || err) } }));
+    }
   }
 
   function emitHole(phase, hole, meta) {
@@ -125,6 +165,14 @@ export function createHelixProxy(opts) {
     const pathOnly = pathWithQuery.split('?')[0] || '/';
 
     // Ops — never DNA-gated (sidecar probes / promote without downtime)
+    if (req.method === 'GET' && (pathOnly === PANEL || pathOnly === PANEL_SLASH || pathOnly === '/__helix/panel')) {
+      servePanel(res);
+      return;
+    }
+    if (req.method === 'GET' && rootPanel && pathOnly === '/') {
+      servePanel(res);
+      return;
+    }
     if (req.method === 'GET' && pathOnly === HEALTHZ) {
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end(JSON.stringify(dnaStatus()));
@@ -133,6 +181,20 @@ export function createHelixProxy(opts) {
     if (req.method === 'GET' && pathOnly === STATUS) {
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end(JSON.stringify(dnaStatus()));
+      return;
+    }
+    if (req.method === 'GET' && pathOnly === SNAPSHOT) {
+      const obs = readRecentNdjson(opts.observePath, 15);
+      const siem = readRecentNdjson(opts.siemLogPath || opts.shadowLogPath, 15);
+      res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+      res.end(
+        JSON.stringify({
+          at: new Date().toISOString(),
+          ...dnaStatus(),
+          observations: obs,
+          siem,
+        }),
+      );
       return;
     }
     if (req.method === 'POST' && pathOnly === RELOAD) {

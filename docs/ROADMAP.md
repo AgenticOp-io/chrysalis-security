@@ -28,7 +28,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 
 ## Now
 
-- [ ] Mode B L2 / dual-NIC appliance path — design: [MODE-B-L2.md](./MODE-B-L2.md); lab entry: `npm run bridge-l2-smoke` (SKIP off Linux/root)  
+- [x] Mode B L2 / dual-NIC appliance path — design: [MODE-B-L2.md](./MODE-B-L2.md); GCE green via `gce-sync -WithL2`  
 - [x] UT ↔ CWL spine demo path: `npm run ut-gce-demo` → `UT_GCE_DEMO_OK` (CWL `smoke:ut-spine`; Convert does not own)  
 - [x] `npm run test:dna` — DNA pack without CWL (BEGINNING / D5)  
 - [x] Docker Compose out-of-box lab (`docker-compose.yml` + `compose-smoke`)  
@@ -54,6 +54,10 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] Shadow soak runbook ([SOAK.md](./SOAK.md))  
 - [x] GCE sync DNA pack + nft green (`GCE_SYNC_OK` / `NFT_SMOKE_OK`) — L2 via `sudo` on sync  
 - [x] Mode B L2 **GCE green** (`BRIDGE_L2_SMOKE_OK` via `gce-sync -WithL2` + sudo)  
+- [x] Cert lifecycle UX — `promoteDna` / `verifyParentChain` / [CERT-LIFECYCLE.md](./CERT-LIFECYCLE.md) / `promote-chain-smoke`  
+- [x] SIEM dashboards — `deploy/siem/helix-holes.{kibana.ndjson,splunk.json}`  
+- [x] K8s push/render — `k8s-push` + [K8S.md](./K8S.md)  
+- [x] Control panel — `/__helix/` + `panel-smoke`  
 
 ## Later
 

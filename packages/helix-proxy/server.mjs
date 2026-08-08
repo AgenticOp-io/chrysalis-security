@@ -12,6 +12,7 @@
  *   HELIX_DNA_KEY=… / HELIX_DNA_REQUIRE=1
  *   HELIX_TLS_CERT=… / HELIX_TLS_KEY=…   (optional terminate)
  *   HELIX_MAX_BODY_BYTES=1048576        (optional; 413 HX-BODY-TOO-LARGE)
+ *   HELIX_ROOT_PANEL=1                  (serve control panel at /)
  *   PLACEMENT=proxy|bridge
  */
 import fs from 'node:fs';

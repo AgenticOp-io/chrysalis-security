@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Helix · Control</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg0: #0f1419;
+      --bg1: #1a2330;
+      --ink: #e8eef4;
+      --muted: #8b9aab;
+      --line: rgba(232, 238, 244, 0.12);
+      --panel: rgba(26, 35, 48, 0.92);
+      --accent: #3db89a;
+      --warn: #e07a4a;
+      --ok: #3db89a;
+      --danger: #e85d5d;
+      --radius: 10px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "IBM Plex Sans", sans-serif;
+      background:
+        linear-gradient(180deg, rgba(61, 184, 154, 0.06) 0%, transparent 28%),
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 47px,
+          rgba(232, 238, 244, 0.03) 48px
+        ),
+        radial-gradient(900px 500px at 85% -10%, #243447 0%, transparent 55%),
+        linear-gradient(160deg, var(--bg0) 0%, var(--bg1) 55%, #121820 100%);
+    }
+    .wrap {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 2.5rem;
+    }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .brand {
+      margin: 0;
+      font-size: clamp(1.85rem, 4vw, 2.4rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .brand span {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.4rem;
+    }
+    .pulse {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.5rem 0.85rem;
+      border-radius: 8px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .dot {
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 50%;
+      background: var(--ok);
+      animation: beat 2s ease-out infinite;
+    }
+    .dot.down { background: var(--danger); animation: none; }
+    @keyframes beat {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.45; }
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 0.85rem;
+    }
+    .tile {
+      grid-column: span 4;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem 1.1rem;
+    }
+    .tile.wide { grid-column: span 8; }
+    .tile.full { grid-column: span 12; }
+    @media (max-width: 820px) {
+      .tile, .tile.wide { grid-column: span 12; }
+    }
+    .label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 0.5rem;
+    }
+    .value {
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 1.55rem;
+      font-weight: 500;
+      line-height: 1.15;
+      margin: 0;
+    }
+    .value.sm { font-size: 1.2rem; }
+    .hint { margin: 0.4rem 0 0; color: var(--muted); font-size: 0.88rem; }
+    .mode-pill {
+      display: inline-block;
+      margin-top: 0.4rem;
+      padding: 0.15rem 0.55rem;
+      border-radius: 4px;
+      background: rgba(61, 184, 154, 0.15);
+      color: var(--accent);
+      font-family: "IBM Plex Mono", monospace;
+      font-weight: 500;
+      font-size: 0.8rem;
+    }
+    .mode-pill.enforce { background: rgba(224, 122, 74, 0.18); color: var(--warn); }
+    .mode-pill.shadow { background: rgba(232, 238, 244, 0.08); color: var(--ink); }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      margin-top: 0.85rem;
+    }
+    button, a.btn {
+      appearance: none;
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #0a1210;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.88rem;
+      padding: 0.55rem 0.9rem;
+      border-radius: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: filter 140ms ease, transform 140ms ease;
+    }
+    button.secondary, a.btn.secondary {
+      background: transparent;
+      color: var(--ink);
+      border-color: var(--line);
+    }
+    button:hover, a.btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    button:disabled { opacity: 0.45; cursor: wait; transform: none; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.5rem 0.3rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    th {
+      color: var(--muted);
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    code {
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 0.82em;
+      background: rgba(232, 238, 244, 0.06);
+      padding: 0.1rem 0.3rem;
+      border-radius: 4px;
+    }
+    .empty { color: var(--muted); font-style: italic; }
+    footer {
+      margin-top: 1.35rem;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+    .toast {
+      position: fixed;
+      right: 1rem;
+      bottom: 1rem;
+      background: var(--ink);
+      color: var(--bg0);
+      padding: 0.7rem 1rem;
+      border-radius: 8px;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 200ms ease, transform 200ms ease;
+      pointer-events: none;
+      max-width: min(90vw, 320px);
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .fade-in {
+      animation: fadeIn 280ms ease both;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1 class="brand"><span>DNA firewall</span>Helix</h1>
+      <div class="pulse" id="pulse"><i class="dot" id="dot"></i><span id="pulseText">Checking…</span></div>
+    </header>
+
+    <div class="grid fade-in">
+      <section class="tile">
+        <p class="label">Mode</p>
+        <p class="value sm" id="modeValue">—</p>
+        <span class="mode-pill" id="modePill">…</span>
+        <p class="hint" id="modeHint">learn → promote → shadow → enforce</p>
+      </section>
+      <section class="tile">
+        <p class="label">DNA certificate</p>
+        <p class="value sm" id="dnaValue">—</p>
+        <p class="hint" id="dnaHint">No certified DNA loaded yet</p>
+      </section>
+      <section class="tile">
+        <p class="label">Live traffic</p>
+        <p class="value" id="obsValue">0</p>
+        <p class="hint">Observations recorded</p>
+      </section>
+
+      <section class="tile wide">
+        <p class="label">Control</p>
+        <p class="hint" style="margin-top:0">Reload DNA after promote without restarting Helix. Probe the demo API through the proxy.</p>
+        <div class="actions">
+          <button type="button" id="btnReload">Reload DNA</button>
+          <a class="btn secondary" href="/api/health" target="_blank" rel="noopener">Probe demo API</a>
+          <a class="btn secondary" href="/api/items" target="_blank" rel="noopener">Probe /api/items</a>
+          <a class="btn secondary" href="/__helix/healthz" target="_blank" rel="noopener">Helix healthz</a>
+          <button type="button" class="secondary" id="btnRefresh">Refresh now</button>
+        </div>
+        <p class="hint" id="reloadNote"></p>
+      </section>
+      <section class="tile">
+        <p class="label">Holes (SIEM)</p>
+        <p class="value" id="siemValue">0</p>
+        <p class="hint">Logged identity mismatches</p>
+      </section>
+
+      <section class="tile full">
+        <p class="label">Recent observations</p>
+        <div id="obsTable" class="empty">Waiting for traffic…</div>
+      </section>
+
+      <section class="tile full">
+        <p class="label">Recent holes</p>
+        <div id="holeTable" class="empty">None yet — expected in learn mode.</div>
+      </section>
+    </div>
+
+    <footer>
+      Open <code>http://127.0.0.1:4080/</code> or <code>/__helix/</code> · never DNA-gated · refreshes every 3s ·
+      <span id="updated">—</span>
+    </footer>
+  </div>
+  <div class="toast" id="toast"></div>
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function toast(msg) {
+      const el = $("toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => el.classList.remove("show"), 2400);
+    }
+
+    function modeHint(mode) {
+      if (mode === "learn") return "Passing traffic and learning the app’s DNA.";
+      if (mode === "shadow") return "Passing traffic; logging holes without blocking.";
+      if (mode === "enforce") return "Blocking anything outside certified DNA.";
+      return "learn → promote → shadow → enforce";
+    }
+
+    function rowsHtml(headers, rows, empty) {
+      if (!rows.length) return `<p class="empty">${empty}</p>`;
+      const head = headers.map((h) => `<th>${h}</th>`).join("");
+      const body = rows
+        .map(
+          (r) =>
+            `<tr>${r.map((c) => `<td>${c}</td>`).join("")}</tr>`,
+        )
+        .join("");
+      return `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+    }
+
+    function esc(s) {
+      return String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    async function refresh() {
+      try {
+        const res = await fetch("/__helix/api/snapshot", { cache: "no-store" });
+        if (!res.ok) throw new Error("snapshot " + res.status);
+        const s = await res.json();
+        const up = Boolean(s.ok);
+        $("dot").classList.toggle("down", !up);
+        $("pulseText").textContent = up ? "Live · proxy healthy" : "Down · cannot reach Helix";
+        $("modeValue").textContent = s.mode || "—";
+        $("modePill").textContent = s.mode || "…";
+        $("modePill").className = "mode-pill " + (s.mode || "");
+        $("modeHint").textContent = modeHint(s.mode);
+        $("dnaValue").textContent = s.dna ? `${s.routes} routes` : "None";
+        $("dnaHint").textContent = s.dna
+          ? s.dnaPath || "Certified DNA loaded"
+          : "Promote a draft after learn, then reload";
+        $("obsValue").textContent = String(s.observations?.count ?? 0);
+        $("siemValue").textContent = String(s.siem?.count ?? 0);
+        $("reloadNote").textContent = s.dnaPath
+          ? `DNA file: ${s.dnaPath}`
+          : "Set DNA=… after promote to enable reload.";
+        $("updated").textContent = "Updated " + new Date(s.at).toLocaleTimeString();
+
+        const obsRows = (s.observations?.recent || []).map((o) => [
+          `<code>${esc(o.method)}</code>`,
+          `<code>${esc(o.path)}</code>`,
+          esc(o.status),
+          esc(o.contentType || "—"),
+        ]);
+        $("obsTable").innerHTML = rowsHtml(
+          ["Method", "Path", "Status", "Type"],
+          obsRows,
+          "Waiting for traffic… hit /api/health or /api/items",
+        );
+
+        const holeRows = (s.siem?.recent || []).map((e) => [
+          `<code>${esc(e.hole?.code || "—")}</code>`,
+          esc(e.phase || "—"),
+          `<code>${esc(e.method || "")} ${esc(e.path || "")}</code>`,
+          esc(e.hole?.reason || ""),
+        ]);
+        $("holeTable").innerHTML = rowsHtml(
+          ["Code", "Phase", "Request", "Reason"],
+          holeRows,
+          "None yet — expected in learn mode.",
+        );
+      } catch (err) {
+        $("dot").classList.add("down");
+        $("pulseText").textContent = "Down · " + (err.message || err);
+      }
+    }
+
+    $("btnRefresh").addEventListener("click", () => refresh());
+    $("btnReload").addEventListener("click", async () => {
+      const btn = $("btnReload");
+      btn.disabled = true;
+      try {
+        const res = await fetch("/__helix/reload", { method: "POST" });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.hole?.reason || body.hole?.code || res.status);
+        toast(body.reloaded ? `Reloaded · ${body.routes || 0} routes` : "Reload finished");
+        await refresh();
+      } catch (err) {
+        toast("Reload failed: " + (err.message || err));
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    refresh();
+    setInterval(refresh, 3000);
+  </script>
+</body>
+</html>
