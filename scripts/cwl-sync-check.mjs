@@ -4,7 +4,7 @@
  * Token: CWL_SYNC_OK | CWL_SYNC_SKIP
  *
  * Follows Exit 1.0: tip may be on candidate/* ahead of origin/main while
- * LANGUAGE_VERSION is 1.0.0 — that is not “behind”.
+ * LANGUAGE_VERSION is 1.x — that is not “behind”.
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -66,7 +66,7 @@ const report = {
   fetchOk: fetch.status === 0,
   status: (status.stdout || '').trim().split('\n')[0] || null,
   upToDate: !behind,
-  exit10Tip: languageVersion === '1.0.0' || packageVersion === '1.0.0',
+  exit10Tip: Boolean(languageVersion?.startsWith('1.') || packageVersion?.startsWith('1.')),
 };
 
 const outDir = path.join(ROOT, 'data');
