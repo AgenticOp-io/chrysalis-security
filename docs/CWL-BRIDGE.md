@@ -19,13 +19,13 @@ npm run helix -- cutover --cwl path/to/routes.cwl --dna certificates/app.json \
 
 Env: `CHRYSALIS_CWL_ROOT` if the language pillar (fixtures) is not at `../chrysalis-cwl`.
 
-## Pin (CWL tip @ 1.0.8)
+## Pin (CWL tip @ 1.0.10)
 
 ```json
-"@agenticop-io/cwl": "1.0.8"
+"@agenticop-io/cwl": "1.0.10"
 ```
 
-Follows CWL `1.0.4`–`1.0.6` → `1.0.7` full matrix → `1.0.8` early-exit/attachment soft-path (Secure consumes language surface only; protect stays DNA / D5).
+Follows CWL through `1.0.10` (foreach/else lower, thin emit reverse, authored CT). Secure consumes language surface only; protect stays DNA / D5.
 
 GitHub Packages — [`.npmrc.example`](../.npmrc.example). Optional monorepo `file:` `@chrysalis/cwl` ≡ same tip.
 
