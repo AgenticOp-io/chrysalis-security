@@ -3,7 +3,7 @@
  * Platform cutover E2E: CWL gold → draft DNA → strip → promote(+HMAC) →
  * compareCwlSurfaceToDna → scoreRequest allow/deny in enforce.
  * Also proves RFC-0023 multi-host (host=api) + dna_gaps fill.
- * Requires sibling engines/chrysalis-cwl (or CHRYSALIS_CWL_ROOT) + @agenticop-io/cwl@1.0.10.
+ * Requires sibling engines/chrysalis-cwl (or CHRYSALIS_CWL_ROOT) + @agenticop-io/cwl@1.0.13.
  */
 import fs from 'node:fs';
 import path from 'node:path';
