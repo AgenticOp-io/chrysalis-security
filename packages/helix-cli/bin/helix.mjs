@@ -15,6 +15,8 @@ import {
   seedDnaFromCwlFile,
   stripBridgeEnvelope,
   compareCwlSurfaceToDna,
+  loadDeployProfile,
+  resolveDeployProfilePath,
 } from '../../cwl-bridge/index.mjs';
 
 function usage() {
@@ -36,12 +38,16 @@ Usage:
                    [--alg hmac-sha256|ed25519]
                    [--key <secret|pem>|--key-file <path>] [--key-id id] [--require]
   helix seed-cwl   --in <routes.cwl> --out <draft.json> [--app-id name] [--host default] [--strip-bridge]
-  helix compare-cwl --cwl <routes.cwl|seed.json> --dna <certified.json>
+                   [--deploy-profile <path>] [--cwl-root <path>]
+  helix cutover    --cwl <routes.cwl|seed.json> --dna <certified.json>
+                   [--deploy-profile <path>] [--cwl-root <path>]
+                   # default cutover: CWL surface ⊆ live DNA (RFC-0022 / 0023)
+  helix compare-cwl …   # alias of cutover
 
 Signing: hmac-sha256 (shared secret) or ed25519 (PEM/raw private promote, public verify).
 Env: HELIX_DNA_KEY, HELIX_DNA_KEY_ID, HELIX_DNA_ALG. Canon: docs/SIGNED-DNA.md
 Lifecycle: docs/CERT-LIFECYCLE.md · Product: docs/PRODUCT.md · Modes: docs/MODES.md
-CWL bridge: RFC-0022 (chrysalis-cwl). Canon: docs/CANON.md
+CWL bridge: RFC-0022/0023 (chrysalis-cwl). Pin: @agenticop-io/cwl@1.0.8. Canon: docs/CANON.md
 `);
 }
 
@@ -250,8 +256,9 @@ if (cmd === 'seed-cwl') {
   }
   const seeded = await seedDnaFromCwlFile(input, {
     app_id: flag(rest, '--app-id') || undefined,
-    host: flag(rest, '--host') || 'default',
+    host: flag(rest, '--host') || undefined,
     cwlRoot: flag(rest, '--cwl-root') || process.env.CHRYSALIS_CWL_ROOT,
+    deployProfile: flag(rest, '--deploy-profile') || undefined,
   });
   const doc = hasFlag(rest, '--strip-bridge') ? stripBridgeEnvelope(seeded) : seeded;
   fs.mkdirSync(path.dirname(out), { recursive: true });
@@ -263,23 +270,31 @@ if (cmd === 'seed-cwl') {
   process.exit(0);
 }
 
-if (cmd === 'compare-cwl') {
+if (cmd === 'cutover' || cmd === 'compare-cwl') {
   const cwlIn = flag(rest, '--cwl');
   const dnaIn = flag(rest, '--dna');
   if (!cwlIn || !dnaIn) {
     usage();
     process.exit(1);
   }
+  const cwlRoot = flag(rest, '--cwl-root') || process.env.CHRYSALIS_CWL_ROOT;
+  const explicitProfile = flag(rest, '--deploy-profile');
   let cwlSide;
+  let deployProfile = null;
   if (String(cwlIn).endsWith('.json')) {
     cwlSide = readJson(cwlIn);
+    const profilePath = explicitProfile || null;
+    if (profilePath) deployProfile = await loadDeployProfile(profilePath);
   } else {
+    const profilePath = resolveDeployProfilePath(cwlIn, explicitProfile);
+    if (profilePath) deployProfile = await loadDeployProfile(profilePath);
     cwlSide = await seedDnaFromCwlFile(cwlIn, {
-      cwlRoot: flag(rest, '--cwl-root') || process.env.CHRYSALIS_CWL_ROOT,
+      cwlRoot,
+      deployProfile: explicitProfile || undefined,
     });
   }
   const live = readJson(dnaIn);
-  const report = compareCwlSurfaceToDna(cwlSide, live);
+  const report = compareCwlSurfaceToDna(cwlSide, live, { deployProfile });
   console.log(JSON.stringify(report, null, 2));
   process.exit(report.ok ? 0 : 2);
 }

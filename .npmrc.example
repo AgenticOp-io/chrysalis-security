@@ -1,0 +1,3 @@
+# GitHub Packages — copy to ~/.npmrc (or local .npmrc, gitignored) for @agenticop-io/cwl
+@agenticop-io:registry=https://npm.pkg.github.com
+# //npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN_WITH_read:packages

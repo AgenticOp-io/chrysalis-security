@@ -61,6 +61,8 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] Local lab flip — `npm run local-lab` + [LOCAL-LAB.md](./LOCAL-LAB.md)  
 - [x] Browser HTML 403 + `/__helix/attack` proof page + `local-lab-tunnel`  
 
+- [x] CWL tip `1.0.8` consume — `@agenticop-io/cwl@1.0.8` (SoR/multi-host/`dna_gaps` from 1.0.3–1.0.4; execute depth 1.0.5–1.0.8 is CWL-owned)  
+
 ## Later
 
 - [ ] Customer traffic soak (operational — follow [SOAK.md](./SOAK.md))  

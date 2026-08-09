@@ -1,58 +1,56 @@
-# CWL ↔ DNA bridge (RFC-0022)
+# CWL ↔ DNA bridge (RFC-0022 / 0023)
 
-Helix protects with traffic DNA out of the box. This bridge is **optional**: seed draft DNA from a CWL module, or compare CWL surface ⊆ certified DNA for cutover.
+Helix protects with traffic DNA out of the box. Bridge is **optional for protect**, **required for cutover default**: seed draft DNA from CWL, or compare CWL surface ⊆ certified DNA.
 
-**Contract owner:** `engines/chrysalis-cwl` — [RFC-0022](../../chrysalis-cwl/docs/language/CWL-RFC-0022-dna-surface-bridge.md)  
-**Implementation:** `packages/cwl-bridge` (consumes CWL `cwl-dna-seed.mjs` + parser; does not fork grammar)
-
-Seed prefers language-pillar `scripts/hub-ingest/cwl-dna-seed.mjs` when present (CWL 0.1.6+). Helix owns strip / promote / compare / enforce only.
+**Contract owner:** `engines/chrysalis-cwl` — [RFC-0022](../../chrysalis-cwl/docs/language/CWL-RFC-0022-dna-surface-bridge.md) · [RFC-0023](../../chrysalis-cwl/docs/language/CWL-RFC-0023-deploy-dna-profiles.md) · [DNA-CWL-COMPLETE.md](../../chrysalis-cwl/docs/history/DNA-CWL-COMPLETE.md)  
+**Implementation:** `packages/cwl-bridge` — consumes **`@agenticop-io/cwl/dna-seed`** (single SoR). Helix owns strip / cutover compare / `dna_gaps` fill / enforce only.
 
 ## Commands
 
 ```bash
-# Seed draft DNA (+ bridge envelope) from .cwl
 npm run helix -- seed-cwl --in path/to/routes.cwl --out data/seeded.dna.json
-
-# Schema-shaped DNA only (no bridge.*)
 npm run helix -- seed-cwl --in path/to/routes.cwl --out data/seeded.dna.json --strip-bridge
 
-# Cutover: every CWL route identity appears in certified DNA
-npm run helix -- compare-cwl --cwl path/to/routes.cwl --dna certificates/app.json
+# Cutover default: CWL surface ⊆ certified DNA (host identity when profile host ≠ default)
+npm run helix -- cutover --cwl path/to/routes.cwl --dna certificates/app.json
+npm run helix -- cutover --cwl path/to/routes.cwl --dna certificates/app.json \
+  --deploy-profile path/to/deploy-profile-api.json
 ```
 
-Env: `CHRYSALIS_CWL_ROOT` if the language pillar is not at `../chrysalis-cwl`.  
-Dependency pin: `"@chrysalis/cwl": "file:../chrysalis-cwl/packages/cwl"` (resolves pillar via package when installed).
+Env: `CHRYSALIS_CWL_ROOT` if the language pillar (fixtures) is not at `../chrysalis-cwl`.
 
-## Pin note (Phase 1.0 — pre-publish)
+## Pin (CWL tip @ 1.0.8)
 
-Secure pins `@chrysalis/cwl` as **`file:../chrysalis-cwl/packages/cwl`** (not a registry release; package stays private). Bridge tools also resolve the language pillar via:
+```json
+"@agenticop-io/cwl": "1.0.8"
+```
 
-1. Sibling `../chrysalis-cwl` under `AgenticOps/engines/`  
-2. Env **`CHRYSALIS_CWL_ROOT`** / CLI `--cwl-root` → absolute path to that repo root
+Follows CWL `1.0.4`–`1.0.6` → `1.0.7` full matrix → `1.0.8` early-exit/attachment soft-path (Secure consumes language surface only; protect stays DNA / D5).
 
-Language version bar: `LANGUAGE_VERSION.md` in chrysalis-cwl (currently **0.1.7**). Full pin / future registry path: [`chrysalis-cwl/docs/language/CWL-PUBLISH.md`](../../chrysalis-cwl/docs/language/CWL-PUBLISH.md). Do not fork grammar here.
+GitHub Packages — [`.npmrc.example`](../.npmrc.example). Optional monorepo `file:` `@chrysalis/cwl` ≡ same tip.
+
+| Import | Role |
+| --- | --- |
+| `@agenticop-io/cwl/dna-seed` | Seed / profile / holes report (SoR) |
+| `@agenticop-io/cwl/parser` | Parse fallback |
+| Sibling fixtures | Gold `24-dna-bridge` (+ `deploy-profile-api.json`) |
 
 ## Rules (honest)
 
 | In bridge envelope | In certified `app-dna-v1` |
 |--------------------|---------------------------|
-| `cwl_effects`, `cwl_surface` | method, path_template, host, content_class, fingerprints |
+| `cwl_effects`, `cwl_surface`, holes report | method, path_template, host, content_class, fingerprints |
 | Never part of `routeKey` | Identity for enforce |
 
-Promote / sign must use `stripBridgeEnvelope` (or `--strip-bridge`) — schema is `additionalProperties: false`.
+`dna_gaps` on the holes bridge report are **filled by Helix** from cutover compare — never auto-merged into DNA `holes[]`.
+
+Promote / sign must use `stripBridgeEnvelope` (or `--strip-bridge`).
 
 ## Prove
 
 ```bash
 npm run cwl-bridge-smoke   # → CWL_BRIDGE_SMOKE_OK
-npm run cutover-smoke      # → CUTOVER_SMOKE_OK (seed→strip→promote(+HMAC)→compare→enforce allow/deny)
-npm run ut-gce-demo        # → UT_GCE_DEMO_OK (gce-smoke + cutover + CWL smoke:ut-spine when sibling present)
+npm run cutover-smoke      # → CUTOVER_SMOKE_OK (default + multi-host api + dna_gaps)
 ```
 
-Uses language gold `fixtures/language-gold/24-dna-bridge/` from chrysalis-cwl.
-
-**CWL spine:** from `chrysalis-cwl`, `npm run smoke:ut-spine` / `smoke:ut-evidence` (or `:helix` with Secure sibling). Convert does not own this prove.
-
-**Before Secure bridge work:** `npm run cwl-sync-check` → `CWL_SYNC_OK` (fetches origin; notes if tip behind).
-
-**RFC-0023:** if `deploy-profile.json` sits beside the `.cwl` (gold `24-dna-bridge`), seed annotates `bridge.deploy_profile` and uses profile `host` / `app_id`. Profile schema owned by CWL; Helix only applies it.
+**CWL spine:** from `chrysalis-cwl`, `npm run smoke:ut-spine:helix`.

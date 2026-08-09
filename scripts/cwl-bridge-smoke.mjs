@@ -8,6 +8,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   resolveCwlRoot,
+  resolveCwlPackageName,
+  readCwlLanguageVersion,
+  loadCwlParser,
+  loadCwlDnaSeed,
   seedDnaFromCwlFile,
   stripBridgeEnvelope,
   pathTemplateShapeEqual,
@@ -50,6 +54,18 @@ if (!fs.existsSync(goldCwl) || !fs.existsSync(goldExpected)) {
 assert(fs.existsSync(goldCwl), `missing CWL gold: ${goldCwl}`);
 assert(fs.existsSync(goldExpected), `missing expected DNA gold: ${goldExpected}`);
 
+const langVer = await readCwlLanguageVersion(cwlRoot);
+assert(langVer, 'language version readable');
+assert(String(langVer).startsWith('1.'), `expect CWL 1.x pin, got ${langVer}`);
+const pkgName = resolveCwlPackageName();
+assert(pkgName, 'language package resolved');
+const { parseCwlModule } = await loadCwlParser(cwlRoot);
+assert(typeof parseCwlModule === 'function', 'package parser exports parseCwlModule');
+const dnaSeed = await loadCwlDnaSeed();
+assert(typeof dnaSeed.seedDraftDnaFromCwlPath === 'function', 'dna-seed SoR');
+assert(typeof dnaSeed.cwlHolesBridgeReport === 'function', 'holes bridge report');
+console.log(`cwl language ${langVer} via ${pkgName} (dna-seed SoR) @ ${cwlRoot}`);
+
 const expected = JSON.parse(fs.readFileSync(goldExpected, 'utf8'));
 
 const seeded = await seedDnaFromCwlFile(goldCwl, {
@@ -80,7 +96,10 @@ for (let i = 0; i < expected.routes.length; i++) {
 }
 
 assert(seeded.bridge?.kind === 'cwl-surface-seed', 'bridge kind');
-assert(seeded.bridge?.rfc === '0022', 'bridge rfc');
+assert(
+  seeded.bridge?.rfc === '0022' || seeded.bridge?.rfc === '0022+0023',
+  `bridge rfc (got ${seeded.bridge?.rfc})`,
+);
 assert(
   seeded.bridge.annotations.length === expected.bridge.annotations.length,
   'annotation count',
