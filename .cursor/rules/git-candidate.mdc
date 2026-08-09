@@ -1,12 +1,14 @@
 ---
-description: Commit always; push only to candidate/* — never main
+description: Commit, push candidate, always merge finished Secure work to main
 alwaysApply: true
 ---
 
-# Git — candidate only (Helix / Secure)
+# Git — land on main (Helix / Secure)
 
-- **Commit** completed work on the active lane (do not leave large finished slices uncommitted).
-- **Push** only to branches named `candidate/*` (or another non-`main`/`master` branch the user named).
-- **Never** `git push` to `main` or `master`. Agents do **not** have authority to update main.
-- After push: report remote URL + branch + SHA.
-- Merge to main is a **human / authority** action (PR merge), not an agent push.
+Authority (user, 2026-08-09): finished Secure slices **always land on `main`**.
+
+- **Commit** completed work (do not leave large finished slices uncommitted).
+- **Push** to `candidate/*` first, then **merge to `main`** via `gh pr merge` (or update open PR) without waiting for a second ask.
+- Prefer PR merge over direct `git push` to `main` (keeps history/reviewable). Do not force-push `main`/`master`.
+- After land: report remote URL + branch + SHA (candidate tip and merge commit on `main`).
+- Portfolio default still forbids silent main pushes elsewhere; this rule is Secure-lane override by user authority.
