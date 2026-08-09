@@ -61,7 +61,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] Local lab flip — `npm run local-lab` + [LOCAL-LAB.md](./LOCAL-LAB.md)  
 - [x] Browser HTML 403 + `/__helix/attack` proof page + `local-lab-tunnel`  
 
-- [x] CWL Exit 1.0.3 consume — `@agenticop-io/cwl@1.0.3` dna-seed SoR, multi-host cutover, `dna_gaps` fill  
+- [x] CWL Exit 1.0.4 consume — `@agenticop-io/cwl@1.0.4` dna-seed SoR, multi-host cutover, `dna_gaps` fill  
 
 ## Later
 

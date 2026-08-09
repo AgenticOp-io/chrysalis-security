@@ -19,10 +19,10 @@ npm run helix -- cutover --cwl path/to/routes.cwl --dna certificates/app.json \
 
 Env: `CHRYSALIS_CWL_ROOT` if the language pillar (fixtures) is not at `../chrysalis-cwl`.
 
-## Pin (CWL pillar complete @ 1.0.3)
+## Pin (CWL tip @ 1.0.4)
 
 ```json
-"@agenticop-io/cwl": "1.0.3"
+"@agenticop-io/cwl": "1.0.4"
 ```
 
 GitHub Packages — [`.npmrc.example`](../.npmrc.example). Optional monorepo `file:` `@chrysalis/cwl` ≡ same tip.
