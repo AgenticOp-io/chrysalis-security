@@ -11,6 +11,7 @@ import {
   resolveCwlPackageName,
   readCwlLanguageVersion,
   loadCwlParser,
+  loadCwlDnaSeed,
   seedDnaFromCwlFile,
   stripBridgeEnvelope,
   pathTemplateShapeEqual,
@@ -60,7 +61,10 @@ const pkgName = resolveCwlPackageName();
 assert(pkgName, 'language package resolved');
 const { parseCwlModule } = await loadCwlParser(cwlRoot);
 assert(typeof parseCwlModule === 'function', 'package parser exports parseCwlModule');
-console.log(`cwl language ${langVer} via ${pkgName} @ ${cwlRoot}`);
+const dnaSeed = await loadCwlDnaSeed();
+assert(typeof dnaSeed.seedDraftDnaFromCwlPath === 'function', 'dna-seed SoR');
+assert(typeof dnaSeed.cwlHolesBridgeReport === 'function', 'holes bridge report');
+console.log(`cwl language ${langVer} via ${pkgName} (dna-seed SoR) @ ${cwlRoot}`);
 
 const expected = JSON.parse(fs.readFileSync(goldExpected, 'utf8'));
 

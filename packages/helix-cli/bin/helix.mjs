@@ -284,10 +284,10 @@ if (cmd === 'cutover' || cmd === 'compare-cwl') {
   if (String(cwlIn).endsWith('.json')) {
     cwlSide = readJson(cwlIn);
     const profilePath = explicitProfile || null;
-    if (profilePath) deployProfile = loadDeployProfile(profilePath);
+    if (profilePath) deployProfile = await loadDeployProfile(profilePath);
   } else {
     const profilePath = resolveDeployProfilePath(cwlIn, explicitProfile);
-    if (profilePath) deployProfile = loadDeployProfile(profilePath);
+    if (profilePath) deployProfile = await loadDeployProfile(profilePath);
     cwlSide = await seedDnaFromCwlFile(cwlIn, {
       cwlRoot,
       deployProfile: explicitProfile || undefined,
