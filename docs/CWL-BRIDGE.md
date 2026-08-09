@@ -5,7 +5,7 @@ Helix protects with traffic DNA out of the box. This bridge is **optional**: see
 **Contract owner:** `engines/chrysalis-cwl` — [RFC-0022](../../chrysalis-cwl/docs/language/CWL-RFC-0022-dna-surface-bridge.md)  
 **Implementation:** `packages/cwl-bridge` (consumes CWL `cwl-dna-seed.mjs` + parser; does not fork grammar)
 
-Seed prefers language-pillar `scripts/hub-ingest/cwl-dna-seed.mjs` when present (CWL 0.1.6+). Helix owns strip / promote / compare / enforce only.
+Seed prefers language-pillar `scripts/hub-ingest/cwl-dna-seed.mjs` when present (CWL 0.1.6+). Parser fallback uses `@chrysalis/cwl/parser` (1.0+ package export). Helix owns strip / promote / compare / enforce only.
 
 ## Commands
 
@@ -23,14 +23,15 @@ npm run helix -- compare-cwl --cwl path/to/routes.cwl --dna certificates/app.jso
 Env: `CHRYSALIS_CWL_ROOT` if the language pillar is not at `../chrysalis-cwl`.  
 Dependency pin: `"@chrysalis/cwl": "file:../chrysalis-cwl/packages/cwl"` (resolves pillar via package when installed).
 
-## Pin note (Phase 1.0 — pre-publish)
+## Pin note (Exit 1.0 — keep `file:` until registry)
 
-Secure pins `@chrysalis/cwl` as **`file:../chrysalis-cwl/packages/cwl`** (not a registry release; package stays private). Bridge tools also resolve the language pillar via:
+Secure pins `@chrysalis/cwl` as **`file:../chrysalis-cwl/packages/cwl`** (GitHub Packages publish is CWL-owned; Secure may migrate later). Bridge tools resolve the language pillar via:
 
-1. Sibling `../chrysalis-cwl` under `AgenticOps/engines/`  
-2. Env **`CHRYSALIS_CWL_ROOT`** / CLI `--cwl-root` → absolute path to that repo root
+1. `@chrysalis/cwl` pin → `pillarRoot()` / package subpaths (`parser`, …)  
+2. Sibling `../chrysalis-cwl` under `AgenticOps/engines/`  
+3. Env **`CHRYSALIS_CWL_ROOT`** / CLI `--cwl-root` → absolute path to that repo root
 
-Language version bar: `LANGUAGE_VERSION.md` in chrysalis-cwl (currently **0.1.7**). Full pin / future registry path: [`chrysalis-cwl/docs/language/CWL-PUBLISH.md`](../../chrysalis-cwl/docs/language/CWL-PUBLISH.md). Do not fork grammar here.
+Language version bar: `LANGUAGE_VERSION.md` in chrysalis-cwl (follow tip **1.0.0**). Full pin / registry path: [`chrysalis-cwl/docs/language/CWL-PUBLISH.md`](../../chrysalis-cwl/docs/language/CWL-PUBLISH.md) · [`EXIT-1.0.md`](../../chrysalis-cwl/docs/history/EXIT-1.0.md). Do not fork grammar here.
 
 ## Rules (honest)
 

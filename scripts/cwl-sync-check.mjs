@@ -2,6 +2,9 @@
 /**
  * Always-check CWL tip before Secure slices (D5 still: DNA works without CWL).
  * Token: CWL_SYNC_OK | CWL_SYNC_SKIP
+ *
+ * Follows Exit 1.0: tip may be on candidate/* ahead of origin/main while
+ * LANGUAGE_VERSION is 1.0.0 — that is not “behind”.
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -18,41 +21,74 @@ if (!fs.existsSync(path.join(cwlRoot, 'LANGUAGE_VERSION.md'))) {
   process.exit(0);
 }
 
-const fetch = spawnSync('git', ['fetch', 'origin'], { cwd: cwlRoot, encoding: 'utf8' });
-const status = spawnSync('git', ['status', '-sb'], { cwd: cwlRoot, encoding: 'utf8' });
-const head = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: cwlRoot, encoding: 'utf8' });
-const origin = spawnSync('git', ['rev-parse', 'origin/main'], { cwd: cwlRoot, encoding: 'utf8' });
-const verLine = fs
-  .readFileSync(path.join(cwlRoot, 'LANGUAGE_VERSION.md'), 'utf8')
-  .split('\n')
-  .find((l) => l.includes('`0.') || /\|\s*\*\*Version\*\*/.test(l));
+function git(args) {
+  return spawnSync('git', args, { cwd: cwlRoot, encoding: 'utf8' });
+}
+
+const fetch = git(['fetch', 'origin']);
+const status = git(['status', '-sb']);
+const head = git(['rev-parse', 'HEAD']);
+const originMain = git(['rev-parse', 'origin/main']);
+const branch = git(['branch', '--show-current']);
+const behindCount = git(['rev-list', '--count', 'HEAD..origin/main']);
+const aheadCount = git(['rev-list', '--count', 'origin/main..HEAD']);
+
+const md = fs.readFileSync(path.join(cwlRoot, 'LANGUAGE_VERSION.md'), 'utf8');
+const verMatch = md.match(/\|\s*\*\*Version\*\*\s*\|\s*`([^`]+)`/);
+const languageVersion = verMatch ? verMatch[1] : null;
+
+let packageVersion = null;
+try {
+  packageVersion = JSON.parse(
+    fs.readFileSync(path.join(cwlRoot, 'packages', 'cwl', 'package.json'), 'utf8'),
+  ).version;
+} catch {
+  /* optional */
+}
 
 const sha = (head.stdout || '').trim();
-const originSha = (origin.stdout || '').trim();
-const behind = sha && originSha && sha !== originSha;
+const originSha = (originMain.stdout || '').trim();
+const behindN = Number((behindCount.stdout || '').trim() || '0');
+const aheadN = Number((aheadCount.stdout || '').trim() || '0');
+const behind = Number.isFinite(behindN) && behindN > 0;
+const ahead = Number.isFinite(aheadN) && aheadN > 0;
 
 const report = {
   kind: 'helix.cwl-sync',
   cwlRoot,
-  languageVersionLine: verLine?.trim() || null,
+  languageVersion,
+  packageVersion,
+  branch: (branch.stdout || '').trim() || null,
   head: sha,
   originMain: originSha || null,
+  commitsBehindMain: behindN,
+  commitsAheadMain: aheadN,
   fetchOk: fetch.status === 0,
   status: (status.stdout || '').trim().split('\n')[0] || null,
   upToDate: !behind,
+  exit10Tip: languageVersion === '1.0.0' || packageVersion === '1.0.0',
 };
 
 const outDir = path.join(ROOT, 'data');
 fs.mkdirSync(outDir, { recursive: true });
 fs.writeFileSync(path.join(outDir, 'cwl-sync.json'), JSON.stringify(report, null, 2) + '\n');
 
+const tipLabel = `${sha.slice(0, 7)} cwl@${languageVersion || packageVersion || '?'}`;
+
 if (behind) {
-  console.warn('CWL tip behind origin/main — pull chrysalis-cwl before bridge/cutover work');
+  console.warn(
+    `CWL tip behind origin/main by ${behindN} commit(s) — pull chrysalis-cwl before bridge/cutover work`,
+  );
   console.warn(JSON.stringify(report, null, 2));
   // Soft warn: still OK token so DNA pack isn't blocked (D5). Exit 0.
-  console.log('CWL_SYNC_OK (behind_origin_noted)');
+  console.log(`CWL_SYNC_OK (behind_origin_noted) ${tipLabel}`);
   process.exit(0);
 }
 
-console.log(`CWL_SYNC_OK ${sha.slice(0, 7)} ${(verLine || '').trim()}`);
+if (ahead) {
+  console.log(`CWL_SYNC_OK (ahead_of_main_${aheadN}) ${tipLabel}`);
+  process.exit(0);
+}
+
+console.log(`CWL_SYNC_OK ${tipLabel}`);
 process.exit(0);

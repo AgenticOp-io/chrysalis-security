@@ -24,4 +24,4 @@ Date: 2026-08-05
 
 - Helix RFC-0022 `cwl-bridge` + `CWL_BRIDGE_SMOKE_OK`
 - Convert `hub:cwl-language-pillar-smoke` v3 + junctions
-- CWL 0.1.7 ingest/emit round-trip path
+- CWL 1.0.0 (`file:` pin) surface seed / cutover compare (RFC-0022/0023)

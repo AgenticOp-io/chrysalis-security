@@ -14,26 +14,24 @@ const requireFromHere = createRequire(import.meta.url);
 
 /**
  * Resolve chrysalis-cwl root (sibling under AgenticOps/engines by default).
+ * Prefer `@chrysalis/cwl` pin → `pillarRoot()` (CWL 1.0.0 / Exit 1.0).
  * @param {string} [override]
  */
 export function resolveCwlRoot(override) {
   if (override) return path.resolve(override);
   if (process.env.CHRYSALIS_CWL_ROOT) return path.resolve(process.env.CHRYSALIS_CWL_ROOT);
 
-  // Prefer @chrysalis/cwl pin → pillarRoot() (CWL 0.1.7+)
   try {
     const pkgJson = requireFromHere.resolve('@chrysalis/cwl/package.json');
     const pkgDir = path.dirname(pkgJson);
-    const indexPath = path.join(pkgDir, 'index.mjs');
-    // Sync resolve via package.json parent: packages/cwl → pillar
+    // packages/cwl → pillar root
     const fromPin = path.resolve(pkgDir, '../..');
-    if (fs.existsSync(path.join(fromPin, 'scripts', 'hub-ingest', 'cwl-parser.mjs'))) {
+    if (
+      fs.existsSync(path.join(fromPin, 'LANGUAGE_VERSION.md')) ||
+      fs.existsSync(path.join(fromPin, 'scripts', 'hub-ingest', 'cwl-parser.mjs'))
+    ) {
       return fromPin;
     }
-    if (fs.existsSync(path.join(fromPin, 'LANGUAGE_VERSION.md'))) {
-      return fromPin;
-    }
-    void indexPath;
   } catch {
     /* not installed */
   }
@@ -48,12 +46,42 @@ export function resolveCwlRoot(override) {
 }
 
 /**
+ * Load parseCwlModule via package subpath (1.0+) else hub-ingest deep-link.
  * @param {string} [cwlRoot]
  */
 export async function loadCwlParser(cwlRoot) {
+  if (!cwlRoot && !process.env.CHRYSALIS_CWL_ROOT) {
+    try {
+      return await import('@chrysalis/cwl/parser');
+    } catch {
+      /* fall through to pillar path */
+    }
+  }
   const root = resolveCwlRoot(cwlRoot);
-  const parserPath = path.join(root, 'scripts', 'hub-ingest', 'cwl-parser.mjs');
+  const staged = path.join(root, 'packages', 'cwl', 'lib', 'cwl-parser.mjs');
+  const hub = path.join(root, 'scripts', 'hub-ingest', 'cwl-parser.mjs');
+  const parserPath = fs.existsSync(staged) ? staged : hub;
+  if (!fs.existsSync(parserPath)) {
+    throw new Error(`CWL parser not found under ${root}`);
+  }
   return import(pathToFileUrl(parserPath));
+}
+
+/**
+ * Language version from pinned `@chrysalis/cwl` (or LANGUAGE_VERSION.md).
+ * @param {string} [cwlRoot]
+ */
+export async function readCwlLanguageVersion(cwlRoot) {
+  try {
+    const { languageVersion, VERSION } = await import('@chrysalis/cwl');
+    return languageVersion?.() || VERSION;
+  } catch {
+    /* fall through */
+  }
+  const root = resolveCwlRoot(cwlRoot);
+  const md = fs.readFileSync(path.join(root, 'LANGUAGE_VERSION.md'), 'utf8');
+  const m = md.match(/\|\s*\*\*Version\*\*\s*\|\s*`([^`]+)`/);
+  return m ? m[1] : null;
 }
 
 function pathToFileUrl(p) {
