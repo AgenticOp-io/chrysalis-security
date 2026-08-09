@@ -1,11 +1,11 @@
-# CWL ↔ DNA bridge (RFC-0022)
+# CWL ↔ DNA bridge (RFC-0022 / 0023)
 
-Helix protects with traffic DNA out of the box. This bridge is **optional**: seed draft DNA from a CWL module, or compare CWL surface ⊆ certified DNA for cutover.
+Helix protects with traffic DNA out of the box. This bridge is **optional for protect**, **required for cutover default**: seed draft DNA from a CWL module, or compare CWL surface ⊆ certified DNA.
 
-**Contract owner:** `engines/chrysalis-cwl` — [RFC-0022](../../chrysalis-cwl/docs/language/CWL-RFC-0022-dna-surface-bridge.md)  
-**Implementation:** `packages/cwl-bridge` (consumes CWL `cwl-dna-seed.mjs` + parser; does not fork grammar)
+**Contract owner:** `engines/chrysalis-cwl` — [RFC-0022](../../chrysalis-cwl/docs/language/CWL-RFC-0022-dna-surface-bridge.md) · [RFC-0023](../../chrysalis-cwl/docs/language/CWL-RFC-0023-deploy-dna-profiles.md)  
+**Implementation:** `packages/cwl-bridge` (consumes CWL seed + `@agenticop-io/cwl` parser; does not fork grammar)
 
-Seed prefers language-pillar `scripts/hub-ingest/cwl-dna-seed.mjs` when present (CWL 0.1.6+). Parser fallback uses `@chrysalis/cwl/parser` (1.0+ package export). Helix owns strip / promote / compare / enforce only.
+Seed prefers language-pillar `scripts/hub-ingest/cwl-dna-seed.mjs` when the pillar tree is present. Parser prefers **`@agenticop-io/cwl/parser`** (published 1.0.0). Helix owns strip / promote / cutover compare / enforce only.
 
 ## Commands
 
@@ -16,22 +16,30 @@ npm run helix -- seed-cwl --in path/to/routes.cwl --out data/seeded.dna.json
 # Schema-shaped DNA only (no bridge.*)
 npm run helix -- seed-cwl --in path/to/routes.cwl --out data/seeded.dna.json --strip-bridge
 
-# Cutover: every CWL route identity appears in certified DNA
-npm run helix -- compare-cwl --cwl path/to/routes.cwl --dna certificates/app.json
+# Cutover default: every CWL route identity appears in certified DNA (RFC-0022)
+npm run helix -- cutover --cwl path/to/routes.cwl --dna certificates/app.json
+# alias: compare-cwl
 ```
 
-Env: `CHRYSALIS_CWL_ROOT` if the language pillar is not at `../chrysalis-cwl`.  
-Dependency pin: `"@chrysalis/cwl": "file:../chrysalis-cwl/packages/cwl"` (resolves pillar via package when installed).
+Env: `CHRYSALIS_CWL_ROOT` if the language pillar (fixtures / hub-ingest) is not at `../chrysalis-cwl`.
 
-## Pin note (Exit 1.0 — keep `file:` until registry)
+## Pin note (Exit 1.0 — published)
 
-Secure pins `@chrysalis/cwl` as **`file:../chrysalis-cwl/packages/cwl`** (GitHub Packages publish is CWL-owned; Secure may migrate later). Bridge tools resolve the language pillar via:
+```json
+"@agenticop-io/cwl": "1.0.0"
+```
 
-1. `@chrysalis/cwl` pin → `pillarRoot()` / package subpaths (`parser`, …)  
-2. Sibling `../chrysalis-cwl` under `AgenticOps/engines/`  
-3. Env **`CHRYSALIS_CWL_ROOT`** / CLI `--cwl-root` → absolute path to that repo root
+GitHub Packages only — see [`.npmrc.example`](../.npmrc.example) and [`EXIT-1.0.md`](../../chrysalis-cwl/docs/history/EXIT-1.0.md).
 
-Language version bar: `LANGUAGE_VERSION.md` in chrysalis-cwl (follow tip **1.0.0**). Full pin / registry path: [`chrysalis-cwl/docs/language/CWL-PUBLISH.md`](../../chrysalis-cwl/docs/language/CWL-PUBLISH.md) · [`EXIT-1.0.md`](../../chrysalis-cwl/docs/history/EXIT-1.0.md). Do not fork grammar here.
+Optional monorepo helper: `"@chrysalis/cwl": "file:../chrysalis-cwl/packages/cwl"` (same tree; used when sibling checkout is present). Gold fixtures still come from the **pillar checkout** (`CHRYSALIS_CWL_ROOT` / sibling), not from the registry tarball.
+
+Bridge resolve order:
+
+1. Package language surface — `@agenticop-io/cwl` then `@chrysalis/cwl`  
+2. Sibling `../chrysalis-cwl` for fixtures / `cwl-dna-seed`  
+3. Env **`CHRYSALIS_CWL_ROOT`** / CLI `--cwl-root`
+
+Language bar: **1.0.0**. Do not fork grammar here.
 
 ## Rules (honest)
 

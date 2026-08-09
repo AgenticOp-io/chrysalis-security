@@ -12,49 +12,59 @@ import { routeKey, responseKeyFingerprint } from '../dna-core/index.mjs';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const requireFromHere = createRequire(import.meta.url);
 
+/** Published GH Packages name, then local `file:` alias. */
+const CWL_PKG_NAMES = ['@agenticop-io/cwl', '@chrysalis/cwl'];
+
 /**
- * Resolve chrysalis-cwl root (sibling under AgenticOps/engines by default).
- * Prefer `@chrysalis/cwl` pin → `pillarRoot()` (CWL 1.0.0 / Exit 1.0).
+ * Resolve chrysalis-cwl pillar root (fixtures + hub-ingest seed).
+ * Registry package alone is not enough for golds — sibling / CHRYSALIS_CWL_ROOT / file: pin.
  * @param {string} [override]
  */
 export function resolveCwlRoot(override) {
   if (override) return path.resolve(override);
   if (process.env.CHRYSALIS_CWL_ROOT) return path.resolve(process.env.CHRYSALIS_CWL_ROOT);
 
-  try {
-    const pkgJson = requireFromHere.resolve('@chrysalis/cwl/package.json');
-    const pkgDir = path.dirname(pkgJson);
-    // packages/cwl → pillar root
-    const fromPin = path.resolve(pkgDir, '../..');
-    if (
-      fs.existsSync(path.join(fromPin, 'LANGUAGE_VERSION.md')) ||
-      fs.existsSync(path.join(fromPin, 'scripts', 'hub-ingest', 'cwl-parser.mjs'))
-    ) {
-      return fromPin;
+  for (const name of CWL_PKG_NAMES) {
+    try {
+      const pkgJson = requireFromHere.resolve(`${name}/package.json`);
+      const pkgDir = path.dirname(pkgJson);
+      // file: packages/cwl → pillar; registry node_modules path usually is not a pillar
+      const fromPin = path.resolve(pkgDir, '../..');
+      if (
+        fs.existsSync(path.join(fromPin, 'LANGUAGE_VERSION.md')) ||
+        fs.existsSync(path.join(fromPin, 'scripts', 'hub-ingest', 'cwl-parser.mjs'))
+      ) {
+        return fromPin;
+      }
+    } catch {
+      /* try next */
     }
-  } catch {
-    /* not installed */
   }
 
   const sibling = path.resolve(HERE, '../../../chrysalis-cwl');
-  if (fs.existsSync(path.join(sibling, 'scripts', 'hub-ingest', 'cwl-parser.mjs'))) {
+  if (
+    fs.existsSync(path.join(sibling, 'LANGUAGE_VERSION.md')) ||
+    fs.existsSync(path.join(sibling, 'scripts', 'hub-ingest', 'cwl-parser.mjs'))
+  ) {
     return sibling;
   }
   throw new Error(
-    'chrysalis-cwl not found — npm i @chrysalis/cwl (file: pin), set CHRYSALIS_CWL_ROOT, or keep engines/chrysalis-cwl next to chrysalis-security',
+    'chrysalis-cwl pillar not found — set CHRYSALIS_CWL_ROOT, keep engines/chrysalis-cwl sibling, or optional file: @chrysalis/cwl (registry @agenticop-io/cwl@1.0.0 is language surface only)',
   );
 }
 
 /**
- * Load parseCwlModule via package subpath (1.0+) else hub-ingest deep-link.
+ * Load parseCwlModule via published/package subpath (1.0+) else pillar staged/hub path.
  * @param {string} [cwlRoot]
  */
 export async function loadCwlParser(cwlRoot) {
   if (!cwlRoot && !process.env.CHRYSALIS_CWL_ROOT) {
-    try {
-      return await import('@chrysalis/cwl/parser');
-    } catch {
-      /* fall through to pillar path */
+    for (const name of CWL_PKG_NAMES) {
+      try {
+        return await import(`${name}/parser`);
+      } catch {
+        /* try next */
+      }
     }
   }
   const root = resolveCwlRoot(cwlRoot);
@@ -68,20 +78,37 @@ export async function loadCwlParser(cwlRoot) {
 }
 
 /**
- * Language version from pinned `@chrysalis/cwl` (or LANGUAGE_VERSION.md).
+ * Language version from pinned package (or LANGUAGE_VERSION.md).
  * @param {string} [cwlRoot]
  */
 export async function readCwlLanguageVersion(cwlRoot) {
-  try {
-    const { languageVersion, VERSION } = await import('@chrysalis/cwl');
-    return languageVersion?.() || VERSION;
-  } catch {
-    /* fall through */
+  for (const name of CWL_PKG_NAMES) {
+    try {
+      const mod = await import(name);
+      return mod.languageVersion?.() || mod.VERSION;
+    } catch {
+      /* try next */
+    }
   }
   const root = resolveCwlRoot(cwlRoot);
   const md = fs.readFileSync(path.join(root, 'LANGUAGE_VERSION.md'), 'utf8');
   const m = md.match(/\|\s*\*\*Version\*\*\s*\|\s*`([^`]+)`/);
   return m ? m[1] : null;
+}
+
+/**
+ * Which npm package name resolved for the language surface.
+ */
+export function resolveCwlPackageName() {
+  for (const name of CWL_PKG_NAMES) {
+    try {
+      requireFromHere.resolve(`${name}/package.json`);
+      return name;
+    } catch {
+      /* try next */
+    }
+  }
+  return null;
 }
 
 function pathToFileUrl(p) {

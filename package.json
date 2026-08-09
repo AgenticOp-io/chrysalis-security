@@ -47,6 +47,9 @@
     "test": "npm run test:dna && node scripts/cwl-bridge-smoke.mjs && node scripts/cutover-smoke.mjs && node scripts/bridge-l2-smoke.mjs && node scripts/compose-smoke.mjs && node scripts/k8s-image-smoke.mjs && node scripts/k8s-push.mjs"
   },
   "dependencies": {
+    "@agenticop-io/cwl": "1.0.0"
+  },
+  "optionalDependencies": {
     "@chrysalis/cwl": "file:../chrysalis-cwl/packages/cwl"
   },
   "engines": {

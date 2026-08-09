@@ -8,6 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   resolveCwlRoot,
+  resolveCwlPackageName,
   readCwlLanguageVersion,
   loadCwlParser,
   seedDnaFromCwlFile,
@@ -54,9 +55,12 @@ assert(fs.existsSync(goldExpected), `missing expected DNA gold: ${goldExpected}`
 
 const langVer = await readCwlLanguageVersion(cwlRoot);
 assert(langVer, 'language version readable');
+assert(String(langVer).startsWith('1.'), `expect CWL 1.x pin, got ${langVer}`);
+const pkgName = resolveCwlPackageName();
+assert(pkgName, 'language package resolved');
 const { parseCwlModule } = await loadCwlParser(cwlRoot);
-assert(typeof parseCwlModule === 'function', '@chrysalis/cwl/parser (or staged lib) exports parseCwlModule');
-console.log(`cwl language ${langVer} @ ${cwlRoot}`);
+assert(typeof parseCwlModule === 'function', 'package parser exports parseCwlModule');
+console.log(`cwl language ${langVer} via ${pkgName} @ ${cwlRoot}`);
 
 const expected = JSON.parse(fs.readFileSync(goldExpected, 'utf8'));
 

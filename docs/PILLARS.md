@@ -11,6 +11,6 @@ Optional CWL bridge (seed / cutover compare) follows [RFC-0022](../../chrysalis-
 
 **Always check `engines/chrysalis-cwl`** as the primary holder of CWL language logic before inventing bridge semantics here.
 
-**Pin (Exit 1.0):** `"@chrysalis/cwl": "file:../chrysalis-cwl/packages/cwl"` + sibling / `CHRYSALIS_CWL_ROOT` — keep `file:` until Secure opts into GitHub Packages `@chrysalis/cwl@1.0.0`. Prefer package subpaths (`@chrysalis/cwl/parser`) over hub-ingest deep-links. See [CWL-BRIDGE.md](./CWL-BRIDGE.md) and [`chrysalis-cwl/docs/history/EXIT-1.0.md`](../../chrysalis-cwl/docs/history/EXIT-1.0.md).
+**Pin (Exit 1.0 published):** `"@agenticop-io/cwl": "1.0.0"` (GitHub Packages) + sibling / `CHRYSALIS_CWL_ROOT` for fixtures. Optional `file:` `@chrysalis/cwl` ≡ same 1.0.0 tree. Prefer package subpaths (`@agenticop-io/cwl/parser`). Default cutover CLI: `helix cutover`. See [CWL-BRIDGE.md](./CWL-BRIDGE.md) and [`chrysalis-cwl/docs/history/EXIT-1.0.md`](../../chrysalis-cwl/docs/history/EXIT-1.0.md).
 
 Portfolio doc: [`../../../docs/THREE_PILLARS.md`](../../../docs/THREE_PILLARS.md) (from `AgenticOps/docs/`).
