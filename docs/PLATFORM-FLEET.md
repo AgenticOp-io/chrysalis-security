@@ -24,4 +24,4 @@ Date: 2026-08-05
 
 - Helix RFC-0022 `cwl-bridge` + `CWL_BRIDGE_SMOKE_OK`
 - Convert `hub:cwl-language-pillar-smoke` v3 + junctions
-- CWL `@agenticop-io/cwl@1.0.10` surface seed / cutover compare (RFC-0022/0023)
+- CWL `@agenticop-io/cwl@1.0.13` surface seed / cutover compare (RFC-0022/0023)
