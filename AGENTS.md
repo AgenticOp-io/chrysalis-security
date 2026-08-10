@@ -4,6 +4,8 @@ Read [`docs/PROCESS.md`](./docs/PROCESS.md) and [`docs/CANON.md`](./docs/CANON.m
 
 **Authority / git:** See `AgenticOps/docs/AGENT_AUTHORITY.md` and `AgenticOps/docs/SUBAGENT_PUSH_PROTOCOL.md`.
 
+**Sibling sync (required):** Every turn `git pull` this repo + `../chrysalis-cwl` + `../chrysalis-convert`. Read `../chrysalis-cwl/docs/pillar-sync/BOARD.md` and CWL `OUTBOX.md`. Write only `docs/pillar-sync/OUTBOX.md` here; **commit + push candidate** before ending the turn.
+
 | Action | Agent may |
 |--------|-----------|
 | **Commit** | Yes — land finished work (do not leave large slices dirty) |
