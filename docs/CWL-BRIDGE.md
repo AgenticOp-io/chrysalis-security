@@ -19,13 +19,13 @@ npm run helix -- cutover --cwl path/to/routes.cwl --dna certificates/app.json \
 
 Env: `CHRYSALIS_CWL_ROOT` if the language pillar (fixtures) is not at `../chrysalis-cwl`.
 
-## Pin (CWL tip @ 1.0.16 — DNA queue closed)
+## Pin (CWL tip @ 1.0.17)
 
 ```json
-"@agenticop-io/cwl": "1.0.16"
+"@agenticop-io/cwl": "1.0.17"
 ```
 
-Follows CWL tip through queue close (`1.0.14`–`1.0.16` hygiene/doc handoff). Secure consumes `@…/dna-seed` only; protect stays DNA / D5. Convert owns emit/runtime/oracle depth.
+Follows CWL `1.0.17` DNA seed Helix parity (nested FP depth ≤2, request/query name FPs, `pathTemplateShapeEqual` SoR). Secure thin-wraps path-shape from `@agenticop-io/cwl/dna-seed`; protect stays DNA / D5.
 
 GitHub Packages — [`.npmrc.example`](../.npmrc.example). Optional monorepo `file:` `@chrysalis/cwl` ≡ same tip.
 

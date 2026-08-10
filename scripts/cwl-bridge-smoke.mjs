@@ -64,6 +64,8 @@ assert(typeof parseCwlModule === 'function', 'package parser exports parseCwlMod
 const dnaSeed = await loadCwlDnaSeed();
 assert(typeof dnaSeed.seedDraftDnaFromCwlPath === 'function', 'dna-seed SoR');
 assert(typeof dnaSeed.cwlHolesBridgeReport === 'function', 'holes bridge report');
+assert(typeof dnaSeed.pathTemplateShapeEqual === 'function', 'dna-seed pathTemplateShapeEqual');
+assert(typeof dnaSeed.namesKeyFingerprint === 'function', 'dna-seed namesKeyFingerprint');
 console.log(`cwl language ${langVer} via ${pkgName} (dna-seed SoR) @ ${cwlRoot}`);
 
 const expected = JSON.parse(fs.readFileSync(goldExpected, 'utf8'));
@@ -90,8 +92,20 @@ for (let i = 0; i < expected.routes.length; i++) {
   assert(g.host === e.host, `host ${e.path_template}`);
   assert(g.content_class === e.content_class, `content_class ${e.path_template}`);
   assert(
+    JSON.stringify(g.status_classes || []) === JSON.stringify(e.status_classes || []),
+    `status_classes ${e.path_template}`,
+  );
+  assert(
     (g.response_key_fingerprint || null) === (e.response_key_fingerprint || null),
     `fingerprint ${e.path_template}: got ${g.response_key_fingerprint}`,
+  );
+  assert(
+    (g.request_key_fingerprint || null) === (e.request_key_fingerprint || null),
+    `request_key_fingerprint ${e.path_template}: got ${g.request_key_fingerprint}`,
+  );
+  assert(
+    (g.query_key_fingerprint || null) === (e.query_key_fingerprint || null),
+    `query_key_fingerprint ${e.path_template}: got ${g.query_key_fingerprint}`,
   );
 }
 
@@ -125,6 +139,11 @@ assert(pathTemplateShapeEqual('/items/:id', '/items/:id') === true, 'exact shape
 assert(pathTemplateShapeEqual('/items/:userId', '/items/:id') === true, 'named vs :id');
 assert(pathTemplateShapeEqual('/items/:id', '/items/42') === false, 'param vs static');
 assert(pathTemplateShapeEqual('/a/:id', '/b/:id') === false, 'static mismatch');
+assert(
+  pathTemplateShapeEqual('/items/:id', '/items/:id') ===
+    dnaSeed.pathTemplateShapeEqual('/items/:id', '/items/:id'),
+  'thin-wrap matches dna-seed SoR',
+);
 
 const live = {
   schema: 'app-dna-v1',

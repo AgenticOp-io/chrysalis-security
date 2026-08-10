@@ -3,7 +3,7 @@
  * Platform cutover E2E: CWL gold → draft DNA → strip → promote(+HMAC) →
  * compareCwlSurfaceToDna → scoreRequest allow/deny in enforce.
  * Also proves RFC-0023 multi-host (host=api) + dna_gaps fill.
- * Requires sibling engines/chrysalis-cwl (or CHRYSALIS_CWL_ROOT) + @agenticop-io/cwl@1.0.16.
+ * Requires sibling engines/chrysalis-cwl (or CHRYSALIS_CWL_ROOT) + @agenticop-io/cwl@1.0.17.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -102,8 +102,22 @@ console.log('=== cutover: enforce via scoreRequest ===');
 const known = scoreRequest(certified, { method: 'GET', path: '/api/health', host: 'default' });
 assert(known.allow === true, `known /api/health should allow: ${JSON.stringify(known)}`);
 
-const knownParam = scoreRequest(certified, { method: 'GET', path: '/items/42', host: 'default' });
+// Gold seeds query_key_fingerprint "include" on /items/:id (CWL 1.0.17+)
+const knownParam = scoreRequest(certified, {
+  method: 'GET',
+  path: '/items/42',
+  host: 'default',
+  query: { include: '1' },
+});
 assert(knownParam.allow === true, `known /items/:id should allow: ${JSON.stringify(knownParam)}`);
+
+const loginOk = scoreRequest(certified, {
+  method: 'POST',
+  path: '/login',
+  host: 'default',
+  body: { username: 'a', password: 'b' },
+});
+assert(loginOk.allow === true, `known POST /login should allow: ${JSON.stringify(loginOk)}`);
 
 const unknown = scoreRequest(certified, { method: 'GET', path: '/api/backdoor', host: 'default' });
 assert(unknown.allow === false, 'unknown route must deny');
