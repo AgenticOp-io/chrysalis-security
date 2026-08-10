@@ -18,7 +18,7 @@
 
 ```text
 SECURE_SYNC: ok
-SHA: PENDING
+SHA: bf399ac
 BRANCH: candidate/live-match-step4
 CWL_PIN: @agenticop-io/cwl@^1.0.17 (resolved 1.0.17)
 SMOKES: cwl-bridge-smoke · cutover-smoke · live-match-smoke
