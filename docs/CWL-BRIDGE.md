@@ -51,6 +51,7 @@ Promote / sign must use `stripBridgeEnvelope` (or `--strip-bridge`).
 ```bash
 npm run cwl-bridge-smoke   # → CWL_BRIDGE_SMOKE_OK
 npm run cutover-smoke      # → CUTOVER_SMOKE_OK (default + multi-host api + dna_gaps)
+npm run live-match-smoke   # → LIVE_MATCH_OK (Rosetta Step 4 composite)
 ```
 
 **CWL spine:** from `chrysalis-cwl`, `npm run smoke:ut-spine:helix`.
