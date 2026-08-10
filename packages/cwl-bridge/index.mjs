@@ -1,6 +1,6 @@
 /**
  * CWL ↔ app-dna-v1 bridge (RFC-0022 / 0023).
- * Seed / profile / holes-report SoR: `@agenticop-io/cwl/dna-seed` (CWL 1.0.3+; tip 1.0.16).
+ * Seed / profile / holes-report / path-shape SoR: `@agenticop-io/cwl/dna-seed` (CWL 1.0.3+; tip 1.0.17).
  * Helix owns strip / compare / dna_gaps fill / enforce — does not fork grammar.
  * @see engines/chrysalis-cwl/docs/language/CWL-RFC-0022-dna-surface-bridge.md
  */
@@ -8,6 +8,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import {
+  pathTemplateShapeEqual as cwlPathTemplateShapeEqual,
+} from '@agenticop-io/cwl/dna-seed';
 import { routeKey } from '../dna-core/index.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -82,7 +85,7 @@ export async function loadCwlDnaSeed() {
     /* fall through */
   }
   throw new Error(
-    'CWL dna-seed not found — npm i @agenticop-io/cwl@1.0.16 (or sibling file: pin with dna-seed export)',
+    'CWL dna-seed not found — npm i @agenticop-io/cwl@1.0.17 (or sibling file: pin with dna-seed export)',
   );
 }
 
@@ -141,27 +144,12 @@ export function resolveCwlPackageName() {
 }
 
 /**
- * Segment-shape equality: `:param` aligns with `:id`; statics exact.
+ * RFC-0022 path-shape equality — thin wrap of CWL dna-seed SoR (no local fork).
+ * @param {unknown} a
+ * @param {unknown} b
  */
 export function pathTemplateShapeEqual(a, b) {
-  const left = String(a || '/');
-  const right = String(b || '/');
-  if (left === right) return true;
-  const seg = (p) => {
-    const parts = String(p).split('/');
-    if (parts[0] === '') parts.shift();
-    return parts;
-  };
-  const sa = seg(left);
-  const sb = seg(right);
-  if (sa.length !== sb.length) return false;
-  for (let i = 0; i < sa.length; i++) {
-    const x = sa[i];
-    const y = sb[i];
-    if (x.startsWith(':') && y.startsWith(':')) continue;
-    if (x !== y) return false;
-  }
-  return true;
+  return cwlPathTemplateShapeEqual(a, b);
 }
 
 /**
