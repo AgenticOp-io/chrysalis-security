@@ -42,6 +42,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] CWL tip sync check (`cwl-sync-check` → `CWL_SYNC_OK`)  
 - [x] Filebeat SIEM recipe ([FILEBEAT.md](./FILEBEAT.md))  
 - [x] DNA hot reload (`POST /__helix/reload` + SIGHUP) — [MODES.md](./MODES.md)  
+- [x] Reload **fixture** smoke (`reload-fixture-smoke` → `RELOAD_FIXTURE_OK`) — promote onto live DNA + hot reload, same PID  
 - [x] `HELIX_MAX_BODY_BYTES` → `HX-BODY-TOO-LARGE`  
 - [x] Product gap map ([PRODUCT.md](./PRODUCT.md)) + `helix report` / `helix ready`  
 - [x] Mode A systemd install sketch ([INSTALL-MODE-A.md](./INSTALL-MODE-A.md))  

@@ -55,7 +55,7 @@ helix ready --target enforce --shadow-log "$SHADOW_LOG" --max-shadow-holes 0 --r
 | Unexpected holes | Investigate each `HX-*` — promote if legitimate, fix app if not |
 | `helix ready --target enforce --shadow-log …` | Exit 0 with `--max-shadow-holes 0` (or agreed budget) |
 | `MODE=enforce` | Fail closed on out-of-DNA |
-| New deploys | Draft → promote → `POST /__helix/reload` |
+| New deploys | Draft → promote → `POST /__helix/reload` (fixture: `npm run reload-fixture-smoke` → `RELOAD_FIXTURE_OK`) |
 
 ## Runbook gaps (ops must fill — no invent)
 

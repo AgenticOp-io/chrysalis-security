@@ -26,7 +26,8 @@ Ops (never DNA-gated):
 - `POST /__helix/reload`  
 - Optional: `HELIX_ROOT_PANEL=1` serves the panel at `/` for local labs  
 
-Prove: `npm run reload-smoke` → `RELOAD_SMOKE_OK`
+Prove: `npm run reload-smoke` → `RELOAD_SMOKE_OK`  
+Fixture (promote → reload, same PID): `npm run reload-fixture-smoke` → `RELOAD_FIXTURE_OK`
 
 ## Body size (ops protect)
 

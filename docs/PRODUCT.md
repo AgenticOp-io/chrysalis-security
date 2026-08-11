@@ -87,6 +87,7 @@ That sentence is only credible with Tier 1 install + readiness + real-app prove.
 | P2 | Cert lifecycle UX | **done** ([CERT-LIFECYCLE.md](./CERT-LIFECYCLE.md) · `promote-chain-smoke`) |
 | Ops | Soak preflight (tooling) | **done** (`npm run soak-preflight-smoke` → `SOAK_PREFLIGHT_OK`) |
 | Ops | SIEM_LOG fixture smoke | **done** (`npm run siem-fixture-smoke` → `SIEM_FIXTURE_OK`) — file sink only |
+| Ops | Reload fixture smoke | **done** (`npm run reload-fixture-smoke` → `RELOAD_FIXTURE_OK`) — promote → hot reload, no restart |
 | Ops | Customer shadow soak | **runbook** ([SOAK.md](./SOAK.md)) — live traffic only; preflight ≠ soak |
 
 Related: [WHITEPAPER.md](./WHITEPAPER.md) · [MODES.md](./MODES.md) · [BEGINNING.md](./BEGINNING.md) · [ROADMAP.md](./ROADMAP.md)

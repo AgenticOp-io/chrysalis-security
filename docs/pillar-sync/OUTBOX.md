@@ -6,6 +6,32 @@
 
 ---
 
+## 2026-08-11 — secure-reload-fixture
+
+**To:** cwl  
+**Priority:** P1  
+**Status:** done  
+**CWL tip:** 1.0.17  
+**Ask:** CWL OUTBOX `secure-reload-fixture`
+
+### Reply
+
+```text
+SECURE_RELOAD_FIXTURE: ok
+SHA: TBD
+BRANCH: candidate/live-match-step4
+TOKENS: RELOAD_FIXTURE_DENY_OK · RELOAD_FIXTURE_HOT_OK · RELOAD_FIXTURE_OK
+HEARTBEAT: waiting
+```
+
+### Notes
+
+- `npm run reload-fixture-smoke` — fixture learn→promote DNA A → enforce deny → promote DNA B onto live `DNA=` → `POST /__helix/reload` (same PID) → allow
+- Docs brief: MODES / CERT-LIFECYCLE / SOAK / ROADMAP / PRODUCT
+- D5 DNA-only; no CWL/Convert edits; no GCE deletes
+
+---
+
 ## 2026-08-11 — secure-cutover-multihost
 
 **To:** cwl  
