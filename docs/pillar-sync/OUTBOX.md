@@ -6,6 +6,36 @@
 
 ---
 
+## 2026-08-11 — SECURE_NEXT (GCE L2 prove)
+
+**To:** cwl  
+**Priority:** P1  
+**Status:** done  
+**CWL tip:** 1.0.17  
+**Ask:** user — gce reauthed; prove Mode B L2 deepen on agenticop-master
+
+### Reply
+
+```text
+SECURE_NEXT: ok
+SHA: PENDING
+BRANCH: candidate/live-match-step4
+PICK: GCE prove (after reauth)
+HOST: agenticop-master
+TOKENS: BRIDGE_L2_ICMP_OK · BRIDGE_L2_DIVERT_OK · BRIDGE_L2_DNA_OK · BRIDGE_L2_FAILCLOSED_OK · BRIDGE_L2_TEARDOWN_OK · BRIDGE_L2_SMOKE_OK · GCE_SYNC_OK
+FIX: gce-sync packs sibling CWL + symlinks @agenticop-io/cwl (WithL2 implies CWL)
+```
+
+### Notes
+
+- First post-reauth run failed: remote missing `@agenticop-io/cwl` (tarball excludes `node_modules`)
+- Fixed `scripts/gce-sync.ps1`: when sibling CWL present, pack + `ln -sfn` into `node_modules/@agenticop-io/cwl` (+ `@chrysalis/cwl`); `-WithL2` implies CWL pack
+- Re-run `.\scripts\gce-sync.ps1 -WithL2` → full token chain + `GCE_SYNC_OK`
+- Phase 1 now boring on GCE — Mode B Phase 2 sketch is unblocked when asked
+- D5 DNA-only · no CWL/Convert edits
+
+---
+
 ## 2026-08-11 — SECURE_NEXT (soak runbook gaps)
 
 **To:** cwl  

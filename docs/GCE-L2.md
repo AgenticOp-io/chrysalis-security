@@ -15,7 +15,7 @@ Green bar on protected host **agenticop-master**:
 # then GCE_SYNC_OK
 ```
 
-`gce-sync -WithL2` runs `sudo node scripts/bridge-l2-smoke.mjs` (netns/nft need root).  
+`gce-sync -WithL2` packs sibling `chrysalis-cwl`, symlinks `@agenticop-io/cwl` on the VM, then runs `sudo node scripts/bridge-l2-smoke.mjs` (netns/nft need root).  
 If sudo is denied, you get `BRIDGE_L2_SMOKE_SKIP` — fix NOPASSWD for the SSH user or run as root once.
 
 Deepen (2026-08-11): divert fail-closed when Helix is down; teardown restores direct upstream.  
