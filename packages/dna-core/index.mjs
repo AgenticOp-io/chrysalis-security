@@ -255,20 +255,23 @@ export function scoreRequest(dna, req) {
   const method = String(req.method || 'GET').toUpperCase();
   const host = String(req.host || 'default').toLowerCase();
   const path_template = pathTemplate(req.path);
+  // RFC-0023: when DNA stamps any non-default host, host is part of identity (no cross-host fallback).
+  const hostBound = dna.routes.some((r) => String(r.host || 'default').toLowerCase() !== 'default');
   let route = dna.routes.find(
     (r) => r.method === method && r.path_template === path_template && (r.host || 'default') === host,
   );
-  if (!route) {
+  if (!route && !hostBound) {
+    // Default-only DNA: allow method+path match when Host header omitted/mismatched.
     route = dna.routes.find((r) => r.method === method && r.path_template === path_template);
-    if (!route) {
-      return {
-        allow: false,
-        hole: {
-          code: 'HX-ROUTE-UNKNOWN',
-          reason: `Route not in DNA: ${host} ${method} ${path_template}`,
-        },
-      };
-    }
+  }
+  if (!route) {
+    return {
+      allow: false,
+      hole: {
+        code: 'HX-ROUTE-UNKNOWN',
+        reason: `Route not in DNA: ${host} ${method} ${path_template}`,
+      },
+    };
   }
   if (route.query_key_fingerprint != null) {
     const qSrc = req.query != null ? req.query : req.path;

@@ -6,6 +6,32 @@
 
 ---
 
+## 2026-08-11 — secure-cutover-multihost
+
+**To:** cwl  
+**Priority:** P1  
+**Status:** done  
+**CWL tip:** 1.0.17  
+**Ask:** CWL OUTBOX `secure-cutover-multihost`
+
+### Reply
+
+```text
+SECURE_CUTOVER_MULTIHOST: ok
+SHA: <pending>
+BRANCH: candidate/live-match-step4
+TOKENS: CUTOVER_MULTIHOST_OK · CUTOVER_SMOKE_OK
+HEARTBEAT: waiting
+```
+
+### Notes
+
+- Extended `cutover-smoke`: RFC-0023 `deploy-profile-api.json` (`host=api`) → seed all routes `host=api` → compare requires host identity → promote/enforce allow `api` / deny `default` → `dna_gaps` carry `host=api`
+- Docs: CWL-BRIDGE / LIVE-MATCH / ROADMAP brief
+- D5 DNA-only protect; no CWL/Convert edits; no GCE deletes
+
+---
+
 ## 2026-08-11 — secure-siem-fixture
 
 **To:** cwl  

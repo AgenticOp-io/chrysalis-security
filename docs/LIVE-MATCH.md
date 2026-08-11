@@ -16,7 +16,7 @@ Helix **cutover default** compares authored CWL surface to certified `app-dna-v1
 | Tip pin ≥ 1.0.17 | `package.json` `@agenticop-io/cwl` |
 | Path-shape SoR | Thin-wrap `pathTemplateShapeEqual` from `@agenticop-io/cwl/dna-seed` |
 | Bridge smoke | `npm run cwl-bridge-smoke` → `CWL_BRIDGE_SMOKE_OK` |
-| Cutover E2E | `npm run cutover-smoke` → `CUTOVER_SMOKE_OK` (default + multi-host `api` + `dna_gaps`) |
+| Cutover E2E | `npm run cutover-smoke` → `CUTOVER_MULTIHOST_OK` · `CUTOVER_SMOKE_OK` (default + RFC-0023 `host=api` seed/compare/enforce + `dna_gaps`) |
 | No grammar fork | Seed/parse from package or sibling pillar only |
 
 ## Gate

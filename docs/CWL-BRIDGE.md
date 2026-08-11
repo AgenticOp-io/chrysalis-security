@@ -50,8 +50,11 @@ Promote / sign must use `stripBridgeEnvelope` (or `--strip-bridge`).
 
 ```bash
 npm run cwl-bridge-smoke   # → CWL_BRIDGE_SMOKE_OK
-npm run cutover-smoke      # → CUTOVER_SMOKE_OK (default + multi-host api + dna_gaps)
+npm run cutover-smoke      # → CUTOVER_MULTIHOST_OK · CUTOVER_SMOKE_OK
+                           #   (default + RFC-0023 host=api seed/compare/enforce + dna_gaps)
 npm run live-match-smoke   # → LIVE_MATCH_OK (Rosetta Step 4 composite)
 ```
+
+**Multi-host (RFC-0023):** gold `deploy-profile-api.json` (`host: "api"`) seeds all routes with `host=api`; cutover compare requires host identity; enforce (`scoreRequest`) is host-bound when DNA stamps any non-`default` host (no cross-host path fallback). Protect remains DNA-only (D5).
 
 **CWL spine:** from `chrysalis-cwl`, `npm run smoke:ut-spine:helix`.

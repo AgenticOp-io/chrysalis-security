@@ -2,7 +2,8 @@
 /**
  * Platform cutover E2E: CWL gold → draft DNA → strip → promote(+HMAC) →
  * compareCwlSurfaceToDna → scoreRequest allow/deny in enforce.
- * Also proves RFC-0023 multi-host (host=api) + dna_gaps fill.
+ * Also proves RFC-0023 multi-host (host=api) + dna_gaps fill + enforce host identity.
+ * Tokens: CUTOVER_MULTIHOST_OK · CUTOVER_SMOKE_OK
  * Requires sibling engines/chrysalis-cwl (or CHRYSALIS_CWL_ROOT) + @agenticop-io/cwl@1.0.17.
  */
 import fs from 'node:fs';
@@ -123,36 +124,69 @@ const unknown = scoreRequest(certified, { method: 'GET', path: '/api/backdoor', 
 assert(unknown.allow === false, 'unknown route must deny');
 assert(unknown.hole?.code === 'HX-ROUTE-UNKNOWN', `expected HX-ROUTE-UNKNOWN got ${unknown.hole?.code}`);
 
-if (fs.existsSync(profileApiPath)) {
-  console.log('=== cutover: RFC-0023 multi-host seed host=api ===');
-  const profileApi = await loadDeployProfile(profileApiPath);
-  assert(profileApi.host === 'api', 'api profile host');
-  const seededApi = await seedDnaFromCwlFile(goldCwl, {
-    created_at: '2026-08-04T00:00:00.000Z',
-    fixture: 'fixtures/language-gold/24-dna-bridge/routes.cwl',
-    cwlRoot,
-    deployProfile: profileApiPath,
-  });
-  assert(seededApi.routes.every((r) => r.host === 'api'), 'all routes host=api');
-  const cmpApi = compareCwlSurfaceToDna(seededApi, seededApi, { deployProfile: profileApi });
-  assert(cmpApi.ok === true, 'api self-compare');
-  assert(cmpApi.ignore_host === false, 'multi-host must require host identity');
-  const cmpCross = compareCwlSurfaceToDna(seededApi, certified, { deployProfile: profileApi });
-  assert(cmpCross.ok === false, 'api surface must not match default-host DNA');
-  assert(cmpCross.missing_in_dna.length >= 1, 'reports host gaps');
-  fs.writeFileSync(path.join(outDir, 'seeded-api.dna.json'), JSON.stringify(seededApi, null, 2) + '\n');
-
-  console.log('=== cutover: dna_gaps fill (Secure-owned) ===');
-  const holes = await buildHolesBridgeReport(goldCwl, {
-    cwlRoot,
-    compare: cmpCross,
-    fixture: 'fixtures/language-gold/24-dna-bridge/routes.cwl',
-  });
-  assert(holes.kind === 'chrysalis.cwl.holes-bridge-report', 'holes report kind');
-  assert(Array.isArray(holes.dna_gaps), 'dna_gaps array');
-  assert(holes.dna_gaps.length === cmpCross.missing_in_dna.length, 'dna_gaps filled');
-  assert(holes.filled_by === 'helix', 'filled_by helix');
-  fs.writeFileSync(path.join(outDir, 'holes-bridge.json'), JSON.stringify(holes, null, 2) + '\n');
+if (!fs.existsSync(profileApiPath)) {
+  console.log(`CUTOVER_MULTIHOST_SKIP (missing RFC-0023 profile: ${profileApiPath})`);
+  console.log('CUTOVER_SMOKE_OK');
+  process.exit(0);
 }
 
+console.log('=== cutover: RFC-0023 multi-host seed host=api ===');
+const profileApi = await loadDeployProfile(profileApiPath);
+assert(profileApi.host === 'api', 'api profile host must be non-default');
+assert(profileApi.host !== 'default', 'multi-host profile rejects default host');
+const seededApi = await seedDnaFromCwlFile(goldCwl, {
+  app_id: 'cutover-smoke-api',
+  mode: 'draft',
+  created_at: '2026-08-04T00:00:00.000Z',
+  fixture: 'fixtures/language-gold/24-dna-bridge/routes.cwl',
+  cwlRoot,
+  deployProfile: profileApiPath,
+});
+assert(seededApi.routes.every((r) => r.host === 'api'), 'all routes host=api from deploy profile');
+assert(
+  seededApi.bridge?.deploy_profile?.host === 'api' || seededApi.bridge?.deploy_host === 'api',
+  'bridge annotates deploy host=api',
+);
+const cmpApi = compareCwlSurfaceToDna(seededApi, seededApi, { deployProfile: profileApi });
+assert(cmpApi.ok === true, 'api self-compare');
+assert(cmpApi.ignore_host === false, 'multi-host must require host identity');
+const cmpCross = compareCwlSurfaceToDna(seededApi, certified, { deployProfile: profileApi });
+assert(cmpCross.ok === false, 'api surface must not match default-host DNA');
+assert(cmpCross.missing_in_dna.length >= 1, 'reports host gaps');
+fs.writeFileSync(path.join(outDir, 'seeded-api.dna.json'), JSON.stringify(seededApi, null, 2) + '\n');
+
+console.log('=== cutover: multi-host promote + enforce host=api ===');
+let certifiedApi = {
+  ...stripBridgeEnvelope(seededApi),
+  mode: 'certified',
+  created_at: new Date().toISOString(),
+};
+certifiedApi = signDna(certifiedApi, { secret: LAB_KEY, key_id: LAB_KEY_ID });
+fs.writeFileSync(path.join(outDir, 'certified-api.dna.json'), JSON.stringify(certifiedApi, null, 2) + '\n');
+
+const apiKnown = scoreRequest(certifiedApi, { method: 'GET', path: '/api/health', host: 'api' });
+assert(apiKnown.allow === true, `host=api known route must allow: ${JSON.stringify(apiKnown)}`);
+const wrongHost = scoreRequest(certifiedApi, { method: 'GET', path: '/api/health', host: 'default' });
+assert(wrongHost.allow === false, 'host=default must deny against api DNA');
+assert(wrongHost.hole?.code === 'HX-ROUTE-UNKNOWN', `wrong host hole: ${wrongHost.hole?.code}`);
+const apiUnknown = scoreRequest(certifiedApi, { method: 'GET', path: '/api/backdoor', host: 'api' });
+assert(apiUnknown.allow === false, 'unknown on api host must deny');
+
+console.log('=== cutover: dna_gaps fill (Secure-owned) ===');
+const holes = await buildHolesBridgeReport(goldCwl, {
+  cwlRoot,
+  compare: cmpCross,
+  fixture: 'fixtures/language-gold/24-dna-bridge/routes.cwl',
+});
+assert(holes.kind === 'chrysalis.cwl.holes-bridge-report', 'holes report kind');
+assert(Array.isArray(holes.dna_gaps), 'dna_gaps array');
+assert(holes.dna_gaps.length === cmpCross.missing_in_dna.length, 'dna_gaps filled');
+assert(holes.filled_by === 'helix', 'filled_by helix');
+assert(
+  holes.dna_gaps.every((g) => g.host === 'api'),
+  'dna_gaps carry non-default host=api',
+);
+fs.writeFileSync(path.join(outDir, 'holes-bridge.json'), JSON.stringify(holes, null, 2) + '\n');
+
+console.log('CUTOVER_MULTIHOST_OK');
 console.log('CUTOVER_SMOKE_OK');

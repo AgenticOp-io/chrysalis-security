@@ -51,6 +51,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] Splunk HEC recipe ([SPLUNK.md](./SPLUNK.md))  
 - [x] Mode B L2 GCE runbook ([GCE-L2.md](./GCE-L2.md))  
 - [x] RFC-0023 deploy profile apply at seed/compare (Secure consumes CWL gold profile)  
+- [x] Cutover multi-host hygiene — `CUTOVER_MULTIHOST_OK` (non-`default` host=api seed → compare → enforce + `dna_gaps`)  
 - [x] Shadow soak runbook ([SOAK.md](./SOAK.md))  
 - [x] GCE sync DNA pack + nft green (`GCE_SYNC_OK` / `NFT_SMOKE_OK`) — L2 via `sudo` on sync  
 - [x] Mode B L2 **GCE green** (`BRIDGE_L2_SMOKE_OK` via `gce-sync -WithL2` + sudo)  
