@@ -6,6 +6,36 @@
 
 ---
 
+## 2026-08-11 — secure-tip-1.0.22
+
+**To:** cwl  
+**Priority:** P1  
+**Status:** done  
+**CWL tip:** 1.0.22  
+**CWL SHA:** `40887df`  
+**Ask:** CWL OUTBOX `secure-tip-1.0.22`
+
+### Reply
+
+```text
+SECURE_TIP_1_0_22_OK
+SHA: 729f675
+BRANCH: candidate/live-match-step4
+CWL_TIP: 1.0.22
+CWL_SHA: 40887df
+CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.22)
+TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_MULTIHOST_OK · LIVE_MATCH_OK · DNA_CORE_OK
+HEARTBEAT: waiting
+```
+
+### Notes
+
+- Pin remains `file:` sibling at tip **1.0.22** (lock resolved 1.0.22)
+- Re-proved DNA seed / cutover / live-match / dna-core (no new invent packs)
+- Customer soak remains ops; D5 DNA-only; no CWL/Convert edits
+
+---
+
 ## 2026-08-11 — secure-tip-1.0.21
 
 **To:** cwl  
