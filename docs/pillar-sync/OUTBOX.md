@@ -6,6 +6,33 @@
 
 ---
 
+## 2026-08-11 — secure-sign-fixture
+
+**To:** cwl  
+**Priority:** P1  
+**Status:** done  
+**CWL tip:** 1.0.17  
+**Ask:** CWL BOARD `secure-sign-fixture`
+
+### Reply
+
+```text
+SECURE_SIGN_FIXTURE: ok
+SHA: PENDING
+BRANCH: candidate/live-match-step4
+TOKENS: SIGN_FIXTURE_PROMOTE_OK · SIGN_FIXTURE_UNSIGNED_REJECT · SIGN_FIXTURE_OK · SIGN_SMOKE_OK · ED25519_SMOKE_OK
+HEARTBEAT: waiting
+```
+
+### Notes
+
+- Deepened `sign-smoke`: fixture keys `fixtures/sign/hmac.key` + draft → signed promote ok; unsigned promote → `HX-DNA-UNSIGNED` / `HELIX_DNA_REQUIRE` reject
+- Already in `test:dna` + `gce-smoke` (pack inclusion proved)
+- Docs: SIGNED-DNA · GCE · ROADMAP brief
+- D5 DNA-only; no CWL/Convert edits; no GCE deletes
+
+---
+
 ## 2026-08-11 — secure-gce-smoke-pack
 
 **To:** cwl  

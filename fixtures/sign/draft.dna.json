@@ -1,0 +1,18 @@
+{
+  "schema": "app-dna-v1",
+  "app_id": "sign-fixture",
+  "created_at": "2026-08-11T00:00:00.000Z",
+  "mode": "draft",
+  "parent_hash": null,
+  "routes": [
+    {
+      "host": "127.0.0.1",
+      "method": "GET",
+      "path_template": "/api/health",
+      "content_class": "json",
+      "status_classes": [200],
+      "response_key_fingerprint": "status"
+    }
+  ],
+  "holes": []
+}

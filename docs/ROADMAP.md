@@ -16,6 +16,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] JSON schema drift enforce smoke (`schema-drift-smoke`)  
 - [x] Persistent mini-site behind helix-agent on GCE (`gce-site-up.sh`, port 18085)  
 - [x] Signed DNA (`hmac-sha256`) + `sign-smoke` / `helix verify`  
+- [x] Sign/promote fixture deepen — fixture keys · signed promote ok · unsigned reject (`SIGN_FIXTURE_OK`; in `gce-smoke` + `test:dna`) 
 - [x] Mode B userspace bridge spike (`helix-bridge` + `bridge-smoke`)  
 
 ## Done (continued)

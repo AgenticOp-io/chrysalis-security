@@ -52,7 +52,7 @@ npm run cwl-bridge-smoke  # → CWL_BRIDGE_SMOKE_OK (or CWL_BRIDGE_SMOKE_SKIP)
 | `host-smoke.mjs` | `HOST_SMOKE_OK` |
 | `static-smoke.mjs` | `STATIC_SMOKE_OK` |
 | `schema-drift-smoke.mjs` | `SCHEMA_DRIFT_SMOKE_OK` |
-| `sign-smoke.mjs` | (sign promote OK — see script stdout) |
+| `sign-smoke.mjs` | `SIGN_FIXTURE_PROMOTE_OK` · `SIGN_FIXTURE_UNSIGNED_REJECT` · `SIGN_FIXTURE_OK` · `SIGN_SMOKE_OK` (in `gce-smoke` + `test:dna`) |
 | `bridge-smoke.mjs` | (host-bridge OK — see script stdout) |
 | `soak-preflight-smoke.mjs` · `siem-fixture-smoke.mjs` · `reload-fixture-smoke.mjs` | `SOAK_PREFLIGHT_OK` · `SIEM_FIXTURE_OK` · `RELOAD_FIXTURE_OK` (in `gce-smoke` + `test:dna`; Node DNA-only — win32 green) |
 | `nft-smoke.mjs` / `gce-nft-smoke.sh` | `MODE_A_DIVERT_OK` · `MODE_A_DNA_OK` · `MODE_A_FAILCLOSED_OK` · `MODE_A_TEARDOWN_OK` · `NFT_SMOKE_OK` (win32 → `NFT_SMOKE_SKIP`) |
