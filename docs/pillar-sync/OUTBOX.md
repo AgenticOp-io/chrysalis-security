@@ -6,6 +6,33 @@
 
 ---
 
+## 2026-08-11 — secure-static-smoke-pack
+
+**To:** cwl  
+**Priority:** P1  
+**Status:** done  
+**CWL tip:** 1.0.17  
+**Ask:** CWL BOARD `secure-static-smoke-pack`
+
+### Reply
+
+```text
+SECURE_STATIC_SMOKE_PACK: ok
+SHA: TBD
+BRANCH: candidate/live-match-step4
+TOKENS: STATIC_SMOKE_LEARN_OK · STATIC_SMOKE_COLLAPSE_JS_OK · STATIC_SMOKE_COLLAPSE_CSS_OK · STATIC_SMOKE_DENY_OK · STATIC_SMOKE_OK · GCE_SMOKE_OK
+HEARTBEAT: waiting
+```
+
+### Notes
+
+- Deepened `static-smoke`: unit collapse · learn asserts `/**/*.js` + `/**/*.css` · enforce never-learned hashed JS+CSS allow · `/api/backdoor` deny
+- Already in `test:dna` + `gce-smoke` (pack inclusion proved → `GCE_SMOKE_OK`)
+- Docs brief: GCE · ROADMAP · WHITEPAPER
+- D5 DNA-only; no CWL/Convert edits; no GCE deletes
+
+---
+
 ## 2026-08-11 — secure-schema-drift-pack
 
 **To:** cwl  

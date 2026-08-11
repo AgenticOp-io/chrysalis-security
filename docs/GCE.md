@@ -50,7 +50,7 @@ npm run cwl-bridge-smoke  # → CWL_BRIDGE_SMOKE_OK (or CWL_BRIDGE_SMOKE_SKIP)
 | `dna-core-smoke.mjs` | `DNA_CORE_OK` |
 | `smoke.mjs` | `SMOKE_OK` |
 | `host-smoke.mjs` | `HOST_SMOKE_OK` |
-| `static-smoke.mjs` | `STATIC_SMOKE_OK` |
+| `static-smoke.mjs` | `STATIC_SMOKE_LEARN_OK` · `STATIC_SMOKE_COLLAPSE_JS_OK` · `STATIC_SMOKE_COLLAPSE_CSS_OK` · `STATIC_SMOKE_DENY_OK` · `STATIC_SMOKE_OK` (hashed JS+CSS never learned still allow; `/api/backdoor` deny; in `gce-smoke` + `test:dna`) |
 | `schema-drift-smoke.mjs` | `SCHEMA_DRIFT_UNIT_*` · `SCHEMA_DRIFT_FIXTURE_LEARN_OK` · `SCHEMA_DRIFT_ENFORCE_*` · `SCHEMA_DRIFT_SHADOW_OK` · `SCHEMA_DRIFT_SMOKE_OK` (fixture `fixtures/schema-drift/`; in `gce-smoke` + `test:dna`) |
 | `sign-smoke.mjs` | `SIGN_FIXTURE_PROMOTE_OK` · `SIGN_FIXTURE_UNSIGNED_REJECT` · `SIGN_FIXTURE_OK` · `SIGN_SMOKE_OK` (in `gce-smoke` + `test:dna`) |
 | `bridge-smoke.mjs` | (host-bridge OK — see script stdout) |

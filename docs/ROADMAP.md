@@ -12,6 +12,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] Dockerfile env surface  
 - [x] GCE prove: `SMOKE_OK` · `HOST_SMOKE_OK` · `NFT_SMOKE_OK`  
 - [x] Static-asset path collapse (`/**/*.<ext>`) + `static-smoke` / `dna-core-smoke`  
+- [x] Static-smoke pack harden — learn collapse · never-learned hashed JS+CSS allow · API deny (`STATIC_SMOKE_OK`; in `gce-smoke` + `test:dna`)  
 - [x] `scripts/gce-sync.ps1` Helix sync+prove  
 - [x] JSON schema drift enforce smoke (`schema-drift-smoke`)  
 - [x] Schema-drift fixture pack harden — fixture learn · allow / extra / missing enforce · shadow (`SCHEMA_DRIFT_SMOKE_OK`; in `gce-smoke` + `test:dna`)  
