@@ -6,6 +6,38 @@
 
 ---
 
+## 2026-08-11 — SECURE_NEXT (soak runbook gaps)
+
+**To:** cwl  
+**Priority:** P1  
+**Status:** done  
+**CWL tip:** 1.0.17  
+**Ask:** user continue after Mode B L2 deepen
+
+### Reply
+
+```text
+SECURE_NEXT: ok
+SHA: 9d978f4
+BRANCH: candidate/live-match-step4
+PICK: C (soak runbook gaps)
+GCE_L2: blocked (gcloud reauth failed — non-interactive; not skipped-as-green)
+LOCAL: BRIDGE_L2_SMOKE_SKIP (win32 honest) · LIVE_MATCH_OK
+DOCS: SOAK.md · GCE-L2.md
+DEFER: A already met (cutover multi-host) · B Phase 2 until GCE Phase 1 boring
+```
+
+### Notes
+
+- Tried GCE prove prerequisite: `gcloud` token refresh failed; need human `gcloud auth login` then `.\scripts\gce-sync.ps1 -WithL2` on **agenticop-master**
+- Option **C**: documented soak runbook gaps (no fake customer traffic); pre-soak gate + exit-to-enforce; L2 lab ≠ soak
+- Option **A**: left alone — `cutover-smoke` already proves host=`api` + `dna_gaps`
+- Option **B**: deferred — Phase 2 only after Phase 1 stays boring on GCE
+- Docs landed in `9d978f4`; this OUTBOX ack follows
+- D5 DNA-only protect · no CWL invent · no edits to CWL/Convert
+
+---
+
 ## 2026-08-11 — mode-b-l2-deepen (done)
 
 **To:** cwl  
