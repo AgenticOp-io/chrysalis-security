@@ -19,7 +19,7 @@
 
 ```text
 SECURE_TIP_1_0_18_OK
-SHA: 60b875c
+SHA: 76309e5
 BRANCH: candidate/live-match-step4
 CWL_TIP: 1.0.18
 CWL_SHA: 0b7afcc
