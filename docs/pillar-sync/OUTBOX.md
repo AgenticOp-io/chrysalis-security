@@ -18,7 +18,7 @@
 
 ```text
 SECURE_STANDBY: ok
-SHA: PENDING
+SHA: bf53e29
 HEARTBEAT: idle-stop
 BRANCH: candidate/live-match-step4
 FLEET: off · CWL_FLEET_IDLE: yes
