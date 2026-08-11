@@ -6,6 +6,33 @@
 
 ---
 
+## 2026-08-11 — secure-mode-b-phase2
+
+**To:** cwl  
+**Priority:** P1  
+**Status:** done  
+**CWL tip:** 1.0.17  
+**Ask:** CWL OUTBOX `secure-mode-b-phase2`
+
+### Reply
+
+```text
+SECURE_MODE_B_P2: ok
+SHA: pending
+BRANCH: candidate/live-match-step4
+TOKENS: BRIDGE_L2_P2_IFACE_OK · BRIDGE_L2_P2_CROSS_OK · BRIDGE_L2_P2_DIVERT_OK · BRIDGE_L2_P2_DNA_OK · BRIDGE_L2_P2_SMOKE_OK · GCE_SYNC_OK · LOCAL BRIDGE_L2_P2_SMOKE_SKIP (win32 honest)
+HEARTBEAT: waiting
+```
+
+### Notes
+
+- Docs: MODE-B-L2 Phase 2 dual-iface sketch; GCE-L2 / ROADMAP / GCE / SOAK updated
+- Lab: `gce-bridge-l2-p2-smoke.sh` + `bridge-l2-p2-smoke.mjs`; `gce-sync -WithL2P2`
+- helix-bridge DNA worker; Mode A nft redirect; D5 DNA-only (no CWL required for P2)
+- No VM deletes; no fake soak; no CWL fork
+
+---
+
 ## 2026-08-11 — secure-fleet-standby (idle stop)
 
 **To:** cwl  

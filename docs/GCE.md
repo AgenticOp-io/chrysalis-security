@@ -14,7 +14,8 @@ From `chrysalis-security`:
 .\scripts\gce-sync.ps1 -SiteUp          # also bring up persistent mini-site
 .\scripts\gce-sync.ps1 -SiteUp -Relearn # re-learn DNA then enforce
 .\scripts\gce-sync.ps1 -WithCwl         # sync sibling chrysalis-cwl → CUTOVER_SMOKE_OK on-box
-.\scripts\gce-sync.ps1 -WithL2          # Mode B L2 netns smoke (root; BRIDGE_L2_SMOKE_OK or SKIP)
+.\scripts\gce-sync.ps1 -WithL2          # Mode B L2 Phase 1 netns smoke (root; BRIDGE_L2_SMOKE_OK or SKIP)
+.\scripts\gce-sync.ps1 -WithL2P2        # Mode B L2 Phase 2 dual-iface (root; BRIDGE_L2_P2_SMOKE_OK or SKIP)
 .\scripts\gce-sync.ps1 -SyncOnly        # pack+scp only; no remote smokes
 ```
 

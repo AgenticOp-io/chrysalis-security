@@ -10,7 +10,7 @@ Locks: [DECISIONS.md](./DECISIONS.md) · placement: [AUGMENT.md](./AUGMENT.md) �
 |-------|-------|----------|
 | DNA learn / promote / enforce | Ships (`dna-core` + proxy) | Unchanged |
 | Mode B code | `packages/helix-bridge` + `bridge-smoke` | Userspace **placement label** only |
-| Dual-NIC / L2 forwarding | **Phase 1 lab landed** | netns + nft divert + fail-closed (`gce-bridge-l2-smoke.sh`); Phase 2 dual-NIC still later |
+| Dual-NIC / L2 forwarding | **Phase 1 + Phase 2 lab landed** | P1: netns + nft divert + fail-closed; P2: dual-iface pair in appliance ns (`gce-bridge-l2-p2-smoke.sh`) |
 
 **Design-only for this slice.** No production kernel modules. No custom OS image beyond stock Linux + Helix userspace.
 
@@ -191,26 +191,65 @@ Prove tokens (landed in `gce-bridge-l2-smoke.sh`):
 
 Script: `scripts/gce-bridge-l2-smoke.sh` — root for netns/nft only; Helix stays Node userspace.
 
-### Phase 2 — optional second NIC / pair of interfaces
+### Phase 2 — dual-iface appliance (NIC-A + NIC-B) (**landed**)
 
-Only if Phase 1 is boring: attach an extra NIC or use a dedicated lab VM **without** deleting fleet VMs. Same divert + DNA checks.
+Phase 1 keeps the bridge in the host netns with a single helix veth. Phase 2 moves the **interface pair into the appliance namespace** — the topology Mode B actually claims:
+
+```text
+ns-a (NGFW/client)                 ns-helix (appliance)                 ns-b (server)
+10.68.0.10/24                      NIC-A ── br0 ── NIC-B               10.68.0.20/24
+     │                                │    +IP                         │
+     └──────── veth ──────────────────┘    helix-bridge                └──── veth
+                                           nft divert (Mode A pattern)
+```
+
+Locks for this slice:
+
+- **No VM deletes** — lab uses netns on **agenticop-master** (or any stock Linux root). Do not attach/delete protected GCE instances for this prove.
+- **helix-bridge** remains the DNA worker (same engine as Mode A/C; `placement: 'bridge'`).
+- **nft** redirect reuses Mode A patterns (`prerouting`/`output` → Helix listen). No DNA fork.
+- **D5** — protect path is DNA-only; no CWL required for this smoke.
+- **Honest divert scope** — client hits **appliance br0 IP** on the public port (on-path L3 hop on the dual-iface box). Full transparent bridge-nf divert of `daddr=server` is a later deepen, not required for Phase 2 green.
+- **Windows / no root** — `npm run bridge-l2-p2-smoke` → `BRIDGE_L2_P2_SMOKE_SKIP` with reason (not a fake green).
+
+Entry points:
+
+```bash
+# Local Windows / no root → BRIDGE_L2_P2_SMOKE_SKIP (honest)
+npm run bridge-l2-p2-smoke
+
+# GCE Linux as root (after sync):
+bash scripts/gce-bridge-l2-p2-smoke.sh   # → BRIDGE_L2_P2_SMOKE_OK
+# or: .\scripts\gce-sync.ps1 -WithL2P2
+```
+
+Prove tokens (`gce-bridge-l2-p2-smoke.sh`):
+
+1. NIC-A + NIC-B exist and share `br0` master → `BRIDGE_L2_P2_IFACE_OK`  
+2. ICMP client → server across appliance → `BRIDGE_L2_P2_CROSS_OK`  
+3. Mode A-style nft divert installed → `BRIDGE_L2_P2_DIVERT_OK`  
+4. Learned HTTP allows; `/api/backdoor` → **403** via appliance public port → `BRIDGE_L2_P2_DNA_OK`  
+5. Composite → `BRIDGE_L2_P2_SMOKE_OK`
+
+Optional hardware second NIC (same checks, still no deletes): attach an extra NIC to a lab VM or use a non-protected scratch instance if one exists — never `gcloud compute instances delete` on **agenticop-master** / **fusion-lab**.
 
 ### Sync
 
-Reuse `scripts/gce-sync.ps1 -WithL2` (does not break current `SMOKE_OK` / `NFT_SMOKE_OK` pack).
+- Phase 1: `scripts/gce-sync.ps1 -WithL2`  
+- Phase 2: `scripts/gce-sync.ps1 -WithL2P2` (implies CWL pack like `-WithL2`; does not break `SMOKE_OK` / `NFT_SMOKE_OK`)
 
 ---
 
 ## Recommended next code slice (small, non-dangerous)
 
-**Phase 1 deepen landed** (nft divert + fail-closed + teardown in `gce-bridge-l2-smoke.sh`).
+**Phase 1 deepen + Phase 2 dual-iface landed.**
 
 When coding further Mode B:
 
 1. **Keep** `helix-bridge` as the userspace DNA worker.  
 2. **Reuse** Mode A nft patterns; do not fork DNA logic.  
-3. **Defer** TC/eBPF and cloud dual-NIC runbooks until netns prove stays boring on GCE.  
-4. **Ops:** customer shadow soak remains live-traffic only ([SOAK.md](./SOAK.md)).
+3. **Defer** TC/eBPF and transparent `br_netfilter` divert until Phase 2 stays boring on GCE.  
+4. **Ops:** customer shadow soak remains live-traffic only ([SOAK.md](./SOAK.md)) — never fake soak traffic in lab smokes.
 
 That is the straight line from spike → honest appliance path without inventing an OS.
 

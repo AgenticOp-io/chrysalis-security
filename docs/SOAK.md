@@ -56,7 +56,7 @@ If `ready` fails: extend soak or promote/fix — never invent routes to silence 
 - Not UEBA (“user looks weird”)
 - Not a promise zero holes forever — new features must promote
 - Not a substitute for WAF on in-DNA abuse
-- Not Mode B Phase 2 dual-NIC work — that waits until Phase 1 stays boring on GCE ([MODE-B-L2.md](./MODE-B-L2.md))
+- Not Mode B Phase 2 dual-NIC work — that is a separate lab prove ([MODE-B-L2.md](./MODE-B-L2.md)); soak stays live customer traffic only
 - Not synthetic load that looks like a customer
 
 ## Ops pointers
