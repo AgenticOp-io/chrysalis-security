@@ -18,7 +18,7 @@
 
 ```text
 SECURE_CUTOVER_MULTIHOST: ok
-SHA: <pending>
+SHA: 72b2e16
 BRANCH: candidate/live-match-step4
 TOKENS: CUTOVER_MULTIHOST_OK · CUTOVER_SMOKE_OK
 HEARTBEAT: waiting
