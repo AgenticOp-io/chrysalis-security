@@ -14,6 +14,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] Static-asset path collapse (`/**/*.<ext>`) + `static-smoke` / `dna-core-smoke`  
 - [x] `scripts/gce-sync.ps1` Helix sync+prove  
 - [x] JSON schema drift enforce smoke (`schema-drift-smoke`)  
+- [x] Schema-drift fixture pack harden — fixture learn · allow / extra / missing enforce · shadow (`SCHEMA_DRIFT_SMOKE_OK`; in `gce-smoke` + `test:dna`)  
 - [x] Persistent mini-site behind helix-agent on GCE (`gce-site-up.sh`, port 18085)  
 - [x] Signed DNA (`hmac-sha256`) + `sign-smoke` / `helix verify`  
 - [x] Sign/promote fixture deepen — fixture keys · signed promote ok · unsigned reject (`SIGN_FIXTURE_OK`; in `gce-smoke` + `test:dna`) 

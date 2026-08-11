@@ -109,6 +109,8 @@ On each request (and JSON response), Helix asks only: **is this still the certif
 2. Content class not `json` when DNA says json → `HX-CONTENT-CLASS-DRIFT`.
 3. Key fingerprint mismatch, missing body, or unparseable JSON → `HX-SCHEMA-DRIFT` (**fail-closed** — no silent allow on empty parse).
 
+Prove pack: `npm run schema-drift-smoke` → `SCHEMA_DRIFT_SMOKE_OK` (fixture observations under `fixtures/schema-drift/`; also in `test:dna` / `gce-smoke`). Nested depth≤2 covered by `nested-drift-smoke`.
+
 HTML/static routes: allow if the path template is known; do not overfit bodies.
 
 Holes are emitted as structured events (optional `SIEM_LOG` NDJSON) for your existing SIEM/XDR. Helix is not a SIEM (lock **D3**).
