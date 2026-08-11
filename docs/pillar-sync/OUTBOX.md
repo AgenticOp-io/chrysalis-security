@@ -18,7 +18,7 @@
 
 ```text
 SECURE_NEXT: ok
-SHA: PENDING
+SHA: 95fbd21
 BRANCH: candidate/live-match-step4
 PICK: GCE prove (after reauth)
 HOST: agenticop-master
