@@ -18,7 +18,7 @@
 
 ```text
 SECURE_GCE_SMOKE_PACK: ok
-SHA: (stamp after push)
+SHA: ca0d379
 BRANCH: candidate/live-match-step4
 TOKENS: SOAK_PREFLIGHT_OK · SIEM_FIXTURE_OK · RELOAD_FIXTURE_OK · GCE_SMOKE_OK
 HEARTBEAT: waiting
