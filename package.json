@@ -52,7 +52,7 @@
     "live-match-smoke": "node scripts/live-match-smoke.mjs"
   },
   "dependencies": {
-    "@agenticop-io/cwl": "^1.0.17"
+    "@agenticop-io/cwl": "file:../chrysalis-cwl/packages/cwl"
   },
   "optionalDependencies": {
     "@chrysalis/cwl": "file:../chrysalis-cwl/packages/cwl"

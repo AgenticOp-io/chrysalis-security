@@ -4,7 +4,7 @@
  * compareCwlSurfaceToDna → scoreRequest allow/deny in enforce.
  * Also proves RFC-0023 multi-host (host=api) + dna_gaps fill + enforce host identity.
  * Tokens: CUTOVER_MULTIHOST_OK · CUTOVER_SMOKE_OK
- * Requires sibling engines/chrysalis-cwl (or CHRYSALIS_CWL_ROOT) + @agenticop-io/cwl@1.0.17.
+ * Requires sibling engines/chrysalis-cwl (or CHRYSALIS_CWL_ROOT) + @agenticop-io/cwl@1.0.18.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -103,7 +103,7 @@ console.log('=== cutover: enforce via scoreRequest ===');
 const known = scoreRequest(certified, { method: 'GET', path: '/api/health', host: 'default' });
 assert(known.allow === true, `known /api/health should allow: ${JSON.stringify(known)}`);
 
-// Gold seeds query_key_fingerprint "include" on /items/:id (CWL 1.0.17+)
+// Gold seeds query_key_fingerprint "include" on /items/:id (CWL 1.0.18+)
 const knownParam = scoreRequest(certified, {
   method: 'GET',
   path: '/items/42',
