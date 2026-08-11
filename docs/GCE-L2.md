@@ -2,6 +2,10 @@
 
 Local Windows/lab: `npm run bridge-l2-smoke` → **SKIP** without Linux root.
 
+## Auth
+
+`gcloud` must already be logged in (`gcloud auth login` / ADC). Non-interactive agents cannot refresh expired tokens — if reauth fails, treat GCE prove as **blocked**, not skipped-as-green.
+
 Green bar on protected host **agenticop-master**:
 
 ```powershell
@@ -16,3 +20,5 @@ If sudo is denied, you get `BRIDGE_L2_SMOKE_SKIP` — fix NOPASSWD for the SSH u
 
 Deepen (2026-08-11): divert fail-closed when Helix is down; teardown restores direct upstream.  
 Design: [MODE-B-L2.md](./MODE-B-L2.md). Never delete protected GCE VMs.
+
+**Not a customer soak** — soak is real traffic in `shadow` ([SOAK.md](./SOAK.md)).
