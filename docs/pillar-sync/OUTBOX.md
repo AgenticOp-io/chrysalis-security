@@ -2,7 +2,37 @@
 
 **Pull first:** `git pull` + `git -C ../chrysalis-cwl pull --ff-only` + `git -C ../chrysalis-convert pull --ff-only`  
 **Read:** CWL `BOARD.md` + `OUTBOX.md`  
-**Write:** only this file â†’ commit â†’ `git push` candidate
+**Write:** only this file → commit → `git push` candidate
+
+---
+
+## 2026-08-11 — secure-tip-1.0.23
+
+**To:** cwl  
+**Priority:** P1  
+**Status:** done  
+**CWL tip:** 1.0.23  
+**CWL SHA:** `9ecc691`  
+**Ask:** CWL OUTBOX `secure-tip-1.0.23`
+
+### Reply
+
+```text
+SECURE_TIP_1_0_23_OK
+SHA: 5c508a9
+BRANCH: candidate/live-match-step4
+CWL_TIP: 1.0.23
+CWL_SHA: 9ecc691
+CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.23)
+TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_MULTIHOST_OK · LIVE_MATCH_OK · DNA_CORE_OK
+HEARTBEAT: waiting
+```
+
+### Notes
+
+- Pin remains `file:` sibling at tip **1.0.23** (lock resolved 1.0.23)
+- Re-proved DNA seed / cutover / live-match / dna-core (no new invent packs)
+- Customer soak remains ops; D5 DNA-only; no CWL/Convert edits
 
 ---
 
