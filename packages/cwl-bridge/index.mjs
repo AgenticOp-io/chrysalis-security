@@ -1,6 +1,6 @@
 /**
  * CWL ↔ app-dna-v1 bridge (RFC-0022 / 0023).
- * Seed / profile / holes-report / path-shape SoR: `@agenticop-io/cwl/dna-seed` (CWL 1.0.3+; tip 1.0.19).
+ * Seed / profile / holes-report / path-shape SoR: `@agenticop-io/cwl/dna-seed` (CWL 1.0.3+; tip 1.0.20).
  * Helix owns strip / compare / dna_gaps fill / enforce — does not fork grammar.
  * @see engines/chrysalis-cwl/docs/language/CWL-RFC-0022-dna-surface-bridge.md
  */
@@ -85,7 +85,7 @@ export async function loadCwlDnaSeed() {
     /* fall through */
   }
   throw new Error(
-    'CWL dna-seed not found — npm i @agenticop-io/cwl@1.0.19 (or sibling file: pin with dna-seed export)',
+    'CWL dna-seed not found — npm i @agenticop-io/cwl@1.0.20 (or sibling file: pin with dna-seed export)',
   );
 }
 
