@@ -70,6 +70,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 ## Later
 
 - [x] Soak **preflight** smoke (`soak-preflight-smoke` → `SOAK_PREFLIGHT_OK`) — fixture learn→report→shadow→ready; no fake customers  
+- [x] SIEM_LOG **fixture** smoke (`siem-fixture-smoke` → `SIEM_FIXTURE_OK`) — shadow/enforce holes → file sink; no vendor invent  
 - [ ] Customer traffic soak (operational — follow [SOAK.md](./SOAK.md) after preflight green)  
 - [ ] Mode B transparent bridge-nf divert (daddr=server) when Phase 2 stays boring on GCE  
 

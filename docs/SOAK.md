@@ -51,7 +51,7 @@ helix ready --target enforce --shadow-log "$SHADOW_LOG" --max-shadow-holes 0 --r
 | Learn window | Cover peak + off-peak (often 3–14 days for real apps) |
 | `helix report` | Routes look complete for the app’s real surface |
 | `helix promote --from` | Diff reviewed; no surprise admin routes |
-| `MODE=shadow` | Traffic still flows; holes go to `SHADOW_LOG` / `SIEM_LOG` |
+| `MODE=shadow` | Traffic still flows; holes go to `SHADOW_LOG` / `SIEM_LOG` (prove file sink: `npm run siem-fixture-smoke` → `SIEM_FIXTURE_OK`) |
 | Unexpected holes | Investigate each `HX-*` — promote if legitimate, fix app if not |
 | `helix ready --target enforce --shadow-log …` | Exit 0 with `--max-shadow-holes 0` (or agreed budget) |
 | `MODE=enforce` | Fail closed on out-of-DNA |
@@ -100,4 +100,5 @@ If `ready` fails: extend soak or promote/fix — never invent routes to silence 
 - Modes: [MODES.md](./MODES.md)  
 - Install: [INSTALL-MODE-A.md](./INSTALL-MODE-A.md)  
 - Product bar: [PRODUCT.md](./PRODUCT.md)  
+- SIEM file sink: [SIEM.md](./SIEM.md) · `npm run siem-fixture-smoke`  
 - Mode B L2 lab: [MODE-B-L2.md](./MODE-B-L2.md) · [GCE-L2.md](./GCE-L2.md)

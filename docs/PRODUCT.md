@@ -41,7 +41,7 @@ Rough product maturity: **~85%** of the *shippable* bar. Remaining: real custome
 
 5. **K8s sidecar image + prove** — **done** (`k8s-image-smoke` + `k8s-push` + [K8S.md](./K8S.md))  
 6. **Certificate lifecycle UX** — **done** (`promoteDna` / parent_hash / [CERT-LIFECYCLE.md](./CERT-LIFECYCLE.md) + `promote-chain-smoke`)  
-7. **SIEM that ops already open** — **done** (Kibana NDJSON + Splunk pack under `deploy/siem/`)  
+7. **SIEM that ops already open** — **done** (generic `SIEM_LOG` NDJSON + optional Kibana/Splunk packs under `deploy/siem/`; fixture prove `siem-fixture-smoke` → `SIEM_FIXTURE_OK`)  
 8. **L2/GCE Mode B green** — **done** (segment buyers; Mode A remains the host path; Phase 1 deepen = divert fail-closed + teardown)
 
 ### Tier 3 — do **not** chase (would un-change the category)
@@ -86,6 +86,7 @@ That sentence is only credible with Tier 1 install + readiness + real-app prove.
 | P2 | Splunk HEC + dashboards | **done** ([SPLUNK.md](./SPLUNK.md) · `deploy/siem/`) |
 | P2 | Cert lifecycle UX | **done** ([CERT-LIFECYCLE.md](./CERT-LIFECYCLE.md) · `promote-chain-smoke`) |
 | Ops | Soak preflight (tooling) | **done** (`npm run soak-preflight-smoke` → `SOAK_PREFLIGHT_OK`) |
+| Ops | SIEM_LOG fixture smoke | **done** (`npm run siem-fixture-smoke` → `SIEM_FIXTURE_OK`) — file sink only |
 | Ops | Customer shadow soak | **runbook** ([SOAK.md](./SOAK.md)) — live traffic only; preflight ≠ soak |
 
 Related: [WHITEPAPER.md](./WHITEPAPER.md) · [MODES.md](./MODES.md) · [BEGINNING.md](./BEGINNING.md) · [ROADMAP.md](./ROADMAP.md)

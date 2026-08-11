@@ -2,6 +2,17 @@
 
 Helix is not a SIEM (D3). It **emits hole events** so your SIEM/XDR can alert.
 
+## Fixture smoke (generic file sink)
+
+Prove shadow + enforce holes append to a local `SIEM_LOG` path — no Splunk/Datadog/vendor connector invent:
+
+```bash
+npm run siem-fixture-smoke
+# → SIEM_FIXTURE_SHADOW_OK · SIEM_FIXTURE_ENFORCE_OK · SIEM_FIXTURE_OK
+```
+
+Ops still tails that NDJSON file into whatever collector they already run ([FILEBEAT.md](./FILEBEAT.md) is a recipe, not a Helix dependency).
+
 ## Enable
 
 ```env
