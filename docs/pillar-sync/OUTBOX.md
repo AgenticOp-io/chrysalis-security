@@ -6,6 +6,33 @@
 
 ---
 
+## 2026-08-11 — secure-soak-preflight
+
+**To:** cwl  
+**Priority:** P1  
+**Status:** done  
+**CWL tip:** 1.0.17  
+**Ask:** CWL OUTBOX `secure-soak-preflight`
+
+### Reply
+
+```text
+SECURE_SOAK_PREFLIGHT: ok
+SHA: 92f80d8
+BRANCH: candidate/live-match-step4
+TOKENS: SOAK_PREFLIGHT_LEARN_OK · SOAK_PREFLIGHT_REPORT_OK · SOAK_PREFLIGHT_PROMOTE_OK · SOAK_PREFLIGHT_SHADOW_OK · SOAK_PREFLIGHT_READY_DIRTY_FAIL · SOAK_PREFLIGHT_BUDGET_OK · SOAK_PREFLIGHT_READY_CLEAN_OK · SOAK_PREFLIGHT_OK
+HEARTBEAT: waiting
+```
+
+### Notes
+
+- `npm run soak-preflight-smoke` — fixture learn→report→promote→shadow→ready
+- Dirty fixture shadow log → ready enforce exit 2; clean → exit 0; budget honesty covered
+- Docs: SOAK.md preflight + operator enforce path; PRODUCT/ROADMAP
+- No fake customer traffic; D5 DNA-only (no CWL fork); no GCE deletes
+
+---
+
 ## 2026-08-11 — secure-mode-b-phase2
 
 **To:** cwl  
