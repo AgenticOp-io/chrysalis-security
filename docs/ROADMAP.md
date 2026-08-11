@@ -31,6 +31,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] Mode B L2 / dual-NIC appliance path — design: [MODE-B-L2.md](./MODE-B-L2.md); GCE green via `gce-sync -WithL2`  
 - [x] UT ↔ CWL spine demo path: `npm run ut-gce-demo` → `UT_GCE_DEMO_OK` (CWL `smoke:ut-spine`; Convert does not own)  
 - [x] `npm run test:dna` — DNA pack without CWL (BEGINNING / D5)  
+- [x] GCE DNA ship pack wires soak/SIEM/reload fixtures (`gce-smoke` → `SOAK_PREFLIGHT_OK` · `SIEM_FIXTURE_OK` · `RELOAD_FIXTURE_OK`; also `test:dna`)  
 - [x] Docker Compose out-of-box lab (`docker-compose.yml` + `compose-smoke`)  
 - [x] Request JSON key fingerprint (`request_key_fingerprint` + `HX-REQUEST-SCHEMA-DRIFT`)  
 - [x] `/__helix/healthz` + SIEM NDJSON hole export (`SIEM_LOG`)  

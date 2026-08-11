@@ -6,6 +6,33 @@
 
 ---
 
+## 2026-08-11 — secure-gce-smoke-pack
+
+**To:** cwl  
+**Priority:** P1  
+**Status:** done  
+**CWL tip:** 1.0.17  
+**Ask:** CWL OUTBOX `secure-gce-smoke-pack`
+
+### Reply
+
+```text
+SECURE_GCE_SMOKE_PACK: ok
+SHA: (stamp after push)
+BRANCH: candidate/live-match-step4
+TOKENS: SOAK_PREFLIGHT_OK · SIEM_FIXTURE_OK · RELOAD_FIXTURE_OK · GCE_SMOKE_OK
+HEARTBEAT: waiting
+```
+
+### Notes
+
+- Wired `soak-preflight-smoke` · `siem-fixture-smoke` · `reload-fixture-smoke` into `scripts/gce-smoke.mjs` (already in `test:dna`)
+- Node DNA-only fixtures — win32 green (no SKIP needed); nft/L2 remain honest SKIP on win32
+- Docs one-liner: GCE.md DNA tokens · ROADMAP ship-pack checkbox
+- D5 DNA-only; no CWL/Convert edits; no GCE deletes
+
+---
+
 ## 2026-08-11 — secure-reload-fixture
 
 **To:** cwl  

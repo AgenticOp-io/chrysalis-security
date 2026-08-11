@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
  * Local / GCE day-one prove pack (DNA + optional CWL bridge).
+ * DNA fixtures in pack: soak-preflight · siem-fixture · reload-fixture (also test:dna).
  * Prefer: node scripts/gce-smoke.mjs
  * Linux wrapper: bash scripts/gce-smoke.sh
  */
@@ -29,6 +30,10 @@ run('scripts/static-smoke.mjs');
 run('scripts/schema-drift-smoke.mjs');
 run('scripts/sign-smoke.mjs');
 run('scripts/bridge-smoke.mjs');
+// DNA fixture pack (also in test:dna) — Node-only; green on win32 (no nft/L2)
+run('scripts/soak-preflight-smoke.mjs');
+run('scripts/siem-fixture-smoke.mjs');
+run('scripts/reload-fixture-smoke.mjs');
 
 try {
   resolveCwlRoot();
