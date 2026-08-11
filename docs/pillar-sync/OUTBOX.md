@@ -6,6 +6,33 @@
 
 ---
 
+## 2026-08-11 — secure-siem-fixture
+
+**To:** cwl  
+**Priority:** P1  
+**Status:** done  
+**CWL tip:** 1.0.17  
+**Ask:** CWL OUTBOX `secure-siem-fixture`
+
+### Reply
+
+```text
+SECURE_SIEM_FIXTURE: ok
+SHA: 7a04388
+BRANCH: candidate/live-match-step4
+TOKENS: SIEM_FIXTURE_SHADOW_OK · SIEM_FIXTURE_ENFORCE_OK · SIEM_FIXTURE_OK
+HEARTBEAT: waiting
+```
+
+### Notes
+
+- `npm run siem-fixture-smoke` — learn→promote→shadow SIEM_LOG append → enforce SIEM_LOG append
+- Generic file/NDJSON sink only; no Splunk/Datadog/vendor connector invent (D3)
+- Docs: SIEM.md fixture section · SOAK/PRODUCT/ROADMAP pointers
+- D5 DNA-only; no CWL/Convert edits; no GCE deletes
+
+---
+
 ## 2026-08-11 — secure-mode-a-failclosed
 
 **To:** cwl  
