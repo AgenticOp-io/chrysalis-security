@@ -54,7 +54,7 @@ npm run cwl-bridge-smoke  # → CWL_BRIDGE_SMOKE_OK (or CWL_BRIDGE_SMOKE_SKIP)
 | `schema-drift-smoke.mjs` | `SCHEMA_DRIFT_SMOKE_OK` |
 | `sign-smoke.mjs` | (sign promote OK — see script stdout) |
 | `bridge-smoke.mjs` | (host-bridge OK — see script stdout) |
-| `gce-nft-smoke.sh` | `NFT_SMOKE_OK` |
+| `nft-smoke.mjs` / `gce-nft-smoke.sh` | `MODE_A_DIVERT_OK` · `MODE_A_DNA_OK` · `MODE_A_FAILCLOSED_OK` · `MODE_A_TEARDOWN_OK` · `NFT_SMOKE_OK` (win32 → `NFT_SMOKE_SKIP`) |
 | `gce-site-up.sh` | `GCE_SITE_UP_OK` |
 | pack wrapper | `GCE_SMOKE_OK` / `GCE_SYNC_OK` |
 
@@ -129,4 +129,6 @@ bash scripts/gce-nft-smoke.sh
 bash scripts/gce-site-up.sh
 ```
 
-Proven tokens: `SMOKE_OK` · `HOST_SMOKE_OK` · `NFT_SMOKE_OK` · `STATIC_SMOKE_OK` · `DNA_CORE_OK` · `SCHEMA_DRIFT_SMOKE_OK` · `CWL_BRIDGE_SMOKE_OK` (or `CWL_BRIDGE_SMOKE_SKIP`) · `CUTOVER_SMOKE_OK` · `UT_GCE_DEMO_OK` · `GCE_SITE_UP_OK` · `GCE_SMOKE_OK` / `GCE_SYNC_OK`.
+Proven tokens: `SMOKE_OK` · `HOST_SMOKE_OK` · `NFT_SMOKE_OK` (+ Mode A `MODE_A_FAILCLOSED_OK` / `MODE_A_TEARDOWN_OK`) · `STATIC_SMOKE_OK` · `DNA_CORE_OK` · `SCHEMA_DRIFT_SMOKE_OK` · `CWL_BRIDGE_SMOKE_OK` (or `CWL_BRIDGE_SMOKE_SKIP`) · `CUTOVER_SMOKE_OK` · `UT_GCE_DEMO_OK` · `GCE_SITE_UP_OK` · `GCE_SMOKE_OK` / `GCE_SYNC_OK`.
+
+Mode A nft deepen (mirror Mode B L2 fail-closed): default `gce-sync` runs `bash scripts/gce-nft-smoke.sh` unless `-SkipNft`.

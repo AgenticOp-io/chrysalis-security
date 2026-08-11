@@ -65,6 +65,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] Rosetta Step 4 Live match — `docs/LIVE-MATCH.md` · `npm run live-match-smoke`  
 - [x] Mode B L2 **deepen** — nft divert + fail-closed + teardown (`BRIDGE_L2_FAILCLOSED_OK` / `TEARDOWN_OK`)  
 - [x] Mode B L2 **Phase 2** — dual-iface NIC-A/NIC-B in appliance ns (`BRIDGE_L2_P2_IFACE_OK` / `CROSS_OK` / `DNA_OK` / `SMOKE_OK`)  
+- [x] Mode A host-redirect **fail-closed** — divert+Helix-down no silent 200 + teardown (`MODE_A_FAILCLOSED_OK` / `MODE_A_TEARDOWN_OK` · `NFT_SMOKE_OK`)  
 
 ## Later
 

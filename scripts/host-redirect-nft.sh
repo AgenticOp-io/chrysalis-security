@@ -3,6 +3,10 @@
 # Leaves the public port number the same on the host; redirects into Helix;
 # app should listen on APP_PORT on 127.0.0.1 only.
 #
+# Fail-closed contract (proven by scripts/gce-nft-smoke.sh / nft-smoke.mjs):
+#   divert on + Helix down → PUBLIC_PORT must NOT silent-200 (MODE_A_FAILCLOSED_OK)
+#   remove divert → direct APP_PORT restored (MODE_A_TEARDOWN_OK)
+#
 # Usage (root):
 #   PUBLIC_PORT=80 HELIX_PORT=4080 APP_PORT=8080 bash scripts/host-redirect-nft.sh install
 #   bash scripts/host-redirect-nft.sh remove

@@ -31,7 +31,17 @@ curl -sS http://127.0.0.1:4080/__helix/healthz
 
 Optional nft redirect instead of rebinding the app: `scripts/host-redirect-nft.sh` (root). Soft bind (this unit) needs no nft.
 
+### Hard redirect fail-closed (nft)
+
+When using nft divert (`PUBLIC_PORT` → `HELIX_PORT`):
+
+1. Divert on + Helix up → DNA allow/deny on the public port (`MODE_A_DIVERT_OK` · `MODE_A_DNA_OK`)
+2. Divert on + Helix **down** → public port must **not** silent-200 (`MODE_A_FAILCLOSED_OK`)
+3. `host-redirect-nft.sh remove` → direct `APP_PORT` restored; public port no longer DNA-proxied (`MODE_A_TEARDOWN_OK`)
+
+Prove: `npm run nft-smoke` → `NFT_SMOKE_OK` (Linux/GCE). Win32 → honest `NFT_SMOKE_SKIP`.
+
 ## Prove
 
-Local: `npm run ready-smoke` · host path: `npm run host-smoke`  
-GCE: `docs/GCE.md`
+Local: `npm run ready-smoke` · host path: `npm run host-smoke` · nft: `npm run nft-smoke`  
+GCE: `docs/GCE.md` (default `gce-sync` runs nft smoke)

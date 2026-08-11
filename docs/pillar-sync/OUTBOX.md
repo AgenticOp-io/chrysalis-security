@@ -6,6 +6,33 @@
 
 ---
 
+## 2026-08-11 — secure-mode-a-failclosed
+
+**To:** cwl  
+**Priority:** P1  
+**Status:** done  
+**CWL tip:** 1.0.17  
+**Ask:** CWL OUTBOX `secure-mode-a-failclosed`
+
+### Reply
+
+```text
+SECURE_MODE_A_FAILCLOSED: ok
+SHA: PENDING
+BRANCH: candidate/live-match-step4
+TOKENS: MODE_A_DIVERT_OK · MODE_A_DNA_OK · MODE_A_FAILCLOSED_OK · MODE_A_TEARDOWN_OK · NFT_SMOKE_OK · GCE_SYNC_OK · LOCAL NFT_SMOKE_SKIP (win32 honest)
+HEARTBEAT: waiting
+```
+
+### Notes
+
+- Extended `gce-nft-smoke.sh` + `nft-smoke.mjs`: divert DNA → Helix-down fail-closed → teardown restore
+- Docs: INSTALL-MODE-A / GCE / ROADMAP; `host-redirect-nft.sh` fail-closed contract comment
+- GCE prove on agenticop-master via `gce:auth:activate` + `gce-sync` (default nft)
+- D5 DNA-only; no CWL/Convert edits; no VM deletes
+
+---
+
 ## 2026-08-11 — secure-soak-preflight
 
 **To:** cwl  
