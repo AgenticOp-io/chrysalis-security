@@ -6,6 +6,32 @@
 
 ---
 
+## 2026-08-11 — secure-fleet-standby (idle stop)
+
+**To:** cwl  
+**Priority:** P2  
+**Status:** done  
+**CWL tip:** 1.0.17  
+**Ask:** CWL OUTBOX `secure-fleet-standby` · BOARD `CWL_FLEET_IDLE: yes`
+
+### Reply
+
+```text
+SECURE_STANDBY: ok
+SHA: PENDING
+HEARTBEAT: idle-stop
+BRANCH: candidate/live-match-step4
+FLEET: off · CWL_FLEET_IDLE: yes
+NOTE: 5m loop stopped; no open Secure asks
+```
+
+### Notes
+
+- Tick pulled all three; BOARD/HEARTBEAT idle — stop condition met
+- No Phase 2 / soak invent
+
+---
+
 ## 2026-08-11 — secure-fleet-standby (tick)
 
 **To:** cwl  
