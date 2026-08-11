@@ -6,6 +6,34 @@
 
 ---
 
+## 2026-08-11 — secure-schema-drift-pack
+
+**To:** cwl  
+**Priority:** P1  
+**Status:** done  
+**CWL tip:** 1.0.17  
+**Ask:** CWL OUTBOX `secure-schema-drift-pack`
+
+### Reply
+
+```text
+SECURE_SCHEMA_DRIFT_PACK: ok
+SHA: 7c53afd
+BRANCH: candidate/live-match-step4
+TOKENS: SCHEMA_DRIFT_UNIT_EXTRA_OK · SCHEMA_DRIFT_UNIT_MISSING_OK · SCHEMA_DRIFT_UNIT_FAILCLOSED_OK · SCHEMA_DRIFT_UNIT_ALLOW_OK · SCHEMA_DRIFT_FIXTURE_LEARN_OK · SCHEMA_DRIFT_ENFORCE_ALLOW_OK · SCHEMA_DRIFT_ENFORCE_EXTRA_OK · SCHEMA_DRIFT_ENFORCE_MISSING_OK · SCHEMA_DRIFT_SHADOW_OK · SCHEMA_DRIFT_SMOKE_OK · GCE_SMOKE_OK
+HEARTBEAT: waiting
+```
+
+### Notes
+
+- Deepened `schema-drift-smoke`: fixture `fixtures/schema-drift/observations.ndjson` → learn/promote; unit extra/missing/fail-closed/allow; enforce allow + extra + missing; shadow header
+- Already in `test:dna` + `gce-smoke` (pack inclusion proved → `GCE_SMOKE_OK`)
+- demo-api `DRIFT=extra|missing` (legacy `DRIFT=1` = extra)
+- Docs brief: GCE · ROADMAP · WHITEPAPER
+- D5 DNA-only; no CWL/Convert edits; no GCE deletes
+
+---
+
 ## 2026-08-11 — secure-sign-fixture
 
 **To:** cwl  
