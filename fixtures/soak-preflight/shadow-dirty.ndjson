@@ -1,0 +1,3 @@
+{"at":"2026-08-10T12:00:01.000Z","kind":"helix.hole","mode":"shadow","placement":"proxy","phase":"request","hole":{"code":"HX-ROUTE-UNKNOWN","reason":"Route not in certified DNA"},"method":"GET","path":"/api/backdoor","host":"app.example"}
+{"at":"2026-08-10T12:00:02.000Z","kind":"helix.hole","mode":"shadow","placement":"proxy","phase":"response","hole":{"code":"HX-SCHEMA-DRIFT","reason":"Response key fingerprint mismatch"},"method":"GET","path":"/api/items","host":"app.example"}
+{"at":"2026-08-10T12:00:03.000Z","kind":"access","method":"GET","path":"/api/health","host":"app.example","status":200}

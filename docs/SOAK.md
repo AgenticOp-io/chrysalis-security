@@ -8,6 +8,42 @@ Helix changes security only if enforce follows a boring **soak**, not a flip on 
 learn → report → promote → shadow → soak → ready --shadow-log → enforce → reload
 ```
 
+## Preflight (automatable — no fake customers)
+
+Prove the **tooling path** before ops starts a live soak. Fixture observations + fixture shadow logs only — never synthetic production traffic.
+
+```bash
+npm run soak-preflight-smoke
+# → SOAK_PREFLIGHT_LEARN_OK · REPORT_OK · PROMOTE_OK · SHADOW_OK
+#   · READY_DIRTY_FAIL · BUDGET_OK · READY_CLEAN_OK · SOAK_PREFLIGHT_OK
+```
+
+| Gate (SOAK checklist) | Preflight proves |
+|-----------------------|------------------|
+| `helix learn` | Draft DNA from `fixtures/soak-preflight/observations.ndjson` |
+| `helix report` | Routes present; draft → promote |
+| `helix promote` | Signed certified DNA (D5 — no CWL required) |
+| `MODE=shadow` readiness | `helix ready --target shadow` on cert |
+| Unexpected holes / budget | Dirty fixture log → exit 2 at `--max-shadow-holes 0`; budget covers → exit 0 |
+| `helix ready --target enforce --shadow-log` | Clean fixture log → exit 0 |
+
+**Preflight green ≠ soak complete.** Ops still owes real peak/off-peak traffic, durable `SHADOW_LOG`, and a written hole budget (see gaps below).
+
+### Operator path after preflight green → enforce
+
+1. Keep Helix on the **same placement** that preflight assumed (Mode A proxy / Mode B divert / Mode C agent).  
+2. `MODE=shadow` + `SHADOW_LOG` (or SIEM) for the agreed soak window.  
+3. Investigate every `HX-*`; promote legitimate new surface; fix app otherwise.  
+4. Gate:
+
+```bash
+helix ready --target enforce --shadow-log "$SHADOW_LOG" --max-shadow-holes 0 --require-signed
+# exit 0 only
+```
+
+5. Set `MODE=enforce` and `POST /__helix/reload` (or restart).  
+6. On new deploys: draft → promote → reload — do not invent routes to silence holes (**D5** DNA-only).
+
 ## Soak checklist (honest)
 
 | Gate | Bar |

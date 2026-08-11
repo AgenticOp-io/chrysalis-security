@@ -68,7 +68,8 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 
 ## Later
 
-- [ ] Customer traffic soak (operational — follow [SOAK.md](./SOAK.md))  
+- [x] Soak **preflight** smoke (`soak-preflight-smoke` → `SOAK_PREFLIGHT_OK`) — fixture learn→report→shadow→ready; no fake customers  
+- [ ] Customer traffic soak (operational — follow [SOAK.md](./SOAK.md) after preflight green)  
 - [ ] Mode B transparent bridge-nf divert (daddr=server) when Phase 2 stays boring on GCE  
 
 

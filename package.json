@@ -21,6 +21,7 @@
     "status-smoke": "node scripts/status-smoke.mjs",
     "nested-drift-smoke": "node scripts/nested-drift-smoke.mjs",
     "ready-smoke": "node scripts/ready-smoke.mjs",
+    "soak-preflight-smoke": "node scripts/soak-preflight-smoke.mjs",
     "real-site-smoke": "node scripts/real-site-smoke.mjs",
     "k8s-image-smoke": "node scripts/k8s-image-smoke.mjs",
     "k8s-push": "node scripts/k8s-push.mjs",
@@ -44,7 +45,7 @@
     "gce-smoke": "node scripts/gce-smoke.mjs",
     "nft-smoke": "bash scripts/gce-nft-smoke.sh",
     "agent": "node packages/helix-agent/bin/helix-agent.mjs",
-    "test:dna": "node scripts/cwl-sync-check.mjs && node scripts/dna-core-smoke.mjs && node scripts/smoke.mjs && node scripts/host-smoke.mjs && node scripts/static-smoke.mjs && node scripts/schema-drift-smoke.mjs && node scripts/request-drift-smoke.mjs && node scripts/query-drift-smoke.mjs && node scripts/status-smoke.mjs && node scripts/nested-drift-smoke.mjs && node scripts/reload-smoke.mjs && node scripts/body-limit-smoke.mjs && node scripts/ready-smoke.mjs && node scripts/real-site-smoke.mjs && node scripts/sign-smoke.mjs && node scripts/promote-chain-smoke.mjs && node scripts/panel-smoke.mjs && node scripts/local-lab-smoke.mjs && node scripts/bridge-smoke.mjs && node scripts/tls-smoke.mjs",
+    "test:dna": "node scripts/cwl-sync-check.mjs && node scripts/dna-core-smoke.mjs && node scripts/smoke.mjs && node scripts/host-smoke.mjs && node scripts/static-smoke.mjs && node scripts/schema-drift-smoke.mjs && node scripts/request-drift-smoke.mjs && node scripts/query-drift-smoke.mjs && node scripts/status-smoke.mjs && node scripts/nested-drift-smoke.mjs && node scripts/reload-smoke.mjs && node scripts/body-limit-smoke.mjs && node scripts/ready-smoke.mjs && node scripts/soak-preflight-smoke.mjs && node scripts/real-site-smoke.mjs && node scripts/sign-smoke.mjs && node scripts/promote-chain-smoke.mjs && node scripts/panel-smoke.mjs && node scripts/local-lab-smoke.mjs && node scripts/bridge-smoke.mjs && node scripts/tls-smoke.mjs",
     "test": "npm run test:dna && node scripts/cwl-bridge-smoke.mjs && node scripts/cutover-smoke.mjs && node scripts/bridge-l2-smoke.mjs && node scripts/bridge-l2-p2-smoke.mjs && node scripts/compose-smoke.mjs && node scripts/k8s-image-smoke.mjs && node scripts/k8s-push.mjs",
     "live-match-smoke": "node scripts/live-match-smoke.mjs"
   },

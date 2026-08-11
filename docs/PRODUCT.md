@@ -22,7 +22,7 @@ That is a category shift only if operators can run it **Monday morning** without
 | Optional CWL cutover | Platform path without requiring CWL (D5) |
 | Whitepaper + threat model | Story is honest |
 
-**Verdict today:** shippable engine + operator path + Mode A/K8s recipes + **L2 GCE green**. Remaining for full “changed security” credibility is **living with real customer traffic** (shadow soak → enforce) — not more core fingerprints.
+**Verdict today:** shippable engine + operator path + Mode A/K8s recipes + **L2 GCE green** + soak **preflight** smoke. Remaining for full “changed security” credibility is **living with real customer traffic** (shadow soak → enforce) — not more core fingerprints.
 
 ---
 
@@ -85,6 +85,7 @@ That sentence is only credible with Tier 1 install + readiness + real-app prove.
 | P2 | Mode B L2 GCE | **done** (`BRIDGE_L2_SMOKE_OK` on agenticop-master) |
 | P2 | Splunk HEC + dashboards | **done** ([SPLUNK.md](./SPLUNK.md) · `deploy/siem/`) |
 | P2 | Cert lifecycle UX | **done** ([CERT-LIFECYCLE.md](./CERT-LIFECYCLE.md) · `promote-chain-smoke`) |
-| Ops | Customer shadow soak | **runbook** ([SOAK.md](./SOAK.md)) — live traffic only |
+| Ops | Soak preflight (tooling) | **done** (`npm run soak-preflight-smoke` → `SOAK_PREFLIGHT_OK`) |
+| Ops | Customer shadow soak | **runbook** ([SOAK.md](./SOAK.md)) — live traffic only; preflight ≠ soak |
 
 Related: [WHITEPAPER.md](./WHITEPAPER.md) · [MODES.md](./MODES.md) · [BEGINNING.md](./BEGINNING.md) · [ROADMAP.md](./ROADMAP.md)
