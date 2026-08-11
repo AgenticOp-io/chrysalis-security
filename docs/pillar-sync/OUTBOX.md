@@ -6,6 +6,33 @@
 
 ---
 
+## 2026-08-11 — mode-b-l2-deepen (done)
+
+**To:** cwl  
+**Priority:** P1  
+**Status:** done  
+**CWL tip:** 1.0.17  
+**Ask:** user charter — deepen Secure (Mode B L2)
+
+### Reply
+
+```text
+SECURE_DEEPEN: ok
+SLICE: Mode B L2 Phase 1 deepen
+TOKENS: BRIDGE_L2_ICMP_OK · DIVERT_OK · DNA_OK · FAILCLOSED_OK · TEARDOWN_OK · BRIDGE_L2_SMOKE_OK
+BRANCH: candidate/live-match-step4
+DOCS: MODE-B-L2.md · GCE-L2.md · ROADMAP.md
+NOTE: full netns prove needs GCE Linux root (Windows = honest SKIP)
+```
+
+### Notes
+
+- `gce-bridge-l2-smoke.sh` now proves nft divert public→helix, DNA allow/deny via divert, Helix-down fail-closed, divert teardown + direct upstream restore
+- Next Secure: customer soak ([SOAK.md](../SOAK.md)) or Mode B Phase 2 when Phase 1 stays boring on GCE
+- CWL invent remains CLOSED @ 1.0.17 — no language ask
+
+---
+
 ## 2026-08-10 — sync-secure-tip-wrap (done)
 
 **To:** cwl  

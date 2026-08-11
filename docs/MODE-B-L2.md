@@ -10,7 +10,7 @@ Locks: [DECISIONS.md](./DECISIONS.md) · placement: [AUGMENT.md](./AUGMENT.md) �
 |-------|-------|----------|
 | DNA learn / promote / enforce | Ships (`dna-core` + proxy) | Unchanged |
 | Mode B code | `packages/helix-bridge` + `bridge-smoke` | Userspace **placement label** only |
-| Dual-NIC / L2 forwarding | **Not built** | Design + GCE prove sketch below |
+| Dual-NIC / L2 forwarding | **Phase 1 lab landed** | netns + nft divert + fail-closed (`gce-bridge-l2-smoke.sh`); Phase 2 dual-NIC still later |
 
 **Design-only for this slice.** No production kernel modules. No custom OS image beyond stock Linux + Helix userspace.
 
@@ -160,7 +160,7 @@ Preferred host: **agenticop-master** ([GCE.md](./GCE.md)). Do not delete protect
 
 - `node scripts/bridge-smoke.mjs` → `BRIDGE_SMOKE_OK` (userspace placement).
 
-### Phase 1 — namespace dual-NIC simulation (recommended next prove)
+### Phase 1 — namespace dual-NIC simulation (**landed**)
 
 On GCE Linux, **no second VM required**. Entry points:
 
@@ -170,24 +170,26 @@ npm run bridge-l2-smoke
 
 # GCE Linux as root (after gce-sync):
 bash scripts/gce-bridge-l2-smoke.sh   # → BRIDGE_L2_SMOKE_OK
+# or: .\scripts\gce-sync.ps1 -WithL2
 ```
 
 ```text
 ns-a (NGFW side)  --veth--  br0 in helix-ns  --veth--  ns-b (server)
                               │
-                         divert :80 → helix-bridge userspace
+                         nft divert PUBLIC→helix-bridge
                               │
                          upstream = server IP in ns-b
 ```
 
-Prove tokens (proposed):
+Prove tokens (landed in `gce-bridge-l2-smoke.sh`):
 
-1. ICMP / non-HTTP TCP across bridge still works  
-2. Learned HTTP path allows; `/api/backdoor` → **403** `HX-ROUTE-UNKNOWN`  
-3. Stop Helix with divert left on → diverted port **fails** (no silent allow)  
-4. Teardown divert → non-HTTP path restored  
+1. ICMP / non-HTTP TCP across bridge still works → `BRIDGE_L2_ICMP_OK`  
+2. Learned HTTP path allows; `/api/backdoor` → **403** → `BRIDGE_L2_DNA_OK`  
+3. Stop Helix with divert left on → diverted port **fails** (no silent allow) → `BRIDGE_L2_FAILCLOSED_OK`  
+4. Teardown divert → ICMP + direct upstream restored → `BRIDGE_L2_TEARDOWN_OK`  
+5. Composite → `BRIDGE_L2_SMOKE_OK`
 
-Script shape (future): `scripts/gce-bridge-l2-smoke.sh` — root for netns/nft only; Helix stays Node userspace.
+Script: `scripts/gce-bridge-l2-smoke.sh` — root for netns/nft only; Helix stays Node userspace.
 
 ### Phase 2 — optional second NIC / pair of interfaces
 
@@ -195,19 +197,20 @@ Only if Phase 1 is boring: attach an extra NIC or use a dedicated lab VM **witho
 
 ### Sync
 
-Reuse `scripts/gce-sync.ps1`; add a skip flag for L2 smoke until the script exists (do not break current `SMOKE_OK` / `NFT_SMOKE_OK` pack).
+Reuse `scripts/gce-sync.ps1 -WithL2` (does not break current `SMOKE_OK` / `NFT_SMOKE_OK` pack).
 
 ---
 
 ## Recommended next code slice (small, non-dangerous)
 
-Prefer **docs-first**; when coding, keep the first slice tiny:
+**Phase 1 deepen landed** (nft divert + fail-closed + teardown in `gce-bridge-l2-smoke.sh`).
 
-1. **Keep** `helix-bridge` as the userspace DNA worker (no L2 claims in runtime logs beyond “spike”).  
-2. **Add** a lab-only script sketch: netns + veth + bridge + nft TPROXY → existing `helix-bridge` (root required on GCE; no kernel module).  
-3. **Reuse** Mode A nft patterns; do not fork DNA logic.  
-4. **Wire** prove token into GCE pack only after Phase 1 is green once.  
-5. **Defer** TC/eBPF and cloud dual-NIC runbooks until netns prove is boring.
+When coding further Mode B:
+
+1. **Keep** `helix-bridge` as the userspace DNA worker.  
+2. **Reuse** Mode A nft patterns; do not fork DNA logic.  
+3. **Defer** TC/eBPF and cloud dual-NIC runbooks until netns prove stays boring on GCE.  
+4. **Ops:** customer shadow soak remains live-traffic only ([SOAK.md](./SOAK.md)).
 
 That is the straight line from spike → honest appliance path without inventing an OS.
 

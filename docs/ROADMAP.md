@@ -63,9 +63,11 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 
 - [x] CWL tip `1.0.17` consume — `@agenticop-io/cwl@1.0.17` (dna-seed path-shape SoR thin-wrap; nested/status/request/query seed parity)
 - [x] Rosetta Step 4 Live match — `docs/LIVE-MATCH.md` · `npm run live-match-smoke`  
+- [x] Mode B L2 **deepen** — nft divert + fail-closed + teardown (`BRIDGE_L2_FAILCLOSED_OK` / `TEARDOWN_OK`)  
 
 ## Later
 
 - [ ] Customer traffic soak (operational — follow [SOAK.md](./SOAK.md))  
+- [ ] Optional Mode B Phase 2 (extra NIC / pair of interfaces) when Phase 1 stays boring on GCE  
 
 **Non-goals (locked):** no NGFW TLS dependency (D1); DNA block/alert only (D2); no UEBA/signature-WAF replacement (D3); host augment / no NAT homework (D4); CWL never required to enforce (D5).

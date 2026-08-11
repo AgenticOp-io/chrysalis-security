@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 /**
- * Mode B L2 lab prove — Phase 1 sketch (netns + divert → helix-bridge).
+ * Mode B L2 lab prove — Phase 1 deepen (netns + nft divert → helix-bridge + fail-closed).
  * Design: docs/MODE-B-L2.md
  *
  * On non-Linux or without root: honest SKIP (DNA firewall does not require L2).
  * Full netns prove runs only on GCE Linux with CAP_NET_ADMIN.
+ * Tokens: BRIDGE_L2_ICMP_OK · DIVERT_OK · DNA_OK · FAILCLOSED_OK · TEARDOWN_OK · BRIDGE_L2_SMOKE_OK
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';

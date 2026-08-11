@@ -42,7 +42,7 @@ Rough product maturity: **~85%** of the *shippable* bar. Remaining: real custome
 5. **K8s sidecar image + prove** — **done** (`k8s-image-smoke` + `k8s-push` + [K8S.md](./K8S.md))  
 6. **Certificate lifecycle UX** — **done** (`promoteDna` / parent_hash / [CERT-LIFECYCLE.md](./CERT-LIFECYCLE.md) + `promote-chain-smoke`)  
 7. **SIEM that ops already open** — **done** (Kibana NDJSON + Splunk pack under `deploy/siem/`)  
-8. **L2/GCE Mode B green** — **done** (segment buyers; Mode A remains the host path)
+8. **L2/GCE Mode B green** — **done** (segment buyers; Mode A remains the host path; Phase 1 deepen = divert fail-closed + teardown)
 
 ### Tier 3 — do **not** chase (would un-change the category)
 
