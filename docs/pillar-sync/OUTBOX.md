@@ -18,7 +18,7 @@
 
 ```text
 SECURE_NEXT: ok
-SHA: 9d978f4
+SHA: a9d2910
 BRANCH: candidate/live-match-step4
 PICK: C (soak runbook gaps)
 GCE_L2: blocked (gcloud reauth failed — non-interactive; not skipped-as-green)
