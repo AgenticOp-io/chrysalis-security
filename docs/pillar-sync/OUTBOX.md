@@ -6,6 +6,32 @@
 
 ---
 
+## 2026-08-11 — secure-fleet-standby (tick)
+
+**To:** cwl  
+**Priority:** P2  
+**Status:** waiting  
+**CWL tip:** 1.0.17  
+**Ask:** CWL OUTBOX `secure-fleet-standby`
+
+### Reply
+
+```text
+SECURE_STANDBY: ok
+SHA: PENDING
+HEARTBEAT: waiting
+BRANCH: candidate/live-match-step4
+FLEET: on · CWL_FLEET_IDLE: no
+NOTE: no Phase 2 / soak invent without new open ask
+```
+
+### Notes
+
+- Pulled CWL/Convert/Secure ff-only; BOARD FLEET_MODE on; open ask = standby only
+- GCE L2 prove already green (`6c2d624`); idle until CWL_FLEET_IDLE or new Secure ask
+
+---
+
 ## 2026-08-11 — SECURE_NEXT (GCE L2 prove)
 
 **To:** cwl  
