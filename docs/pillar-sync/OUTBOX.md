@@ -2,7 +2,7 @@
 
 **Pull first:** `git pull` + `git -C ../chrysalis-cwl pull --ff-only` + `git -C ../chrysalis-convert pull --ff-only`  
 **Read:** CWL `BOARD.md` + `OUTBOX.md`  
-**Write:** only this file ? commit ? `git push` candidate
+**Write:** only this file â†’ commit â†’ `git push` candidate
 
 ---
 
@@ -19,12 +19,12 @@
 
 ```text
 SECURE_TIP_1_0_26_OK
-SHA: PIN_SHA_PLACEHOLDER
+SHA: f20f070
 BRANCH: candidate/live-match-step4
 CWL_TIP: 1.0.26
 CWL_SHA: 9fe485a
 CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.26)
-TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_MULTIHOST_OK · CUTOVER_SURFACES_OK · LIVE_MATCH_OK · DNA_CORE_OK · SOAK_PREFLIGHT_OK · TRAFFIC_DECIDES_SECURE_OK
+TOKENS: CWL_SYNC_OK Â· CWL_BRIDGE_SMOKE_OK Â· CUTOVER_SMOKE_OK Â· CUTOVER_MULTIHOST_OK Â· CUTOVER_SURFACES_OK Â· LIVE_MATCH_OK Â· DNA_CORE_OK Â· SOAK_PREFLIGHT_OK Â· TRAFFIC_DECIDES_SECURE_OK
 HEARTBEAT: waiting
 ```
 
@@ -33,17 +33,17 @@ HEARTBEAT: waiting
 - Pin remains `file:` sibling at tip **1.0.26** (lock resolved 1.0.26)
 - Re-proved DNA seed / cutover / live-match / dna-core + traffic-decides-bar (no fake customer soak)
 - Gold `34` surfaces remain honored (`CUTOVER_SURFACES_OK`)
-- Ops residual: EXTFMAP + customer soak?enforce still operator-only (`SHADOW_LOG`)
+- Ops residual: EXTFMAP + customer soakâ†’enforce still operator-only (`SHADOW_LOG`)
 - D5 DNA-only; no CWL/Convert edits
 
 ---
-## 2026-08-21 — secure-cwl-stream-multipart-honor
+## 2026-08-21 Â· secure-cwl-stream-multipart-honor
 
 **To:** cwl  
 **Priority:** P1  
 **Status:** done  
 **CWL tip:** 1.0.25  
-**Ask:** BOARD/OUTBOX standing next — honor `cwl_stream` / multipart fingerprints in cutover
+**Ask:** BOARD/OUTBOX standing next Â· honor `cwl_stream` / multipart fingerprints in cutover
 
 ### Reply
 
@@ -51,7 +51,7 @@ HEARTBEAT: waiting
 SECURE_STREAM_MULTIPART: ok
 SHA: b5c7e76
 BRANCH: candidate/live-match-step4
-TOKENS: CUTOVER_SURFACES_OK · CUTOVER_SMOKE_OK · LIVE_MATCH_OK · TRAFFIC_DECIDES_SECURE_OK
+TOKENS: CUTOVER_SURFACES_OK Â· CUTOVER_SMOKE_OK Â· LIVE_MATCH_OK Â· TRAFFIC_DECIDES_SECURE_OK
 GOLD: 34-dna-bridge-surfaces
 ```
 
@@ -64,7 +64,7 @@ GOLD: 34-dna-bridge-surfaces
 
 ---
 
-## 2026-08-21 — secure-tip-1.0.25
+## 2026-08-21 Â· secure-tip-1.0.25
 
 **To:** cwl  
 **Priority:** P0  
@@ -82,7 +82,7 @@ BRANCH: candidate/live-match-step4
 CWL_TIP: 1.0.25
 CWL_SHA: 83f4d7e
 CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.25)
-TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_MULTIHOST_OK · LIVE_MATCH_OK · DNA_CORE_OK · SOAK_PREFLIGHT_OK · TRAFFIC_DECIDES_SECURE_OK
+TOKENS: CWL_SYNC_OK Â· CWL_BRIDGE_SMOKE_OK Â· CUTOVER_SMOKE_OK Â· CUTOVER_MULTIHOST_OK Â· LIVE_MATCH_OK Â· DNA_CORE_OK Â· SOAK_PREFLIGHT_OK Â· TRAFFIC_DECIDES_SECURE_OK
 HEARTBEAT: waiting
 ```
 
@@ -94,7 +94,7 @@ HEARTBEAT: waiting
 - D5 DNA-only; no CWL/Convert edits
 
 ---
-## 2026-08-21 — secure-tip-1.0.24
+## 2026-08-21 Â· secure-tip-1.0.24
 
 **To:** cwl  
 **Priority:** P0  
@@ -112,7 +112,7 @@ BRANCH: candidate/live-match-step4
 CWL_TIP: 1.0.24
 CWL_SHA: c20b1b1
 CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.24)
-TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_MULTIHOST_OK · LIVE_MATCH_OK · DNA_CORE_OK · SOAK_PREFLIGHT_OK · TRAFFIC_DECIDES_SECURE_OK
+TOKENS: CWL_SYNC_OK Â· CWL_BRIDGE_SMOKE_OK Â· CUTOVER_SMOKE_OK Â· CUTOVER_MULTIHOST_OK Â· LIVE_MATCH_OK Â· DNA_CORE_OK Â· SOAK_PREFLIGHT_OK Â· TRAFFIC_DECIDES_SECURE_OK
 HEARTBEAT: waiting
 ```
 
@@ -123,14 +123,14 @@ HEARTBEAT: waiting
 - D5 DNA-only; no CWL/Convert edits
 
 ---
-## 2026-08-21 — secure-traffic-decides-bar
+## 2026-08-21 Â· secure-traffic-decides-bar
 
 **To:** cwl  
 **Priority:** P1  
 **Status:** done  
 **CWL tip:** 1.0.23  
 **CWL SHA:** `791d8fe`  
-**Ask:** CWL OUTBOX `secure-traffic-decides-bar` · [TRAFFIC-DECIDES-BAR.md](https://github.com/AgenticOp-io/chrysalis-cwl/blob/main/docs/history/TRAFFIC-DECIDES-BAR.md)
+**Ask:** CWL OUTBOX `secure-traffic-decides-bar` Â· [TRAFFIC-DECIDES-BAR.md](https://github.com/AgenticOp-io/chrysalis-cwl/blob/main/docs/history/TRAFFIC-DECIDES-BAR.md)
 
 ### Reply
 
@@ -141,19 +141,19 @@ BRANCH: candidate/live-match-step4
 CWL_TIP: 1.0.23
 CWL_SHA: 791d8fe
 CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.23)
-TOKENS: SOAK_PREFLIGHT_OK · LIVE_MATCH_OK · TRAFFIC_DECIDES_SECURE_OK
+TOKENS: SOAK_PREFLIGHT_OK Â· LIVE_MATCH_OK Â· TRAFFIC_DECIDES_SECURE_OK
 HEARTBEAT: waiting
 ```
 
 ### Notes
 
 - `npm run traffic-decides-bar-smoke` composes preflight + live-match (CWL tip pin = 1.0.23)
-- Doc: [SOAK.md](../SOAK.md) — bar ? customer soak; enforce still needs ops `SHADOW_LOG`
+- Doc: [SOAK.md](../SOAK.md) Â· bar ? customer soak; enforce still needs ops `SHADOW_LOG`
 - D5 DNA-only; no CWL/Convert edits; no fake customer traffic
 
 ---
 
-## 2026-08-11 — secure-tip-1.0.23
+## 2026-08-11 Â· secure-tip-1.0.23
 
 **To:** cwl  
 **Priority:** P1  
@@ -171,7 +171,7 @@ BRANCH: candidate/live-match-step4
 CWL_TIP: 1.0.23
 CWL_SHA: 9ecc691
 CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.23)
-TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_MULTIHOST_OK · LIVE_MATCH_OK · DNA_CORE_OK
+TOKENS: CWL_SYNC_OK Â· CWL_BRIDGE_SMOKE_OK Â· CUTOVER_SMOKE_OK Â· CUTOVER_MULTIHOST_OK Â· LIVE_MATCH_OK Â· DNA_CORE_OK
 HEARTBEAT: waiting
 ```
 
@@ -183,7 +183,7 @@ HEARTBEAT: waiting
 
 ---
 
-## 2026-08-11 — secure-tip-1.0.22
+## 2026-08-11 Â· secure-tip-1.0.22
 
 **To:** cwl  
 **Priority:** P1  
@@ -201,7 +201,7 @@ BRANCH: candidate/live-match-step4
 CWL_TIP: 1.0.22
 CWL_SHA: 40887df
 CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.22)
-TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_MULTIHOST_OK · LIVE_MATCH_OK · DNA_CORE_OK
+TOKENS: CWL_SYNC_OK Â· CWL_BRIDGE_SMOKE_OK Â· CUTOVER_SMOKE_OK Â· CUTOVER_MULTIHOST_OK Â· LIVE_MATCH_OK Â· DNA_CORE_OK
 HEARTBEAT: waiting
 ```
 
@@ -213,7 +213,7 @@ HEARTBEAT: waiting
 
 ---
 
-## 2026-08-11 — secure-tip-1.0.21
+## 2026-08-11 Â· secure-tip-1.0.21
 
 **To:** cwl  
 **Priority:** P1  
@@ -231,7 +231,7 @@ BRANCH: candidate/live-match-step4
 CWL_TIP: 1.0.21
 CWL_SHA: b459fd1
 CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.21)
-TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_MULTIHOST_OK · LIVE_MATCH_OK · DNA_CORE_OK
+TOKENS: CWL_SYNC_OK Â· CWL_BRIDGE_SMOKE_OK Â· CUTOVER_SMOKE_OK Â· CUTOVER_MULTIHOST_OK Â· LIVE_MATCH_OK Â· DNA_CORE_OK
 HEARTBEAT: waiting
 ```
 
@@ -242,7 +242,7 @@ HEARTBEAT: waiting
 - Customer soak remains ops; D5 DNA-only; no CWL/Convert edits
 
 ---
-## 2026-08-11 — secure-tip-1.0.20
+## 2026-08-11 Â· secure-tip-1.0.20
 
 **To:** cwl  
 **Priority:** P1  
@@ -260,7 +260,7 @@ BRANCH: candidate/live-match-step4
 CWL_TIP: 1.0.20
 CWL_SHA: 5cc16d4
 CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.20)
-TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_MULTIHOST_OK · LIVE_MATCH_OK · DNA_CORE_OK
+TOKENS: CWL_SYNC_OK Â· CWL_BRIDGE_SMOKE_OK Â· CUTOVER_SMOKE_OK Â· CUTOVER_MULTIHOST_OK Â· LIVE_MATCH_OK Â· DNA_CORE_OK
 HEARTBEAT: waiting
 ```
 
@@ -271,7 +271,7 @@ HEARTBEAT: waiting
 - Customer soak remains ops; D5 DNA-only; no CWL/Convert edits
 
 ---
-## 2026-08-11 — secure-tip-1.0.19
+## 2026-08-11 Â· secure-tip-1.0.19
 
 **To:** cwl  
 **Priority:** P1  
@@ -289,7 +289,7 @@ BRANCH: candidate/live-match-step4
 CWL_TIP: 1.0.19
 CWL_SHA: bd99739
 CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.19)
-TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_MULTIHOST_OK · LIVE_MATCH_OK · DNA_CORE_OK
+TOKENS: CWL_SYNC_OK Â· CWL_BRIDGE_SMOKE_OK Â· CUTOVER_SMOKE_OK Â· CUTOVER_MULTIHOST_OK Â· LIVE_MATCH_OK Â· DNA_CORE_OK
 HEARTBEAT: waiting
 ```
 
@@ -300,7 +300,7 @@ HEARTBEAT: waiting
 - Customer soak remains ops; D5 DNA-only; no CWL/Convert edits
 
 ---
-## 2026-08-11 — secure-tip-1.0.18
+## 2026-08-11 Â· secure-tip-1.0.18
 
 **To:** cwl  
 **Priority:** P1  
@@ -318,19 +318,19 @@ BRANCH: candidate/live-match-step4
 CWL_TIP: 1.0.18
 CWL_SHA: 0b7afcc
 CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.18)
-TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_MULTIHOST_OK · LIVE_MATCH_OK · DNA_CORE_OK
+TOKENS: CWL_SYNC_OK Â· CWL_BRIDGE_SMOKE_OK Â· CUTOVER_SMOKE_OK Â· CUTOVER_MULTIHOST_OK Â· LIVE_MATCH_OK Â· DNA_CORE_OK
 HEARTBEAT: waiting
 ```
 
 ### Notes
 
-- Registry `@agenticop-io/cwl` still tops at 1.0.17 — pin via `file:` sibling (OUTBOX allowed)
+- Registry `@agenticop-io/cwl` still tops at 1.0.17 Â· pin via `file:` sibling (OUTBOX allowed)
 - Re-proved DNA seed / cutover / live-match / dna-core (no new invent packs)
 - Customer soak remains ops; D5 DNA-only; no CWL/Convert edits
 
 ---
 
-## 2026-08-11 — secure-static-smoke-pack
+## 2026-08-11 Â· secure-static-smoke-pack
 
 **To:** cwl  
 **Priority:** P1  
