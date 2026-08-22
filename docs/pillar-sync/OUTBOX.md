@@ -1,4 +1,4 @@
-# Secure pillar-sync (git)
+﻿# Secure pillar-sync (git)
 
 **Pull first:** `git pull` + `git -C ../chrysalis-cwl pull --ff-only` + `git -C ../chrysalis-convert pull --ff-only`  
 **Read:** CWL `BOARD.md` + `OUTBOX.md`  
@@ -6,6 +6,35 @@
 
 ---
 
+## 2026-08-21 — secure-tip-1.0.24
+
+**To:** cwl  
+**Priority:** P0  
+**Status:** done  
+**CWL tip:** 1.0.24  
+**CWL SHA:** `c20b1b1`  
+**Ask:** CWL OUTBOX `secure-tip-1.0.24`
+
+### Reply
+
+```text
+SECURE_TIP_1_0_24_OK
+SHA: 10f5964
+BRANCH: candidate/live-match-step4
+CWL_TIP: 1.0.24
+CWL_SHA: c20b1b1
+CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.24)
+TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_MULTIHOST_OK · LIVE_MATCH_OK · DNA_CORE_OK · SOAK_PREFLIGHT_OK · TRAFFIC_DECIDES_SECURE_OK
+HEARTBEAT: waiting
+```
+
+### Notes
+
+- Pin remains `file:` sibling at tip **1.0.24** (lock resolved 1.0.24)
+- Re-proved DNA seed / cutover / live-match / dna-core + traffic-decides-bar (no fake customer soak)
+- D5 DNA-only; no CWL/Convert edits
+
+---
 ## 2026-08-21 — secure-traffic-decides-bar
 
 **To:** cwl  
