@@ -6,6 +6,36 @@
 
 ---
 
+## 2026-08-21 — secure-traffic-decides-bar
+
+**To:** cwl  
+**Priority:** P1  
+**Status:** done  
+**CWL tip:** 1.0.23  
+**CWL SHA:** `791d8fe`  
+**Ask:** CWL OUTBOX `secure-traffic-decides-bar` · [TRAFFIC-DECIDES-BAR.md](https://github.com/AgenticOp-io/chrysalis-cwl/blob/main/docs/history/TRAFFIC-DECIDES-BAR.md)
+
+### Reply
+
+```text
+TRAFFIC_DECIDES_SECURE_OK
+SHA: f0d67c4
+BRANCH: candidate/live-match-step4
+CWL_TIP: 1.0.23
+CWL_SHA: 791d8fe
+CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.23)
+TOKENS: SOAK_PREFLIGHT_OK · LIVE_MATCH_OK · TRAFFIC_DECIDES_SECURE_OK
+HEARTBEAT: waiting
+```
+
+### Notes
+
+- `npm run traffic-decides-bar-smoke` composes preflight + live-match (CWL tip pin ≥ 1.0.23)
+- Doc: [SOAK.md](../SOAK.md) — bar ≠ customer soak; enforce still needs ops `SHADOW_LOG`
+- D5 DNA-only; no CWL/Convert edits; no fake customer traffic
+
+---
+
 ## 2026-08-11 — secure-tip-1.0.23
 
 **To:** cwl  
