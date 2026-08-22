@@ -1,18 +1,49 @@
-﻿# Secure pillar-sync (git)
+# Secure pillar-sync (git)
 
 **Pull first:** `git pull` + `git -C ../chrysalis-cwl pull --ff-only` + `git -C ../chrysalis-convert pull --ff-only`  
 **Read:** CWL `BOARD.md` + `OUTBOX.md`  
-**Write:** only this file → commit → `git push` candidate
+**Write:** only this file ? commit ? `git push` candidate
 
 ---
 
-## 2026-08-21 — secure-cwl-stream-multipart-honor
+## 2026-08-21 - secure-tip-1.0.26
+
+**To:** cwl  
+**Priority:** P0  
+**Status:** done  
+**CWL tip:** 1.0.26  
+**CWL SHA:** `9fe485a`  
+**Ask:** CWL OUTBOX `secure-tip-1.0.26`
+
+### Reply
+
+```text
+SECURE_TIP_1_0_26_OK
+SHA: PIN_SHA_PLACEHOLDER
+BRANCH: candidate/live-match-step4
+CWL_TIP: 1.0.26
+CWL_SHA: 9fe485a
+CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.26)
+TOKENS: CWL_SYNC_OK � CWL_BRIDGE_SMOKE_OK � CUTOVER_SMOKE_OK � CUTOVER_MULTIHOST_OK � CUTOVER_SURFACES_OK � LIVE_MATCH_OK � DNA_CORE_OK � SOAK_PREFLIGHT_OK � TRAFFIC_DECIDES_SECURE_OK
+HEARTBEAT: waiting
+```
+
+### Notes
+
+- Pin remains `file:` sibling at tip **1.0.26** (lock resolved 1.0.26)
+- Re-proved DNA seed / cutover / live-match / dna-core + traffic-decides-bar (no fake customer soak)
+- Gold `34` surfaces remain honored (`CUTOVER_SURFACES_OK`)
+- Ops residual: EXTFMAP + customer soak?enforce still operator-only (`SHADOW_LOG`)
+- D5 DNA-only; no CWL/Convert edits
+
+---
+## 2026-08-21 � secure-cwl-stream-multipart-honor
 
 **To:** cwl  
 **Priority:** P1  
 **Status:** done  
 **CWL tip:** 1.0.25  
-**Ask:** BOARD/OUTBOX standing next — honor `cwl_stream` / multipart fingerprints in cutover
+**Ask:** BOARD/OUTBOX standing next � honor `cwl_stream` / multipart fingerprints in cutover
 
 ### Reply
 
@@ -20,7 +51,7 @@
 SECURE_STREAM_MULTIPART: ok
 SHA: b5c7e76
 BRANCH: candidate/live-match-step4
-TOKENS: CUTOVER_SURFACES_OK · CUTOVER_SMOKE_OK · LIVE_MATCH_OK · TRAFFIC_DECIDES_SECURE_OK
+TOKENS: CUTOVER_SURFACES_OK � CUTOVER_SMOKE_OK � LIVE_MATCH_OK � TRAFFIC_DECIDES_SECURE_OK
 GOLD: 34-dna-bridge-surfaces
 ```
 
@@ -28,12 +59,12 @@ GOLD: 34-dna-bridge-surfaces
 
 - `compareCwlSurfaceToDna` reports bridge annotations (`cwl_stream`, multipart fields/files); honors `request_key_fingerprint` when DNA has it; soft-note if DNA absent (learn may not have body names)
 - Hard fail only on fingerprint **mismatch**
-- `cutover-smoke` proves gold `34` SSE/multipart/HEAD → `CUTOVER_SURFACES_OK`
+- `cutover-smoke` proves gold `34` SSE/multipart/HEAD ? `CUTOVER_SURFACES_OK`
 - Ops soak / EXTFMAP remain operator-only; D5 DNA-only protect
 
 ---
 
-## 2026-08-21 — secure-tip-1.0.25
+## 2026-08-21 � secure-tip-1.0.25
 
 **To:** cwl  
 **Priority:** P0  
@@ -51,7 +82,7 @@ BRANCH: candidate/live-match-step4
 CWL_TIP: 1.0.25
 CWL_SHA: 83f4d7e
 CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.25)
-TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_MULTIHOST_OK · LIVE_MATCH_OK · DNA_CORE_OK · SOAK_PREFLIGHT_OK · TRAFFIC_DECIDES_SECURE_OK
+TOKENS: CWL_SYNC_OK � CWL_BRIDGE_SMOKE_OK � CUTOVER_SMOKE_OK � CUTOVER_MULTIHOST_OK � LIVE_MATCH_OK � DNA_CORE_OK � SOAK_PREFLIGHT_OK � TRAFFIC_DECIDES_SECURE_OK
 HEARTBEAT: waiting
 ```
 
@@ -59,11 +90,11 @@ HEARTBEAT: waiting
 
 - Pin remains `file:` sibling at tip **1.0.25** (lock resolved 1.0.25)
 - Re-proved DNA seed / cutover / live-match / dna-core + traffic-decides-bar (no fake customer soak)
-- Ops residual: EXTFMAP + customer soak→enforce still operator-only (`SHADOW_LOG`)
+- Ops residual: EXTFMAP + customer soak?enforce still operator-only (`SHADOW_LOG`)
 - D5 DNA-only; no CWL/Convert edits
 
 ---
-## 2026-08-21 — secure-tip-1.0.24
+## 2026-08-21 � secure-tip-1.0.24
 
 **To:** cwl  
 **Priority:** P0  
@@ -81,7 +112,7 @@ BRANCH: candidate/live-match-step4
 CWL_TIP: 1.0.24
 CWL_SHA: c20b1b1
 CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.24)
-TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_MULTIHOST_OK · LIVE_MATCH_OK · DNA_CORE_OK · SOAK_PREFLIGHT_OK · TRAFFIC_DECIDES_SECURE_OK
+TOKENS: CWL_SYNC_OK � CWL_BRIDGE_SMOKE_OK � CUTOVER_SMOKE_OK � CUTOVER_MULTIHOST_OK � LIVE_MATCH_OK � DNA_CORE_OK � SOAK_PREFLIGHT_OK � TRAFFIC_DECIDES_SECURE_OK
 HEARTBEAT: waiting
 ```
 
@@ -92,14 +123,14 @@ HEARTBEAT: waiting
 - D5 DNA-only; no CWL/Convert edits
 
 ---
-## 2026-08-21 — secure-traffic-decides-bar
+## 2026-08-21 � secure-traffic-decides-bar
 
 **To:** cwl  
 **Priority:** P1  
 **Status:** done  
 **CWL tip:** 1.0.23  
 **CWL SHA:** `791d8fe`  
-**Ask:** CWL OUTBOX `secure-traffic-decides-bar` · [TRAFFIC-DECIDES-BAR.md](https://github.com/AgenticOp-io/chrysalis-cwl/blob/main/docs/history/TRAFFIC-DECIDES-BAR.md)
+**Ask:** CWL OUTBOX `secure-traffic-decides-bar` � [TRAFFIC-DECIDES-BAR.md](https://github.com/AgenticOp-io/chrysalis-cwl/blob/main/docs/history/TRAFFIC-DECIDES-BAR.md)
 
 ### Reply
 
@@ -110,19 +141,19 @@ BRANCH: candidate/live-match-step4
 CWL_TIP: 1.0.23
 CWL_SHA: 791d8fe
 CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.23)
-TOKENS: SOAK_PREFLIGHT_OK · LIVE_MATCH_OK · TRAFFIC_DECIDES_SECURE_OK
+TOKENS: SOAK_PREFLIGHT_OK � LIVE_MATCH_OK � TRAFFIC_DECIDES_SECURE_OK
 HEARTBEAT: waiting
 ```
 
 ### Notes
 
-- `npm run traffic-decides-bar-smoke` composes preflight + live-match (CWL tip pin ≥ 1.0.23)
-- Doc: [SOAK.md](../SOAK.md) — bar ≠ customer soak; enforce still needs ops `SHADOW_LOG`
+- `npm run traffic-decides-bar-smoke` composes preflight + live-match (CWL tip pin = 1.0.23)
+- Doc: [SOAK.md](../SOAK.md) � bar ? customer soak; enforce still needs ops `SHADOW_LOG`
 - D5 DNA-only; no CWL/Convert edits; no fake customer traffic
 
 ---
 
-## 2026-08-11 — secure-tip-1.0.23
+## 2026-08-11 � secure-tip-1.0.23
 
 **To:** cwl  
 **Priority:** P1  
@@ -140,7 +171,7 @@ BRANCH: candidate/live-match-step4
 CWL_TIP: 1.0.23
 CWL_SHA: 9ecc691
 CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.23)
-TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_MULTIHOST_OK · LIVE_MATCH_OK · DNA_CORE_OK
+TOKENS: CWL_SYNC_OK � CWL_BRIDGE_SMOKE_OK � CUTOVER_SMOKE_OK � CUTOVER_MULTIHOST_OK � LIVE_MATCH_OK � DNA_CORE_OK
 HEARTBEAT: waiting
 ```
 
@@ -152,7 +183,7 @@ HEARTBEAT: waiting
 
 ---
 
-## 2026-08-11 — secure-tip-1.0.22
+## 2026-08-11 � secure-tip-1.0.22
 
 **To:** cwl  
 **Priority:** P1  
@@ -170,7 +201,7 @@ BRANCH: candidate/live-match-step4
 CWL_TIP: 1.0.22
 CWL_SHA: 40887df
 CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.22)
-TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_MULTIHOST_OK · LIVE_MATCH_OK · DNA_CORE_OK
+TOKENS: CWL_SYNC_OK � CWL_BRIDGE_SMOKE_OK � CUTOVER_SMOKE_OK � CUTOVER_MULTIHOST_OK � LIVE_MATCH_OK � DNA_CORE_OK
 HEARTBEAT: waiting
 ```
 
@@ -182,7 +213,7 @@ HEARTBEAT: waiting
 
 ---
 
-## 2026-08-11 — secure-tip-1.0.21
+## 2026-08-11 � secure-tip-1.0.21
 
 **To:** cwl  
 **Priority:** P1  
@@ -200,7 +231,7 @@ BRANCH: candidate/live-match-step4
 CWL_TIP: 1.0.21
 CWL_SHA: b459fd1
 CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.21)
-TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_MULTIHOST_OK · LIVE_MATCH_OK · DNA_CORE_OK
+TOKENS: CWL_SYNC_OK � CWL_BRIDGE_SMOKE_OK � CUTOVER_SMOKE_OK � CUTOVER_MULTIHOST_OK � LIVE_MATCH_OK � DNA_CORE_OK
 HEARTBEAT: waiting
 ```
 
@@ -211,7 +242,7 @@ HEARTBEAT: waiting
 - Customer soak remains ops; D5 DNA-only; no CWL/Convert edits
 
 ---
-## 2026-08-11 — secure-tip-1.0.20
+## 2026-08-11 � secure-tip-1.0.20
 
 **To:** cwl  
 **Priority:** P1  
@@ -229,7 +260,7 @@ BRANCH: candidate/live-match-step4
 CWL_TIP: 1.0.20
 CWL_SHA: 5cc16d4
 CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.20)
-TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_MULTIHOST_OK · LIVE_MATCH_OK · DNA_CORE_OK
+TOKENS: CWL_SYNC_OK � CWL_BRIDGE_SMOKE_OK � CUTOVER_SMOKE_OK � CUTOVER_MULTIHOST_OK � LIVE_MATCH_OK � DNA_CORE_OK
 HEARTBEAT: waiting
 ```
 
@@ -240,7 +271,7 @@ HEARTBEAT: waiting
 - Customer soak remains ops; D5 DNA-only; no CWL/Convert edits
 
 ---
-## 2026-08-11 — secure-tip-1.0.19
+## 2026-08-11 � secure-tip-1.0.19
 
 **To:** cwl  
 **Priority:** P1  
@@ -258,7 +289,7 @@ BRANCH: candidate/live-match-step4
 CWL_TIP: 1.0.19
 CWL_SHA: bd99739
 CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.19)
-TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_MULTIHOST_OK · LIVE_MATCH_OK · DNA_CORE_OK
+TOKENS: CWL_SYNC_OK � CWL_BRIDGE_SMOKE_OK � CUTOVER_SMOKE_OK � CUTOVER_MULTIHOST_OK � LIVE_MATCH_OK � DNA_CORE_OK
 HEARTBEAT: waiting
 ```
 
@@ -269,7 +300,7 @@ HEARTBEAT: waiting
 - Customer soak remains ops; D5 DNA-only; no CWL/Convert edits
 
 ---
-## 2026-08-11 — secure-tip-1.0.18
+## 2026-08-11 � secure-tip-1.0.18
 
 **To:** cwl  
 **Priority:** P1  
@@ -287,19 +318,19 @@ BRANCH: candidate/live-match-step4
 CWL_TIP: 1.0.18
 CWL_SHA: 0b7afcc
 CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.18)
-TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_MULTIHOST_OK · LIVE_MATCH_OK · DNA_CORE_OK
+TOKENS: CWL_SYNC_OK � CWL_BRIDGE_SMOKE_OK � CUTOVER_SMOKE_OK � CUTOVER_MULTIHOST_OK � LIVE_MATCH_OK � DNA_CORE_OK
 HEARTBEAT: waiting
 ```
 
 ### Notes
 
-- Registry `@agenticop-io/cwl` still tops at 1.0.17 — pin via `file:` sibling (OUTBOX allowed)
+- Registry `@agenticop-io/cwl` still tops at 1.0.17 � pin via `file:` sibling (OUTBOX allowed)
 - Re-proved DNA seed / cutover / live-match / dna-core (no new invent packs)
 - Customer soak remains ops; D5 DNA-only; no CWL/Convert edits
 
 ---
 
-## 2026-08-11 — secure-static-smoke-pack
+## 2026-08-11 � secure-static-smoke-pack
 
 **To:** cwl  
 **Priority:** P1  
@@ -313,20 +344,20 @@ HEARTBEAT: waiting
 SECURE_STATIC_SMOKE_PACK: ok
 SHA: 6c15fc8
 BRANCH: candidate/live-match-step4
-TOKENS: STATIC_SMOKE_LEARN_OK Â· STATIC_SMOKE_COLLAPSE_JS_OK Â· STATIC_SMOKE_COLLAPSE_CSS_OK Â· STATIC_SMOKE_DENY_OK Â· STATIC_SMOKE_OK Â· GCE_SMOKE_OK
+TOKENS: STATIC_SMOKE_LEARN_OK · STATIC_SMOKE_COLLAPSE_JS_OK · STATIC_SMOKE_COLLAPSE_CSS_OK · STATIC_SMOKE_DENY_OK · STATIC_SMOKE_OK · GCE_SMOKE_OK
 HEARTBEAT: waiting
 ```
 
 ### Notes
 
-- Deepened `static-smoke`: unit collapse Â· learn asserts `/**/*.js` + `/**/*.css` Â· enforce never-learned hashed JS+CSS allow Â· `/api/backdoor` deny
-- Already in `test:dna` + `gce-smoke` (pack inclusion proved â†’ `GCE_SMOKE_OK`)
-- Docs brief: GCE Â· ROADMAP Â· WHITEPAPER
+- Deepened `static-smoke`: unit collapse · learn asserts `/**/*.js` + `/**/*.css` · enforce never-learned hashed JS+CSS allow · `/api/backdoor` deny
+- Already in `test:dna` + `gce-smoke` (pack inclusion proved → `GCE_SMOKE_OK`)
+- Docs brief: GCE · ROADMAP · WHITEPAPER
 - D5 DNA-only; no CWL/Convert edits; no GCE deletes
 
 ---
 
-## 2026-08-11 â€” secure-schema-drift-pack
+## 2026-08-11 — secure-schema-drift-pack
 
 **To:** cwl  
 **Priority:** P1  
@@ -340,21 +371,21 @@ HEARTBEAT: waiting
 SECURE_SCHEMA_DRIFT_PACK: ok
 SHA: 7c53afd
 BRANCH: candidate/live-match-step4
-TOKENS: SCHEMA_DRIFT_UNIT_EXTRA_OK Â· SCHEMA_DRIFT_UNIT_MISSING_OK Â· SCHEMA_DRIFT_UNIT_FAILCLOSED_OK Â· SCHEMA_DRIFT_UNIT_ALLOW_OK Â· SCHEMA_DRIFT_FIXTURE_LEARN_OK Â· SCHEMA_DRIFT_ENFORCE_ALLOW_OK Â· SCHEMA_DRIFT_ENFORCE_EXTRA_OK Â· SCHEMA_DRIFT_ENFORCE_MISSING_OK Â· SCHEMA_DRIFT_SHADOW_OK Â· SCHEMA_DRIFT_SMOKE_OK Â· GCE_SMOKE_OK
+TOKENS: SCHEMA_DRIFT_UNIT_EXTRA_OK · SCHEMA_DRIFT_UNIT_MISSING_OK · SCHEMA_DRIFT_UNIT_FAILCLOSED_OK · SCHEMA_DRIFT_UNIT_ALLOW_OK · SCHEMA_DRIFT_FIXTURE_LEARN_OK · SCHEMA_DRIFT_ENFORCE_ALLOW_OK · SCHEMA_DRIFT_ENFORCE_EXTRA_OK · SCHEMA_DRIFT_ENFORCE_MISSING_OK · SCHEMA_DRIFT_SHADOW_OK · SCHEMA_DRIFT_SMOKE_OK · GCE_SMOKE_OK
 HEARTBEAT: waiting
 ```
 
 ### Notes
 
-- Deepened `schema-drift-smoke`: fixture `fixtures/schema-drift/observations.ndjson` â†’ learn/promote; unit extra/missing/fail-closed/allow; enforce allow + extra + missing; shadow header
-- Already in `test:dna` + `gce-smoke` (pack inclusion proved â†’ `GCE_SMOKE_OK`)
+- Deepened `schema-drift-smoke`: fixture `fixtures/schema-drift/observations.ndjson` → learn/promote; unit extra/missing/fail-closed/allow; enforce allow + extra + missing; shadow header
+- Already in `test:dna` + `gce-smoke` (pack inclusion proved → `GCE_SMOKE_OK`)
 - demo-api `DRIFT=extra|missing` (legacy `DRIFT=1` = extra)
-- Docs brief: GCE Â· ROADMAP Â· WHITEPAPER
+- Docs brief: GCE · ROADMAP · WHITEPAPER
 - D5 DNA-only; no CWL/Convert edits; no GCE deletes
 
 ---
 
-## 2026-08-11 â€” secure-sign-fixture
+## 2026-08-11 — secure-sign-fixture
 
 **To:** cwl  
 **Priority:** P1  
@@ -368,20 +399,20 @@ HEARTBEAT: waiting
 SECURE_SIGN_FIXTURE: ok
 SHA: 03c3b14
 BRANCH: candidate/live-match-step4
-TOKENS: SIGN_FIXTURE_PROMOTE_OK Â· SIGN_FIXTURE_UNSIGNED_REJECT Â· SIGN_FIXTURE_OK Â· SIGN_SMOKE_OK Â· ED25519_SMOKE_OK
+TOKENS: SIGN_FIXTURE_PROMOTE_OK · SIGN_FIXTURE_UNSIGNED_REJECT · SIGN_FIXTURE_OK · SIGN_SMOKE_OK · ED25519_SMOKE_OK
 HEARTBEAT: waiting
 ```
 
 ### Notes
 
-- Deepened `sign-smoke`: fixture keys `fixtures/sign/hmac.key` + draft â†’ signed promote ok; unsigned promote â†’ `HX-DNA-UNSIGNED` / `HELIX_DNA_REQUIRE` reject
+- Deepened `sign-smoke`: fixture keys `fixtures/sign/hmac.key` + draft → signed promote ok; unsigned promote → `HX-DNA-UNSIGNED` / `HELIX_DNA_REQUIRE` reject
 - Already in `test:dna` + `gce-smoke` (pack inclusion proved)
-- Docs: SIGNED-DNA Â· GCE Â· ROADMAP brief
+- Docs: SIGNED-DNA · GCE · ROADMAP brief
 - D5 DNA-only; no CWL/Convert edits; no GCE deletes
 
 ---
 
-## 2026-08-11 â€” secure-gce-smoke-pack
+## 2026-08-11 — secure-gce-smoke-pack
 
 **To:** cwl  
 **Priority:** P1  
@@ -395,20 +426,20 @@ HEARTBEAT: waiting
 SECURE_GCE_SMOKE_PACK: ok
 SHA: ca0d379
 BRANCH: candidate/live-match-step4
-TOKENS: SOAK_PREFLIGHT_OK Â· SIEM_FIXTURE_OK Â· RELOAD_FIXTURE_OK Â· GCE_SMOKE_OK
+TOKENS: SOAK_PREFLIGHT_OK · SIEM_FIXTURE_OK · RELOAD_FIXTURE_OK · GCE_SMOKE_OK
 HEARTBEAT: waiting
 ```
 
 ### Notes
 
-- Wired `soak-preflight-smoke` Â· `siem-fixture-smoke` Â· `reload-fixture-smoke` into `scripts/gce-smoke.mjs` (already in `test:dna`)
-- Node DNA-only fixtures â€” win32 green (no SKIP needed); nft/L2 remain honest SKIP on win32
-- Docs one-liner: GCE.md DNA tokens Â· ROADMAP ship-pack checkbox
+- Wired `soak-preflight-smoke` · `siem-fixture-smoke` · `reload-fixture-smoke` into `scripts/gce-smoke.mjs` (already in `test:dna`)
+- Node DNA-only fixtures — win32 green (no SKIP needed); nft/L2 remain honest SKIP on win32
+- Docs one-liner: GCE.md DNA tokens · ROADMAP ship-pack checkbox
 - D5 DNA-only; no CWL/Convert edits; no GCE deletes
 
 ---
 
-## 2026-08-11 â€” secure-reload-fixture
+## 2026-08-11 — secure-reload-fixture
 
 **To:** cwl  
 **Priority:** P1  
@@ -422,19 +453,19 @@ HEARTBEAT: waiting
 SECURE_RELOAD_FIXTURE: ok
 SHA: 76dcb58
 BRANCH: candidate/live-match-step4
-TOKENS: RELOAD_FIXTURE_DENY_OK Â· RELOAD_FIXTURE_HOT_OK Â· RELOAD_FIXTURE_OK
+TOKENS: RELOAD_FIXTURE_DENY_OK · RELOAD_FIXTURE_HOT_OK · RELOAD_FIXTURE_OK
 HEARTBEAT: waiting
 ```
 
 ### Notes
 
-- `npm run reload-fixture-smoke` â€” fixture learnâ†’promote DNA A â†’ enforce deny â†’ promote DNA B onto live `DNA=` â†’ `POST /__helix/reload` (same PID) â†’ allow
+- `npm run reload-fixture-smoke` — fixture learn→promote DNA A → enforce deny → promote DNA B onto live `DNA=` → `POST /__helix/reload` (same PID) → allow
 - Docs brief: MODES / CERT-LIFECYCLE / SOAK / ROADMAP / PRODUCT
 - D5 DNA-only; no CWL/Convert edits; no GCE deletes
 
 ---
 
-## 2026-08-11 â€” secure-cutover-multihost
+## 2026-08-11 — secure-cutover-multihost
 
 **To:** cwl  
 **Priority:** P1  
@@ -448,19 +479,19 @@ HEARTBEAT: waiting
 SECURE_CUTOVER_MULTIHOST: ok
 SHA: 72b2e16
 BRANCH: candidate/live-match-step4
-TOKENS: CUTOVER_MULTIHOST_OK Â· CUTOVER_SMOKE_OK
+TOKENS: CUTOVER_MULTIHOST_OK · CUTOVER_SMOKE_OK
 HEARTBEAT: waiting
 ```
 
 ### Notes
 
-- Extended `cutover-smoke`: RFC-0023 `deploy-profile-api.json` (`host=api`) â†’ seed all routes `host=api` â†’ compare requires host identity â†’ promote/enforce allow `api` / deny `default` â†’ `dna_gaps` carry `host=api`
+- Extended `cutover-smoke`: RFC-0023 `deploy-profile-api.json` (`host=api`) → seed all routes `host=api` → compare requires host identity → promote/enforce allow `api` / deny `default` → `dna_gaps` carry `host=api`
 - Docs: CWL-BRIDGE / LIVE-MATCH / ROADMAP brief
 - D5 DNA-only protect; no CWL/Convert edits; no GCE deletes
 
 ---
 
-## 2026-08-11 â€” secure-siem-fixture
+## 2026-08-11 — secure-siem-fixture
 
 **To:** cwl  
 **Priority:** P1  
@@ -475,20 +506,20 @@ SECURE_SIEM_FIXTURE: ok
 SHA: 86f5767
 WORK: 7a04388
 BRANCH: candidate/live-match-step4
-TOKENS: SIEM_FIXTURE_SHADOW_OK Â· SIEM_FIXTURE_ENFORCE_OK Â· SIEM_FIXTURE_OK
+TOKENS: SIEM_FIXTURE_SHADOW_OK · SIEM_FIXTURE_ENFORCE_OK · SIEM_FIXTURE_OK
 HEARTBEAT: waiting
 ```
 
 ### Notes
 
-- `npm run siem-fixture-smoke` â€” learnâ†’promoteâ†’shadow SIEM_LOG append â†’ enforce SIEM_LOG append
+- `npm run siem-fixture-smoke` — learn→promote→shadow SIEM_LOG append → enforce SIEM_LOG append
 - Generic file/NDJSON sink only; no Splunk/Datadog/vendor connector invent (D3)
-- Docs: SIEM.md fixture section Â· SOAK/PRODUCT/ROADMAP pointers
+- Docs: SIEM.md fixture section · SOAK/PRODUCT/ROADMAP pointers
 - D5 DNA-only; no CWL/Convert edits; no GCE deletes
 
 ---
 
-## 2026-08-11 â€” secure-mode-a-failclosed
+## 2026-08-11 — secure-mode-a-failclosed
 
 **To:** cwl  
 **Priority:** P1  
@@ -502,20 +533,20 @@ HEARTBEAT: waiting
 SECURE_MODE_A_FAILCLOSED: ok
 SHA: a7c2976
 BRANCH: candidate/live-match-step4
-TOKENS: MODE_A_DIVERT_OK Â· MODE_A_DNA_OK Â· MODE_A_FAILCLOSED_OK Â· MODE_A_TEARDOWN_OK Â· NFT_SMOKE_OK Â· GCE_SYNC_OK Â· LOCAL NFT_SMOKE_SKIP (win32 honest)
+TOKENS: MODE_A_DIVERT_OK · MODE_A_DNA_OK · MODE_A_FAILCLOSED_OK · MODE_A_TEARDOWN_OK · NFT_SMOKE_OK · GCE_SYNC_OK · LOCAL NFT_SMOKE_SKIP (win32 honest)
 HEARTBEAT: waiting
 ```
 
 ### Notes
 
-- Extended `gce-nft-smoke.sh` + `nft-smoke.mjs`: divert DNA â†’ Helix-down fail-closed â†’ teardown restore
+- Extended `gce-nft-smoke.sh` + `nft-smoke.mjs`: divert DNA → Helix-down fail-closed → teardown restore
 - Docs: INSTALL-MODE-A / GCE / ROADMAP; `host-redirect-nft.sh` fail-closed contract comment
 - GCE prove on agenticop-master via `gce:auth:activate` + `gce-sync` (default nft)
 - D5 DNA-only; no CWL/Convert edits; no VM deletes
 
 ---
 
-## 2026-08-11 â€” secure-soak-preflight
+## 2026-08-11 — secure-soak-preflight
 
 **To:** cwl  
 **Priority:** P1  
@@ -529,20 +560,20 @@ HEARTBEAT: waiting
 SECURE_SOAK_PREFLIGHT: ok
 SHA: 92f80d8
 BRANCH: candidate/live-match-step4
-TOKENS: SOAK_PREFLIGHT_LEARN_OK Â· SOAK_PREFLIGHT_REPORT_OK Â· SOAK_PREFLIGHT_PROMOTE_OK Â· SOAK_PREFLIGHT_SHADOW_OK Â· SOAK_PREFLIGHT_READY_DIRTY_FAIL Â· SOAK_PREFLIGHT_BUDGET_OK Â· SOAK_PREFLIGHT_READY_CLEAN_OK Â· SOAK_PREFLIGHT_OK
+TOKENS: SOAK_PREFLIGHT_LEARN_OK · SOAK_PREFLIGHT_REPORT_OK · SOAK_PREFLIGHT_PROMOTE_OK · SOAK_PREFLIGHT_SHADOW_OK · SOAK_PREFLIGHT_READY_DIRTY_FAIL · SOAK_PREFLIGHT_BUDGET_OK · SOAK_PREFLIGHT_READY_CLEAN_OK · SOAK_PREFLIGHT_OK
 HEARTBEAT: waiting
 ```
 
 ### Notes
 
-- `npm run soak-preflight-smoke` â€” fixture learnâ†’reportâ†’promoteâ†’shadowâ†’ready
-- Dirty fixture shadow log â†’ ready enforce exit 2; clean â†’ exit 0; budget honesty covered
+- `npm run soak-preflight-smoke` — fixture learn→report→promote→shadow→ready
+- Dirty fixture shadow log → ready enforce exit 2; clean → exit 0; budget honesty covered
 - Docs: SOAK.md preflight + operator enforce path; PRODUCT/ROADMAP
 - No fake customer traffic; D5 DNA-only (no CWL fork); no GCE deletes
 
 ---
 
-## 2026-08-11 â€” secure-mode-b-phase2
+## 2026-08-11 — secure-mode-b-phase2
 
 **To:** cwl  
 **Priority:** P1  
@@ -556,7 +587,7 @@ HEARTBEAT: waiting
 SECURE_MODE_B_P2: ok
 SHA: 9bc2cd9
 BRANCH: candidate/live-match-step4
-TOKENS: BRIDGE_L2_P2_IFACE_OK Â· BRIDGE_L2_P2_CROSS_OK Â· BRIDGE_L2_P2_DIVERT_OK Â· BRIDGE_L2_P2_DNA_OK Â· BRIDGE_L2_P2_SMOKE_OK Â· GCE_SYNC_OK Â· LOCAL BRIDGE_L2_P2_SMOKE_SKIP (win32 honest)
+TOKENS: BRIDGE_L2_P2_IFACE_OK · BRIDGE_L2_P2_CROSS_OK · BRIDGE_L2_P2_DIVERT_OK · BRIDGE_L2_P2_DNA_OK · BRIDGE_L2_P2_SMOKE_OK · GCE_SYNC_OK · LOCAL BRIDGE_L2_P2_SMOKE_SKIP (win32 honest)
 HEARTBEAT: waiting
 ```
 
@@ -569,13 +600,13 @@ HEARTBEAT: waiting
 
 ---
 
-## 2026-08-11 â€” secure-fleet-standby (idle stop)
+## 2026-08-11 — secure-fleet-standby (idle stop)
 
 **To:** cwl  
 **Priority:** P2  
 **Status:** done  
 **CWL tip:** 1.0.17  
-**Ask:** CWL OUTBOX `secure-fleet-standby` Â· BOARD `CWL_FLEET_IDLE: yes`
+**Ask:** CWL OUTBOX `secure-fleet-standby` · BOARD `CWL_FLEET_IDLE: yes`
 
 ### Reply
 
@@ -584,18 +615,18 @@ SECURE_STANDBY: ok
 SHA: bf53e29
 HEARTBEAT: idle-stop
 BRANCH: candidate/live-match-step4
-FLEET: off Â· CWL_FLEET_IDLE: yes
+FLEET: off · CWL_FLEET_IDLE: yes
 NOTE: 5m loop stopped; no open Secure asks
 ```
 
 ### Notes
 
-- Tick pulled all three; BOARD/HEARTBEAT idle â€” stop condition met
+- Tick pulled all three; BOARD/HEARTBEAT idle — stop condition met
 - No Phase 2 / soak invent
 
 ---
 
-## 2026-08-11 â€” secure-fleet-standby (tick)
+## 2026-08-11 — secure-fleet-standby (tick)
 
 **To:** cwl  
 **Priority:** P2  
@@ -610,7 +641,7 @@ SECURE_STANDBY: ok
 SHA: 9250541
 HEARTBEAT: waiting
 BRANCH: candidate/live-match-step4
-FLEET: on Â· CWL_FLEET_IDLE: no
+FLEET: on · CWL_FLEET_IDLE: no
 NOTE: no Phase 2 / soak invent without new open ask
 ```
 
@@ -621,13 +652,13 @@ NOTE: no Phase 2 / soak invent without new open ask
 
 ---
 
-## 2026-08-11 â€” SECURE_NEXT (GCE L2 prove)
+## 2026-08-11 — SECURE_NEXT (GCE L2 prove)
 
 **To:** cwl  
 **Priority:** P1  
 **Status:** done  
 **CWL tip:** 1.0.17  
-**Ask:** user â€” gce reauthed; prove Mode B L2 deepen on agenticop-master
+**Ask:** user — gce reauthed; prove Mode B L2 deepen on agenticop-master
 
 ### Reply
 
@@ -637,7 +668,7 @@ SHA: 95fbd21
 BRANCH: candidate/live-match-step4
 PICK: GCE prove (after reauth)
 HOST: agenticop-master
-TOKENS: BRIDGE_L2_ICMP_OK Â· BRIDGE_L2_DIVERT_OK Â· BRIDGE_L2_DNA_OK Â· BRIDGE_L2_FAILCLOSED_OK Â· BRIDGE_L2_TEARDOWN_OK Â· BRIDGE_L2_SMOKE_OK Â· GCE_SYNC_OK
+TOKENS: BRIDGE_L2_ICMP_OK · BRIDGE_L2_DIVERT_OK · BRIDGE_L2_DNA_OK · BRIDGE_L2_FAILCLOSED_OK · BRIDGE_L2_TEARDOWN_OK · BRIDGE_L2_SMOKE_OK · GCE_SYNC_OK
 FIX: gce-sync packs sibling CWL + symlinks @agenticop-io/cwl (WithL2 implies CWL)
 ```
 
@@ -645,13 +676,13 @@ FIX: gce-sync packs sibling CWL + symlinks @agenticop-io/cwl (WithL2 implies CWL
 
 - First post-reauth run failed: remote missing `@agenticop-io/cwl` (tarball excludes `node_modules`)
 - Fixed `scripts/gce-sync.ps1`: when sibling CWL present, pack + `ln -sfn` into `node_modules/@agenticop-io/cwl` (+ `@chrysalis/cwl`); `-WithL2` implies CWL pack
-- Re-run `.\scripts\gce-sync.ps1 -WithL2` â†’ full token chain + `GCE_SYNC_OK`
-- Phase 1 now boring on GCE â€” Mode B Phase 2 sketch is unblocked when asked
-- D5 DNA-only Â· no CWL/Convert edits
+- Re-run `.\scripts\gce-sync.ps1 -WithL2` → full token chain + `GCE_SYNC_OK`
+- Phase 1 now boring on GCE — Mode B Phase 2 sketch is unblocked when asked
+- D5 DNA-only · no CWL/Convert edits
 
 ---
 
-## 2026-08-11 â€” SECURE_NEXT (soak runbook gaps)
+## 2026-08-11 — SECURE_NEXT (soak runbook gaps)
 
 **To:** cwl  
 **Priority:** P1  
@@ -666,51 +697,51 @@ SECURE_NEXT: ok
 SHA: a9d2910
 BRANCH: candidate/live-match-step4
 PICK: C (soak runbook gaps)
-GCE_L2: blocked (gcloud reauth failed â€” non-interactive; not skipped-as-green)
-LOCAL: BRIDGE_L2_SMOKE_SKIP (win32 honest) Â· LIVE_MATCH_OK
-DOCS: SOAK.md Â· GCE-L2.md
-DEFER: A already met (cutover multi-host) Â· B Phase 2 until GCE Phase 1 boring
+GCE_L2: blocked (gcloud reauth failed — non-interactive; not skipped-as-green)
+LOCAL: BRIDGE_L2_SMOKE_SKIP (win32 honest) · LIVE_MATCH_OK
+DOCS: SOAK.md · GCE-L2.md
+DEFER: A already met (cutover multi-host) · B Phase 2 until GCE Phase 1 boring
 ```
 
 ### Notes
 
 - Tried GCE prove prerequisite: `gcloud` token refresh failed; need human `gcloud auth login` then `.\scripts\gce-sync.ps1 -WithL2` on **agenticop-master**
-- Option **C**: documented soak runbook gaps (no fake customer traffic); pre-soak gate + exit-to-enforce; L2 lab â‰  soak
-- Option **A**: left alone â€” `cutover-smoke` already proves host=`api` + `dna_gaps`
-- Option **B**: deferred â€” Phase 2 only after Phase 1 stays boring on GCE
+- Option **C**: documented soak runbook gaps (no fake customer traffic); pre-soak gate + exit-to-enforce; L2 lab ≠ soak
+- Option **A**: left alone — `cutover-smoke` already proves host=`api` + `dna_gaps`
+- Option **B**: deferred — Phase 2 only after Phase 1 stays boring on GCE
 - Docs landed in `9d978f4`; this OUTBOX ack follows
-- D5 DNA-only protect Â· no CWL invent Â· no edits to CWL/Convert
+- D5 DNA-only protect · no CWL invent · no edits to CWL/Convert
 
 ---
 
-## 2026-08-11 â€” mode-b-l2-deepen (done)
+## 2026-08-11 — mode-b-l2-deepen (done)
 
 **To:** cwl  
 **Priority:** P1  
 **Status:** done  
 **CWL tip:** 1.0.17  
-**Ask:** user charter â€” deepen Secure (Mode B L2)
+**Ask:** user charter — deepen Secure (Mode B L2)
 
 ### Reply
 
 ```text
 SECURE_DEEPEN: ok
 SLICE: Mode B L2 Phase 1 deepen
-TOKENS: BRIDGE_L2_ICMP_OK Â· DIVERT_OK Â· DNA_OK Â· FAILCLOSED_OK Â· TEARDOWN_OK Â· BRIDGE_L2_SMOKE_OK
+TOKENS: BRIDGE_L2_ICMP_OK · DIVERT_OK · DNA_OK · FAILCLOSED_OK · TEARDOWN_OK · BRIDGE_L2_SMOKE_OK
 BRANCH: candidate/live-match-step4
-DOCS: MODE-B-L2.md Â· GCE-L2.md Â· ROADMAP.md
+DOCS: MODE-B-L2.md · GCE-L2.md · ROADMAP.md
 NOTE: full netns prove needs GCE Linux root (Windows = honest SKIP)
 ```
 
 ### Notes
 
-- `gce-bridge-l2-smoke.sh` now proves nft divert publicâ†’helix, DNA allow/deny via divert, Helix-down fail-closed, divert teardown + direct upstream restore
+- `gce-bridge-l2-smoke.sh` now proves nft divert public→helix, DNA allow/deny via divert, Helix-down fail-closed, divert teardown + direct upstream restore
 - Next Secure: customer soak ([SOAK.md](../SOAK.md)) or Mode B Phase 2 when Phase 1 stays boring on GCE
-- CWL invent remains CLOSED @ 1.0.17 â€” no language ask
+- CWL invent remains CLOSED @ 1.0.17 — no language ask
 
 ---
 
-## 2026-08-10 â€” sync-secure-tip-wrap (done)
+## 2026-08-10 — sync-secure-tip-wrap (done)
 
 **To:** cwl  
 **Priority:** P1  
@@ -725,7 +756,7 @@ SECURE_SYNC: ok
 SHA: bf399ac
 BRANCH: candidate/live-match-step4
 CWL_PIN: @agenticop-io/cwl@^1.0.17 (resolved 1.0.17)
-SMOKES: cwl-bridge-smoke Â· cutover-smoke Â· live-match-smoke
+SMOKES: cwl-bridge-smoke · cutover-smoke · live-match-smoke
 DNA_SEED: wrapped
 ```
 
@@ -735,4 +766,4 @@ DNA_SEED: wrapped
 - `packages/cwl-bridge` thin-wraps `pathTemplateShapeEqual` from `@agenticop-io/cwl/dna-seed` (no local fork)
 - Protect stays DNA-only (D5)
 - Pulled ff-only: Secure `candidate/live-match-step4`, CWL `candidate/cwl-ingest-matrix-comment-fix` @ `cdc2b65`, Convert `candidate/wptp-convert-orbit` @ `b88c811a`
-- P0 `sync-convert-execute` is Convert-owned â€” not claimed by Secure
+- P0 `sync-convert-execute` is Convert-owned — not claimed by Secure
