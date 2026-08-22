@@ -19,7 +19,7 @@
 
 ```text
 TRAFFIC_DECIDES_SECURE_OK
-SHA: f0d67c4
+SHA: d7cb765
 BRANCH: candidate/live-match-step4
 CWL_TIP: 1.0.23
 CWL_SHA: 791d8fe
