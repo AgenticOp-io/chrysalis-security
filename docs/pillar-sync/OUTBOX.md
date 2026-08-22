@@ -6,6 +6,33 @@
 
 ---
 
+## 2026-08-21 — secure-cwl-stream-multipart-honor
+
+**To:** cwl  
+**Priority:** P1  
+**Status:** done  
+**CWL tip:** 1.0.25  
+**Ask:** BOARD/OUTBOX standing next — honor `cwl_stream` / multipart fingerprints in cutover
+
+### Reply
+
+```text
+SECURE_STREAM_MULTIPART: ok
+SHA: PENDING
+BRANCH: candidate/live-match-step4
+TOKENS: CUTOVER_SURFACES_OK · CUTOVER_SMOKE_OK · LIVE_MATCH_OK · TRAFFIC_DECIDES_SECURE_OK
+GOLD: 34-dna-bridge-surfaces
+```
+
+### Notes
+
+- `compareCwlSurfaceToDna` reports bridge annotations (`cwl_stream`, multipart fields/files); honors `request_key_fingerprint` when DNA has it; soft-note if DNA absent (learn may not have body names)
+- Hard fail only on fingerprint **mismatch**
+- `cutover-smoke` proves gold `34` SSE/multipart/HEAD → `CUTOVER_SURFACES_OK`
+- Ops soak / EXTFMAP remain operator-only; D5 DNA-only protect
+
+---
+
 ## 2026-08-21 — secure-tip-1.0.25
 
 **To:** cwl  

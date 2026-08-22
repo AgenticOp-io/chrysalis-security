@@ -189,4 +189,52 @@ assert(
 fs.writeFileSync(path.join(outDir, 'holes-bridge.json'), JSON.stringify(holes, null, 2) + '\n');
 
 console.log('CUTOVER_MULTIHOST_OK');
+
+console.log('=== cutover: gold 34 SSE/multipart/HEAD fingerprint honor ===');
+const gold34Dir = path.join(cwlRoot, 'fixtures', 'language-gold', '34-dna-bridge-surfaces');
+const gold34Cwl = path.join(gold34Dir, 'routes.cwl');
+if (!fs.existsSync(gold34Cwl)) {
+  console.log('CUTOVER_SURFACES_SKIP (missing 34-dna-bridge-surfaces)');
+} else {
+  const seeded34 = await seedDnaFromCwlFile(gold34Cwl, {
+    app_id: 'cutover-surfaces',
+    mode: 'draft',
+    fixture: 'fixtures/language-gold/34-dna-bridge-surfaces/routes.cwl',
+    cwlRoot,
+  });
+  assert(seeded34.bridge?.annotations?.length >= 3, '34 annotations present');
+  const sseAnn = seeded34.bridge.annotations.find((a) => a.cwl_stream === 'sse');
+  assert(sseAnn?.path_template === '/events', 'cwl_stream sse on /events');
+  const mpAnn = seeded34.bridge.annotations.find(
+    (a) => Array.isArray(a.cwl_multipart_fields) && a.cwl_multipart_fields.includes('title'),
+  );
+  assert(mpAnn?.cwl_multipart_files?.includes('avatar'), 'multipart file avatar');
+  const upload = seeded34.routes.find(
+    (r) => r.method === 'POST' && r.path_template === '/upload',
+  );
+  assert(upload?.request_key_fingerprint === 'avatar,title', 'multipart request fp');
+  const events = seeded34.routes.find(
+    (r) => r.method === 'GET' && r.path_template === '/events',
+  );
+  assert(events?.content_class === 'other', 'SSE content_class other');
+
+  let certified34 = {
+    ...stripBridgeEnvelope(seeded34),
+    mode: 'certified',
+    created_at: new Date().toISOString(),
+  };
+  certified34 = signDna(certified34, { secret: LAB_KEY, key_id: LAB_KEY_ID });
+  const cmp34 = compareCwlSurfaceToDna(seeded34, certified34);
+  assert(cmp34.ok === true, `34 cutover: ${JSON.stringify(cmp34.fingerprint_mismatches)}`);
+  assert(cmp34.bridge_annotations?.cwl_stream?.some((a) => a.cwl_stream === 'sse'), 'stream anns');
+  assert(cmp34.bridge_annotations?.multipart?.length >= 1, 'multipart anns');
+  assert(
+    cmp34.fingerprints_honored?.some((f) => f.field === 'request_key_fingerprint'),
+    'request fp honored',
+  );
+  fs.writeFileSync(path.join(outDir, 'seeded-34.dna.json'), JSON.stringify(seeded34, null, 2) + '\n');
+  fs.writeFileSync(path.join(outDir, 'certified-34.dna.json'), JSON.stringify(certified34, null, 2) + '\n');
+  console.log('CUTOVER_SURFACES_OK');
+}
+
 console.log('CUTOVER_SMOKE_OK');
