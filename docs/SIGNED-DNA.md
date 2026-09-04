@@ -64,4 +64,15 @@ Set `HELIX_DNA_KEY` (and optionally `HELIX_DNA_REQUIRE=1`) on `helix-proxy` / `h
 Signed DNA with a wrong key refuses to start. Unsigned DNA still loads unless `HELIX_DNA_REQUIRE=1`.  
 For `alg: ed25519`, put the verifying public PEM (or private PEM) in `HELIX_DNA_KEY`.
 
-Core: `signDna` / `verifyDna` / `loadEd25519Key` / `generateEd25519KeyPair` in `packages/dna-core`. Smoke: `npm run sign-smoke`.
+Core: `signDna` / `verifyDna` / `loadEd25519Key` / `generateEd25519KeyPair` in `packages/dna-core`.
+
+## Fixture prove
+
+Lab material under `fixtures/sign/` (`hmac.key` + `draft.dna.json`). Smoke:
+
+```bash
+npm run sign-smoke
+# → SIGN_FIXTURE_PROMOTE_OK · SIGN_FIXTURE_UNSIGNED_REJECT · SIGN_FIXTURE_OK · SIGN_SMOKE_OK
+```
+
+Signed promote with fixture key must verify under `--require`. Unsigned promote (no `--key`) must fail `verify --require` / `HELIX_DNA_REQUIRE=1` with `HX-DNA-UNSIGNED`. Wired into `test:dna` and `gce-smoke` (D5 DNA-only).

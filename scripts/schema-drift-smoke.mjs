@@ -1,7 +1,13 @@
 #!/usr/bin/env node
 /**
- * Prove enforce blocks JSON response key drift (HX-SCHEMA-DRIFT).
- * learn certified shape → upstream drifts keys → 403.
+ * Schema-drift fixture deepen: unit scoreResponse + fixture learn→promote→
+ * enforce allow / extra-key deny / missing-key deny / shadow header.
+ *
+ * Fixture: fixtures/schema-drift/observations.ndjson
+ * Tokens: SCHEMA_DRIFT_UNIT_* · SCHEMA_DRIFT_FIXTURE_LEARN_OK · SCHEMA_DRIFT_ENFORCE_* ·
+ *         SCHEMA_DRIFT_SHADOW_OK · SCHEMA_DRIFT_SMOKE_OK
+ * Pack: test:dna · gce-smoke (wired)
+ * D5: DNA-only (no CWL required).
  */
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
@@ -12,14 +18,24 @@ import { scoreResponse } from '../packages/dna-core/index.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
+const fxObs = path.join(root, 'fixtures', 'schema-drift', 'observations.ndjson');
 const dataDir = path.join(root, 'data', 'schema-drift-smoke');
 fs.rmSync(dataDir, { recursive: true, force: true });
 fs.mkdirSync(dataDir, { recursive: true });
 
-const observePath = path.join(dataDir, 'observations.ndjson');
 const draftPath = path.join(dataDir, 'draft.dna.json');
 const certPath = path.join(dataDir, 'certified.dna.json');
 const kids = [];
+const tokens = [];
+
+function token(name) {
+  tokens.push(name);
+  console.log(name);
+}
+
+function assert(cond, msg) {
+  if (!cond) throw new Error(msg);
+}
 
 function start(args, env) {
   const child = spawn(process.execPath, args, {
@@ -84,59 +100,81 @@ function cleanup() {
   for (const k of kids) {
     try { k.kill('SIGTERM'); } catch { /* ignore */ }
   }
+  kids.length = 0;
 }
 
 process.on('exit', cleanup);
 
+const itemsRoute = {
+  method: 'GET',
+  path_template: '/api/items',
+  host: '127.0.0.1',
+  content_class: 'json',
+  status_classes: [200],
+  response_key_fingerprint: 'items',
+};
+
 async function main() {
+  assert(fs.existsSync(fxObs), `missing fixture ${fxObs}`);
+
   console.log('=== schema-drift-smoke: unit scoreResponse ===');
-  const unit = scoreResponse(
-    {
-      method: 'GET',
-      path_template: '/api/items',
-      host: '127.0.0.1',
-      content_class: 'json',
-      status_classes: [200],
-      response_key_fingerprint: 'items',
-    },
-    { contentType: 'application/json', body: { items: [], pwned: true } },
-  );
-  if (unit.allow || unit.hole?.code !== 'HX-SCHEMA-DRIFT') {
-    throw new Error(`unit scoreResponse expected HX-SCHEMA-DRIFT, got ${JSON.stringify(unit)}`);
-  }
-
-  console.log('=== learn stable /api/items shape ===');
-  start(['fixtures/demo-api/server.mjs'], { PORT: '4092', HOST: '127.0.0.1' });
-  await waitPort(4092);
-
-  start(['packages/helix-proxy/server.mjs'], {
-    UPSTREAM: 'http://127.0.0.1:4092',
-    MODE: 'learn',
-    OBSERVE: observePath,
-    PORT: '4083',
+  const extra = scoreResponse(itemsRoute, {
+    contentType: 'application/json',
+    body: { items: [], pwned: true },
   });
-  await sleep(300);
-  await get(4083, '/api/health');
-  await get(4083, '/api/items');
-  await sleep(200);
+  assert(!extra.allow && extra.hole?.code === 'HX-SCHEMA-DRIFT', `extra: ${JSON.stringify(extra)}`);
+  token('SCHEMA_DRIFT_UNIT_EXTRA_OK');
 
-  await run(['packages/helix-cli/bin/helix.mjs', 'learn', '--in', observePath, '--out', draftPath, '--app-id', 'drift-demo']);
+  const missing = scoreResponse(itemsRoute, {
+    contentType: 'application/json',
+    body: {},
+  });
+  assert(!missing.allow && missing.hole?.code === 'HX-SCHEMA-DRIFT', `missing: ${JSON.stringify(missing)}`);
+  token('SCHEMA_DRIFT_UNIT_MISSING_OK');
+
+  const failClosed = scoreResponse(itemsRoute, {
+    contentType: 'application/json',
+    body: null,
+  });
+  assert(
+    !failClosed.allow && failClosed.hole?.code === 'HX-SCHEMA-DRIFT',
+    `fail-closed: ${JSON.stringify(failClosed)}`,
+  );
+  token('SCHEMA_DRIFT_UNIT_FAILCLOSED_OK');
+
+  const allow = scoreResponse(itemsRoute, {
+    contentType: 'application/json',
+    body: { items: [{ id: 1 }] },
+  });
+  assert(allow.allow === true && !allow.hole, `allow: ${JSON.stringify(allow)}`);
+  token('SCHEMA_DRIFT_UNIT_ALLOW_OK');
+
+  console.log('=== fixture learn → promote ===');
+  await run([
+    'packages/helix-cli/bin/helix.mjs',
+    'learn',
+    '--in',
+    fxObs,
+    '--out',
+    draftPath,
+    '--app-id',
+    'schema-drift-fixture',
+  ]);
   await run(['packages/helix-cli/bin/helix.mjs', 'promote', '--in', draftPath, '--out', certPath]);
 
   const dna = JSON.parse(fs.readFileSync(certPath, 'utf8'));
   const items = dna.routes.find((r) => r.path_template === '/api/items');
-  if (!items || items.response_key_fingerprint !== 'items') {
-    throw new Error(`expected fingerprint items, got ${JSON.stringify(items)}`);
-  }
+  assert(items?.response_key_fingerprint === 'items', `fingerprint items, got ${JSON.stringify(items)}`);
+  const health = dna.routes.find((r) => r.path_template === '/api/health');
+  assert(
+    health?.response_key_fingerprint === 'ok,service',
+    `health fingerprint, got ${JSON.stringify(health)}`,
+  );
+  token('SCHEMA_DRIFT_FIXTURE_LEARN_OK');
 
-  cleanup();
-  kids.length = 0;
-  await sleep(200);
-
-  console.log('=== enforce against drifted upstream ===');
-  start(['fixtures/demo-api/server.mjs'], { PORT: '4092', HOST: '127.0.0.1', DRIFT: '1' });
+  console.log('=== enforce allow (stable upstream) ===');
+  start(['fixtures/demo-api/server.mjs'], { PORT: '4092', HOST: '127.0.0.1' });
   await waitPort(4092);
-
   start(['packages/helix-proxy/server.mjs'], {
     UPSTREAM: 'http://127.0.0.1:4092',
     MODE: 'enforce',
@@ -145,25 +183,63 @@ async function main() {
   });
   await sleep(300);
 
-  const health = await get(4083, '/api/health');
-  if (health.status !== 200) throw new Error(`health expected 200 got ${health.status}`);
-
-  const drifted = await get(4083, '/api/items');
-  if (drifted.status !== 403) throw new Error(`drift expected 403 got ${drifted.status} ${drifted.body}`);
-  if (!drifted.body.includes('HX-SCHEMA-DRIFT')) {
-    throw new Error(`missing HX-SCHEMA-DRIFT: ${drifted.body}`);
-  }
-  if (drifted.headers['x-helix-hole'] !== 'HX-SCHEMA-DRIFT') {
-    throw new Error(`expected x-helix-hole HX-SCHEMA-DRIFT, got ${drifted.headers['x-helix-hole']}`);
-  }
-  console.log('enforce blocked schema drift ok');
+  const healthOk = await get(4083, '/api/health');
+  assert(healthOk.status === 200, `health expected 200 got ${healthOk.status}`);
+  const itemsOk = await get(4083, '/api/items');
+  assert(itemsOk.status === 200, `items allow expected 200 got ${itemsOk.status} ${itemsOk.body}`);
+  token('SCHEMA_DRIFT_ENFORCE_ALLOW_OK');
 
   cleanup();
-  kids.length = 0;
+  await sleep(200);
+
+  console.log('=== enforce extra-key drift ===');
+  start(['fixtures/demo-api/server.mjs'], { PORT: '4092', HOST: '127.0.0.1', DRIFT: 'extra' });
+  await waitPort(4092);
+  start(['packages/helix-proxy/server.mjs'], {
+    UPSTREAM: 'http://127.0.0.1:4092',
+    MODE: 'enforce',
+    DNA: certPath,
+    PORT: '4083',
+  });
+  await sleep(300);
+
+  const drifted = await get(4083, '/api/items');
+  assert(drifted.status === 403, `extra expected 403 got ${drifted.status} ${drifted.body}`);
+  assert(drifted.body.includes('HX-SCHEMA-DRIFT'), `missing HX-SCHEMA-DRIFT: ${drifted.body}`);
+  assert(
+    drifted.headers['x-helix-hole'] === 'HX-SCHEMA-DRIFT',
+    `expected x-helix-hole HX-SCHEMA-DRIFT, got ${drifted.headers['x-helix-hole']}`,
+  );
+  token('SCHEMA_DRIFT_ENFORCE_EXTRA_OK');
+
+  cleanup();
+  await sleep(200);
+
+  console.log('=== enforce missing-key drift ===');
+  start(['fixtures/demo-api/server.mjs'], { PORT: '4092', HOST: '127.0.0.1', DRIFT: 'missing' });
+  await waitPort(4092);
+  start(['packages/helix-proxy/server.mjs'], {
+    UPSTREAM: 'http://127.0.0.1:4092',
+    MODE: 'enforce',
+    DNA: certPath,
+    PORT: '4083',
+  });
+  await sleep(300);
+
+  const missingLive = await get(4083, '/api/items');
+  assert(missingLive.status === 403, `missing expected 403 got ${missingLive.status} ${missingLive.body}`);
+  assert(missingLive.body.includes('HX-SCHEMA-DRIFT'), `missing hole text: ${missingLive.body}`);
+  assert(
+    missingLive.headers['x-helix-hole'] === 'HX-SCHEMA-DRIFT',
+    `expected x-helix-hole HX-SCHEMA-DRIFT, got ${missingLive.headers['x-helix-hole']}`,
+  );
+  token('SCHEMA_DRIFT_ENFORCE_MISSING_OK');
+
+  cleanup();
   await sleep(200);
 
   console.log('=== shadow allows drift with header ===');
-  start(['fixtures/demo-api/server.mjs'], { PORT: '4092', HOST: '127.0.0.1', DRIFT: '1' });
+  start(['fixtures/demo-api/server.mjs'], { PORT: '4092', HOST: '127.0.0.1', DRIFT: 'extra' });
   await waitPort(4092);
   start(['packages/helix-proxy/server.mjs'], {
     UPSTREAM: 'http://127.0.0.1:4092',
@@ -175,14 +251,16 @@ async function main() {
   await sleep(300);
 
   const shadowed = await get(4084, '/api/items');
-  if (shadowed.status !== 200) throw new Error(`shadow should pass, got ${shadowed.status}`);
-  if (shadowed.headers['x-helix-shadow-hole'] !== 'HX-SCHEMA-DRIFT') {
-    throw new Error(`expected shadow header HX-SCHEMA-DRIFT, got ${shadowed.headers['x-helix-shadow-hole']}`);
-  }
-  console.log('shadow logged schema drift ok');
+  assert(shadowed.status === 200, `shadow should pass, got ${shadowed.status}`);
+  assert(
+    shadowed.headers['x-helix-shadow-hole'] === 'HX-SCHEMA-DRIFT',
+    `expected shadow header HX-SCHEMA-DRIFT, got ${shadowed.headers['x-helix-shadow-hole']}`,
+  );
+  token('SCHEMA_DRIFT_SHADOW_OK');
 
   cleanup();
-  console.log('\nSCHEMA_DRIFT_SMOKE_OK');
+  token('SCHEMA_DRIFT_SMOKE_OK');
+  console.log(`\npack tokens: ${tokens.join(' · ')}`);
 }
 
 main().catch((err) => {

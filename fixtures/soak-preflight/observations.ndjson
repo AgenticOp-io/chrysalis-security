@@ -1,0 +1,4 @@
+{"method":"GET","path":"/api/health","host":"app.example","status":200,"contentType":"application/json","body":{"ok":true}}
+{"method":"GET","path":"/api/items","host":"app.example","status":200,"contentType":"application/json","body":{"items":[]}}
+{"method":"GET","path":"/api/items/1","host":"app.example","status":200,"contentType":"application/json","body":{"id":1,"name":"alpha"}}
+{"method":"GET","path":"/assets/app.js","host":"app.example","status":200,"contentType":"application/javascript"}

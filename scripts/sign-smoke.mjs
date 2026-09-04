@@ -1,7 +1,13 @@
 #!/usr/bin/env node
 /**
- * Signed DNA: promote --key → verify → enforce with HELIX_DNA_KEY;
+ * Signed DNA fixture deepen: promote --key → verify → enforce with HELIX_DNA_KEY;
+ * unsigned promote rejected under --require / HELIX_DNA_REQUIRE;
  * tampered DNA / wrong key fail closed.
+ *
+ * Fixture key: fixtures/sign/hmac.key
+ * Tokens: SIGN_FIXTURE_PROMOTE_OK · SIGN_FIXTURE_UNSIGNED_REJECT · SIGN_FIXTURE_OK
+ * Pack: test:dna · gce-smoke (already wired)
+ * D5: DNA-only (no CWL required).
  */
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
@@ -12,6 +18,7 @@ import { signDna, verifyDna, generateEd25519KeyPair } from '../packages/dna-core
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
+const fx = path.join(root, 'fixtures', 'sign');
 const dataDir = path.join(root, 'data', 'sign-smoke');
 fs.rmSync(dataDir, { recursive: true, force: true });
 fs.mkdirSync(dataDir, { recursive: true });
@@ -19,9 +26,20 @@ fs.mkdirSync(dataDir, { recursive: true });
 const observePath = path.join(dataDir, 'observations.ndjson');
 const draftPath = path.join(dataDir, 'draft.dna.json');
 const certPath = path.join(dataDir, 'certified.dna.json');
+const unsignedPath = path.join(dataDir, 'unsigned.dna.json');
 const badPath = path.join(dataDir, 'tampered.dna.json');
-const SECRET = 'helix-lab-sign-key-v1';
+const fixtureKeyPath = path.join(fx, 'hmac.key');
+const fixtureDraftPath = path.join(fx, 'draft.dna.json');
+const SECRET = fs.readFileSync(fixtureKeyPath, 'utf8').trim();
+if (!SECRET) throw new Error('fixtures/sign/hmac.key empty');
+const KEY_ID = 'sign-fixture';
 const kids = [];
+const tokens = [];
+
+function token(name) {
+  tokens.push(name);
+  console.log(name);
+}
 
 function start(args, env) {
   const child = spawn(process.execPath, args, {
@@ -95,7 +113,7 @@ function cleanup() {
 process.on('exit', cleanup);
 
 async function main() {
-  console.log('=== sign-smoke: unit sign/verify ===');
+  console.log('=== sign-smoke: unit sign/verify (fixture key) ===');
   const sample = {
     schema: 'app-dna-v1',
     app_id: 'sign-unit',
@@ -105,13 +123,77 @@ async function main() {
     routes: [],
     holes: [],
   };
-  const signed = signDna(sample, { secret: SECRET, key_id: 'lab' });
-  const ok = verifyDna(signed, { secret: SECRET, key_id: 'lab' });
+  const signed = signDna(sample, { secret: SECRET, key_id: KEY_ID });
+  const ok = verifyDna(signed, { secret: SECRET, key_id: KEY_ID });
   if (!ok.ok) throw new Error(`unit verify failed ${JSON.stringify(ok)}`);
   const bad = verifyDna(signed, { secret: 'wrong' });
   if (bad.ok || bad.hole?.code !== 'HX-DNA-BAD-SIG') {
     throw new Error(`expected HX-DNA-BAD-SIG got ${JSON.stringify(bad)}`);
   }
+
+  console.log('=== fixture signed promote ok ===');
+  await run([
+    'packages/helix-cli/bin/helix.mjs', 'promote',
+    '--in', fixtureDraftPath, '--out', certPath,
+    '--key-file', fixtureKeyPath, '--key-id', KEY_ID,
+  ]);
+  await run([
+    'packages/helix-cli/bin/helix.mjs', 'verify',
+    '--in', certPath, '--key-file', fixtureKeyPath, '--key-id', KEY_ID, '--require',
+  ]);
+  const cert = JSON.parse(fs.readFileSync(certPath, 'utf8'));
+  if (!cert.signature?.value) throw new Error('missing signature after fixture promote');
+  if (cert.signature?.key_id !== KEY_ID) {
+    throw new Error(`expected key_id ${KEY_ID} got ${cert.signature?.key_id}`);
+  }
+  token('SIGN_FIXTURE_PROMOTE_OK');
+
+  console.log('=== fixture unsigned promote reject (--require) ===');
+  await run([
+    'packages/helix-cli/bin/helix.mjs', 'promote',
+    '--in', fixtureDraftPath, '--out', unsignedPath,
+  ]);
+  const unsigned = JSON.parse(fs.readFileSync(unsignedPath, 'utf8'));
+  if (unsigned.signature?.value) throw new Error('unsigned promote unexpectedly signed');
+  const unsignedUnit = verifyDna(unsigned, { require: true });
+  if (unsignedUnit.ok || unsignedUnit.hole?.code !== 'HX-DNA-UNSIGNED') {
+    throw new Error(`expected HX-DNA-UNSIGNED got ${JSON.stringify(unsignedUnit)}`);
+  }
+  await run([
+    'packages/helix-cli/bin/helix.mjs', 'verify',
+    '--in', unsignedPath, '--key-file', fixtureKeyPath, '--require',
+  ]).then(
+    () => { throw new Error('unsigned verify --require should fail'); },
+    () => {},
+  );
+
+  // Runtime: HELIX_DNA_REQUIRE=1 refuses unsigned DNA at boot
+  start(['fixtures/demo-api/server.mjs'], { PORT: '4093', HOST: '127.0.0.1' });
+  await waitPort(4093);
+  const unsignedProxy = start(['packages/helix-proxy/server.mjs'], {
+    UPSTREAM: 'http://127.0.0.1:4093',
+    MODE: 'enforce',
+    DNA: unsignedPath,
+    PORT: '4088',
+    HELIX_DNA_KEY: SECRET,
+    HELIX_DNA_KEY_ID: KEY_ID,
+    HELIX_DNA_REQUIRE: '1',
+  });
+  await sleep(500);
+  let unsignedRefused = false;
+  try {
+    await get(4088, '/api/health');
+  } catch {
+    unsignedRefused = true;
+  }
+  if (!unsignedRefused && unsignedProxy.exitCode === null) {
+    throw new Error('unsigned DNA proxy should have exited under HELIX_DNA_REQUIRE');
+  }
+  token('SIGN_FIXTURE_UNSIGNED_REJECT');
+
+  cleanup();
+  kids.length = 0;
+  await sleep(200);
 
   console.log('=== learn + promote --key ===');
   start(['fixtures/demo-api/server.mjs'], { PORT: '4093', HOST: '127.0.0.1' });
@@ -131,15 +213,15 @@ async function main() {
   await run([
     'packages/helix-cli/bin/helix.mjs', 'promote',
     '--in', draftPath, '--out', certPath,
-    '--key', SECRET, '--key-id', 'lab',
+    '--key-file', fixtureKeyPath, '--key-id', KEY_ID,
   ]);
   await run([
     'packages/helix-cli/bin/helix.mjs', 'verify',
-    '--in', certPath, '--key', SECRET, '--key-id', 'lab', '--require',
+    '--in', certPath, '--key-file', fixtureKeyPath, '--key-id', KEY_ID, '--require',
   ]);
 
-  const cert = JSON.parse(fs.readFileSync(certPath, 'utf8'));
-  if (!cert.signature?.value) throw new Error('missing signature after promote');
+  const learnedCert = JSON.parse(fs.readFileSync(certPath, 'utf8'));
+  if (!learnedCert.signature?.value) throw new Error('missing signature after promote');
 
   cleanup();
   kids.length = 0;
@@ -154,7 +236,7 @@ async function main() {
     DNA: certPath,
     PORT: '4086',
     HELIX_DNA_KEY: SECRET,
-    HELIX_DNA_KEY_ID: 'lab',
+    HELIX_DNA_KEY_ID: KEY_ID,
     HELIX_DNA_REQUIRE: '1',
   });
   await waitPort(4086);
@@ -179,7 +261,7 @@ async function main() {
   });
   fs.writeFileSync(badPath, JSON.stringify(tampered, null, 2));
   await run(
-    ['packages/helix-cli/bin/helix.mjs', 'verify', '--in', badPath, '--key', SECRET, '--require'],
+    ['packages/helix-cli/bin/helix.mjs', 'verify', '--in', badPath, '--key-file', fixtureKeyPath, '--require'],
   ).then(
     () => { throw new Error('tampered verify should fail'); },
     () => {},
@@ -251,15 +333,8 @@ async function main() {
   fs.writeFileSync(pubPath, pair.publicPem);
 
   console.log('=== ed25519 promote + verify CLI ===');
-  // Reuse HMAC-learned draft if present; else minimal draft
-  let draftForEd = draftPath;
-  if (!fs.existsSync(draftPath)) {
-    draftForEd = path.join(dataDir, 'ed-draft.dna.json');
-    fs.writeFileSync(
-      draftForEd,
-      JSON.stringify({ ...edSample, mode: 'draft', app_id: 'ed25519-cli' }, null, 2),
-    );
-  }
+  // Reuse HMAC-learned draft if present; else fixture draft
+  const draftForEd = fs.existsSync(draftPath) ? draftPath : fixtureDraftPath;
   await run([
     'packages/helix-cli/bin/helix.mjs', 'promote',
     '--in', draftForEd, '--out', edCertPath,
@@ -275,14 +350,18 @@ async function main() {
   }
 
   // HMAC path still works (regression)
-  const hmacStill = signDna(edSample, { secret: SECRET, key_id: 'lab' });
+  const hmacStill = signDna(edSample, { secret: SECRET, key_id: KEY_ID });
   const hmacOk = verifyDna(hmacStill, { secret: SECRET });
   if (!hmacOk.ok || hmacStill.signature.alg !== 'hmac-sha256') {
     throw new Error('hmac regression after ed25519');
   }
 
+  token('SIGN_FIXTURE_OK');
   console.log('\nED25519_SMOKE_OK');
   console.log('SIGN_SMOKE_OK');
+  if (!tokens.includes('SIGN_FIXTURE_PROMOTE_OK') || !tokens.includes('SIGN_FIXTURE_UNSIGNED_REJECT')) {
+    throw new Error(`missing fixture tokens: ${tokens.join(' · ')}`);
+  }
 }
 
 main().catch((err) => {

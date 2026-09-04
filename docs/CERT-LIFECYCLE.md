@@ -39,6 +39,9 @@ Prove: `npm run promote-chain-smoke` → `PROMOTE_CHAIN_SMOKE_OK`
 2. `POST /__helix/reload` (panel button, or `SIGHUP` / `SIGUSR2`)  
 3. Confirm `/__helix/healthz` shows updated `routes`
 
+Fixture prove (CLI promote onto live `DNA=` then hot reload, no process restart):  
+`npm run reload-fixture-smoke` → `RELOAD_FIXTURE_DENY_OK` · `RELOAD_FIXTURE_HOT_OK` · `RELOAD_FIXTURE_OK`
+
 ## Revoke / replace (v0 — no CRL)
 
 Helix does not ship a certificate revocation list. To **invalidate** a compromised cert:

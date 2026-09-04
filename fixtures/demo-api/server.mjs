@@ -2,8 +2,17 @@ import http from 'node:http';
 
 const port = Number(process.env.PORT || 4090);
 const host = process.env.HOST || '127.0.0.1';
-/** When set, /api/items returns drifted JSON keys (for HX-SCHEMA-DRIFT smokes). */
-const drift = process.env.DRIFT === '1' || process.env.DRIFT === 'true';
+/**
+ * DRIFT for /api/items (HX-SCHEMA-DRIFT smokes):
+ *   1|true|extra → extra keys (implant)
+ *   missing → keys removed (empty object)
+ */
+function itemsDriftMode() {
+  const d = String(process.env.DRIFT || '').toLowerCase();
+  if (d === '1' || d === 'true' || d === 'extra') return 'extra';
+  if (d === 'missing') return 'missing';
+  return '';
+}
 
 const server = http.createServer((req, res) => {
   const url = new URL(req.url || '/', `http://127.0.0.1:${port}`);
@@ -14,8 +23,13 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (url.pathname === '/api/items' && req.method === 'GET') {
-    if (drift) {
+    const mode = itemsDriftMode();
+    if (mode === 'extra') {
       res.end(JSON.stringify({ items: [{ id: 1, name: 'alpha' }], pwned: true, exfil: 'secret' }));
+      return;
+    }
+    if (mode === 'missing') {
+      res.end(JSON.stringify({}));
       return;
     }
     res.end(JSON.stringify({ items: [{ id: 1, name: 'alpha' }] }));

@@ -1,0 +1,1 @@
+{"method":"GET","path":"/api/health","host":"127.0.0.1","status":200,"contentType":"application/json","body":{"ok":true,"service":"demo-api"}}

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Mode B L2 Phase-1 lab prove (GCE Linux / netns).
+# Mode B L2 Phase-1 lab prove (GCE Linux / netns) — deepen: nft divert + fail-closed.
 # Design: docs/MODE-B-L2.md
 # Requires: root (or CAP_NET_ADMIN), bash, ip, nft, node.
 # Does NOT delete VMs. Does NOT load out-of-tree kernel modules.
@@ -11,10 +11,15 @@ NS_SRV="hx-l2-srv"
 BR="hx-l2-br0"
 VETH_H="hx-veth-h"
 VETH_S="hx-veth-s"
+PUBLIC_PORT=18085
 LISTEN=18086
 UPSTREAM_PORT=18087
+NFT_TABLE="helix_l2_redir"
 
 cleanup() {
+  ip netns exec "$NS_HELIX" nft delete table inet "$NFT_TABLE" 2>/dev/null || true
+  [[ -n "${HX_PID:-}" ]] && kill "$HX_PID" 2>/dev/null || true
+  [[ -n "${UP_PID:-}" ]] && kill "$UP_PID" 2>/dev/null || true
   ip netns del "$NS_HELIX" 2>/dev/null || true
   ip netns del "$NS_SRV" 2>/dev/null || true
   ip link del "$BR" 2>/dev/null || true
@@ -57,8 +62,9 @@ ip -n "$NS_SRV" addr add 10.67.0.2/24 dev "${VETH_S}-ns"
 ip -n "$NS_SRV" link set "${VETH_S}-ns" up
 ip -n "$NS_SRV" link set lo up
 
-# Ping across bridge (non-HTTP still works)
+# 1) ICMP / non-HTTP across bridge still works
 ip netns exec "$NS_HELIX" ping -c 1 -W 2 10.67.0.2 >/dev/null
+echo "BRIDGE_L2_ICMP_OK"
 
 # Minimal upstream in server ns
 ip netns exec "$NS_SRV" node -e "
@@ -68,7 +74,6 @@ http.createServer((q,s)=>{s.writeHead(200,{'content-type':'application/json'});s
 UP_PID=$!
 sleep 0.4
 
-# DNA: learn one route then enforce via helix-bridge in helix ns
 DNA_DIR="$ROOT/data/bridge-l2-smoke"
 mkdir -p "$DNA_DIR"
 cat >"$DNA_DIR/certified.dna.json" <<EOF
@@ -101,24 +106,62 @@ ip netns exec "$NS_HELIX" env \
 HX_PID=$!
 sleep 0.5
 
-# Allow known / deny unknown (node — no curl dependency)
+# nft divert: public port → helix listen (Mode A-style redirect inside helix ns)
+ip netns exec "$NS_HELIX" nft -f - <<EOF
+table inet $NFT_TABLE {
+  chain redir {
+    type nat hook prerouting priority dstnat; policy accept;
+    tcp dport $PUBLIC_PORT redirect to :$LISTEN
+  }
+  chain redir_out {
+    type nat hook output priority -100; policy accept;
+    tcp dport $PUBLIC_PORT redirect to :$LISTEN
+  }
+}
+EOF
+echo "BRIDGE_L2_DIVERT_OK"
+
 eval_http() {
   local url="$1"
   ip netns exec "$NS_HELIX" node -e "fetch('$url').then(r=>{console.log(r.status);process.exit(0)}).catch(()=>{console.log(0);process.exit(0)})"
 }
-CODE=$(eval_http "http://127.0.0.1:${LISTEN}/api/health")
-BAD=$(eval_http "http://127.0.0.1:${LISTEN}/api/backdoor")
 
-kill "$HX_PID" 2>/dev/null || true
-kill "$UP_PID" 2>/dev/null || true
+# 2) Learned HTTP path allows; /api/backdoor → 403 (via diverted public port)
+CODE=$(eval_http "http://127.0.0.1:${PUBLIC_PORT}/api/health")
+BAD=$(eval_http "http://127.0.0.1:${PUBLIC_PORT}/api/backdoor")
 
 if [[ "$CODE" != "200" ]]; then
-  echo "BRIDGE_L2_SMOKE_FAIL known route got HTTP $CODE"
+  echo "BRIDGE_L2_SMOKE_FAIL known route via divert got HTTP $CODE"
   exit 1
 fi
 if [[ "$BAD" != "403" ]]; then
-  echo "BRIDGE_L2_SMOKE_FAIL backdoor got HTTP $BAD (want 403)"
+  echo "BRIDGE_L2_SMOKE_FAIL backdoor via divert got HTTP $BAD (want 403)"
   exit 1
 fi
+echo "BRIDGE_L2_DNA_OK"
+
+# 3) Stop Helix with divert left on → diverted port fails (no silent allow)
+kill "$HX_PID" 2>/dev/null || true
+HX_PID=""
+sleep 0.3
+DEAD=$(eval_http "http://127.0.0.1:${PUBLIC_PORT}/api/health")
+if [[ "$DEAD" == "200" ]]; then
+  echo "BRIDGE_L2_SMOKE_FAIL divert-to-dead Helix still returned 200 (silent allow)"
+  exit 1
+fi
+echo "BRIDGE_L2_FAILCLOSED_OK (divert→dead got HTTP $DEAD)"
+
+# 4) Teardown divert → ICMP restored path; upstream still reachable direct
+ip netns exec "$NS_HELIX" nft delete table inet "$NFT_TABLE" 2>/dev/null || true
+ip netns exec "$NS_HELIX" ping -c 1 -W 2 10.67.0.2 >/dev/null
+DIRECT=$(ip netns exec "$NS_HELIX" node -e "fetch('http://10.67.0.2:${UPSTREAM_PORT}/').then(r=>{console.log(r.status);process.exit(0)}).catch(()=>{console.log(0);process.exit(0)})")
+if [[ "$DIRECT" != "200" ]]; then
+  echo "BRIDGE_L2_SMOKE_FAIL direct upstream after divert teardown got HTTP $DIRECT"
+  exit 1
+fi
+echo "BRIDGE_L2_TEARDOWN_OK"
+
+kill "$UP_PID" 2>/dev/null || true
+UP_PID=""
 
 echo "BRIDGE_L2_SMOKE_OK"

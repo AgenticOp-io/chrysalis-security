@@ -14,7 +14,8 @@ From `chrysalis-security`:
 .\scripts\gce-sync.ps1 -SiteUp          # also bring up persistent mini-site
 .\scripts\gce-sync.ps1 -SiteUp -Relearn # re-learn DNA then enforce
 .\scripts\gce-sync.ps1 -WithCwl         # sync sibling chrysalis-cwl → CUTOVER_SMOKE_OK on-box
-.\scripts\gce-sync.ps1 -WithL2          # Mode B L2 netns smoke (root; BRIDGE_L2_SMOKE_OK or SKIP)
+.\scripts\gce-sync.ps1 -WithL2          # Mode B L2 Phase 1 netns smoke (root; BRIDGE_L2_SMOKE_OK or SKIP)
+.\scripts\gce-sync.ps1 -WithL2P2        # Mode B L2 Phase 2 dual-iface (root; BRIDGE_L2_P2_SMOKE_OK or SKIP)
 .\scripts\gce-sync.ps1 -SyncOnly        # pack+scp only; no remote smokes
 ```
 
@@ -49,11 +50,12 @@ npm run cwl-bridge-smoke  # → CWL_BRIDGE_SMOKE_OK (or CWL_BRIDGE_SMOKE_SKIP)
 | `dna-core-smoke.mjs` | `DNA_CORE_OK` |
 | `smoke.mjs` | `SMOKE_OK` |
 | `host-smoke.mjs` | `HOST_SMOKE_OK` |
-| `static-smoke.mjs` | `STATIC_SMOKE_OK` |
-| `schema-drift-smoke.mjs` | `SCHEMA_DRIFT_SMOKE_OK` |
-| `sign-smoke.mjs` | (sign promote OK — see script stdout) |
+| `static-smoke.mjs` | `STATIC_SMOKE_LEARN_OK` · `STATIC_SMOKE_COLLAPSE_JS_OK` · `STATIC_SMOKE_COLLAPSE_CSS_OK` · `STATIC_SMOKE_DENY_OK` · `STATIC_SMOKE_OK` (hashed JS+CSS never learned still allow; `/api/backdoor` deny; in `gce-smoke` + `test:dna`) |
+| `schema-drift-smoke.mjs` | `SCHEMA_DRIFT_UNIT_*` · `SCHEMA_DRIFT_FIXTURE_LEARN_OK` · `SCHEMA_DRIFT_ENFORCE_*` · `SCHEMA_DRIFT_SHADOW_OK` · `SCHEMA_DRIFT_SMOKE_OK` (fixture `fixtures/schema-drift/`; in `gce-smoke` + `test:dna`) |
+| `sign-smoke.mjs` | `SIGN_FIXTURE_PROMOTE_OK` · `SIGN_FIXTURE_UNSIGNED_REJECT` · `SIGN_FIXTURE_OK` · `SIGN_SMOKE_OK` (in `gce-smoke` + `test:dna`) |
 | `bridge-smoke.mjs` | (host-bridge OK — see script stdout) |
-| `gce-nft-smoke.sh` | `NFT_SMOKE_OK` |
+| `soak-preflight-smoke.mjs` · `siem-fixture-smoke.mjs` · `reload-fixture-smoke.mjs` | `SOAK_PREFLIGHT_OK` · `SIEM_FIXTURE_OK` · `RELOAD_FIXTURE_OK` (in `gce-smoke` + `test:dna`; Node DNA-only — win32 green) |
+| `nft-smoke.mjs` / `gce-nft-smoke.sh` | `MODE_A_DIVERT_OK` · `MODE_A_DNA_OK` · `MODE_A_FAILCLOSED_OK` · `MODE_A_TEARDOWN_OK` · `NFT_SMOKE_OK` (win32 → `NFT_SMOKE_SKIP`) |
 | `gce-site-up.sh` | `GCE_SITE_UP_OK` |
 | pack wrapper | `GCE_SMOKE_OK` / `GCE_SYNC_OK` |
 
@@ -128,4 +130,6 @@ bash scripts/gce-nft-smoke.sh
 bash scripts/gce-site-up.sh
 ```
 
-Proven tokens: `SMOKE_OK` · `HOST_SMOKE_OK` · `NFT_SMOKE_OK` · `STATIC_SMOKE_OK` · `DNA_CORE_OK` · `SCHEMA_DRIFT_SMOKE_OK` · `CWL_BRIDGE_SMOKE_OK` (or `CWL_BRIDGE_SMOKE_SKIP`) · `CUTOVER_SMOKE_OK` · `UT_GCE_DEMO_OK` · `GCE_SITE_UP_OK` · `GCE_SMOKE_OK` / `GCE_SYNC_OK`.
+Proven tokens: `SMOKE_OK` · `HOST_SMOKE_OK` · `NFT_SMOKE_OK` (+ Mode A `MODE_A_FAILCLOSED_OK` / `MODE_A_TEARDOWN_OK`) · `STATIC_SMOKE_OK` · `DNA_CORE_OK` · `SCHEMA_DRIFT_SMOKE_OK` · `CWL_BRIDGE_SMOKE_OK` (or `CWL_BRIDGE_SMOKE_SKIP`) · `CUTOVER_SMOKE_OK` · `UT_GCE_DEMO_OK` · `GCE_SITE_UP_OK` · `GCE_SMOKE_OK` / `GCE_SYNC_OK`.
+
+Mode A nft deepen (mirror Mode B L2 fail-closed): default `gce-sync` runs `bash scripts/gce-nft-smoke.sh` unless `-SkipNft`.

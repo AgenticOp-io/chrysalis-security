@@ -1,6 +1,6 @@
 /**
  * CWL ↔ app-dna-v1 bridge (RFC-0022 / 0023).
- * Seed / profile / holes-report / path-shape SoR: `@agenticop-io/cwl/dna-seed` (CWL 1.0.3+; tip 1.0.17).
+ * Seed / profile / holes-report / path-shape SoR: `@agenticop-io/cwl/dna-seed` (CWL 1.0.3+; tip 1.0.21).
  * Helix owns strip / compare / dna_gaps fill / enforce — does not fork grammar.
  * @see engines/chrysalis-cwl/docs/language/CWL-RFC-0022-dna-surface-bridge.md
  */
@@ -85,7 +85,7 @@ export async function loadCwlDnaSeed() {
     /* fall through */
   }
   throw new Error(
-    'CWL dna-seed not found — npm i @agenticop-io/cwl@1.0.17 (or sibling file: pin with dna-seed export)',
+    'CWL dna-seed not found — npm i @agenticop-io/cwl@1.0.21 (or sibling file: pin with dna-seed export)',
   );
 }
 
@@ -284,10 +284,13 @@ export async function buildHolesBridgeReport(cwlPath, opts = {}) {
 /**
  * Identity compare: every CWL surface route appears in DNA (shape match).
  * When deploy profile host is non-`default`, host is part of identity (RFC-0023).
+ * When CWL declares request/query fingerprints (multipart union, etc.), honor them
+ * against DNA when DNA also has the field (RFC-0022 deepen / tip 1.0.24+).
+ * Bridge annotations (`cwl_stream`, multipart part names) are reported — not DNA routeKey.
  *
- * @param {{ routes?: object[] }} cwlDnaOrSeed
+ * @param {{ routes?: object[], bridge?: object }} cwlDnaOrSeed
  * @param {{ routes?: object[] }} liveDna
- * @param {{ ignoreHost?: boolean, deployProfile?: object }} [opts]
+ * @param {{ ignoreHost?: boolean, deployProfile?: object, strictFingerprints?: boolean }} [opts]
  */
 export function compareCwlSurfaceToDna(cwlDnaOrSeed, liveDna, opts = {}) {
   const profile = opts.deployProfile || null;
@@ -301,13 +304,24 @@ export function compareCwlSurfaceToDna(cwlDnaOrSeed, liveDna, opts = {}) {
     [...seededHosts].some((h) => h !== 'default');
   const ignoreHost =
     opts.ignoreHost !== undefined ? opts.ignoreHost !== false : !multiHost;
+  // Authored cutover: when CWL declares a request fp and DNA has one, they must match.
+  const strictFingerprints = opts.strictFingerprints !== false;
 
   const cwlRoutes = cwlDnaOrSeed?.routes || [];
   const liveRoutes = liveDna?.routes || [];
+  const annotations = Array.isArray(cwlDnaOrSeed?.bridge?.annotations)
+    ? cwlDnaOrSeed.bridge.annotations
+    : [];
 
   const matched = [];
   const missing_in_dna = [];
   const extra_notes = [];
+  /** @type {object[]} */
+  const fingerprint_mismatches = [];
+  /** @type {object[]} */
+  const fingerprints_honored = [];
+  /** @type {object[]} */
+  const content_class_notes = [];
 
   for (const c of cwlRoutes) {
     const method = String(c.method || 'GET').toUpperCase();
@@ -325,6 +339,72 @@ export function compareCwlSurfaceToDna(cwlDnaOrSeed, liveDna, opts = {}) {
         cwl: `${c.host || 'default'} ${method} ${c.path_template}`,
         dna: routeKey(hit),
       });
+
+      if (c.request_key_fingerprint != null) {
+        if (hit.request_key_fingerprint == null) {
+          // Soft: live DNA may not have learned body/multipart names yet.
+          content_class_notes.push({
+            method,
+            path_template: c.path_template,
+            field: 'request_key_fingerprint',
+            cwl: c.request_key_fingerprint,
+            dna: null,
+            note: 'cwl_declared_request_fp_absent_in_dna',
+          });
+        } else if (String(hit.request_key_fingerprint) !== String(c.request_key_fingerprint)) {
+          fingerprint_mismatches.push({
+            method,
+            path_template: c.path_template,
+            host: c.host || 'default',
+            field: 'request_key_fingerprint',
+            cwl: c.request_key_fingerprint,
+            dna: hit.request_key_fingerprint,
+            note: 'request_fp_mismatch',
+          });
+        } else {
+          fingerprints_honored.push({
+            method,
+            path_template: c.path_template,
+            field: 'request_key_fingerprint',
+            value: c.request_key_fingerprint,
+          });
+        }
+      }
+
+      if (c.query_key_fingerprint != null && hit.query_key_fingerprint != null) {
+        if (String(hit.query_key_fingerprint) !== String(c.query_key_fingerprint)) {
+          fingerprint_mismatches.push({
+            method,
+            path_template: c.path_template,
+            host: c.host || 'default',
+            field: 'query_key_fingerprint',
+            cwl: c.query_key_fingerprint,
+            dna: hit.query_key_fingerprint,
+            note: 'query_fp_mismatch',
+          });
+        } else {
+          fingerprints_honored.push({
+            method,
+            path_template: c.path_template,
+            field: 'query_key_fingerprint',
+            value: c.query_key_fingerprint,
+          });
+        }
+      }
+
+      if (
+        c.content_class != null &&
+        hit.content_class != null &&
+        String(c.content_class) !== String(hit.content_class)
+      ) {
+        // RFC-0022: content_class drift is DNA-owned after learn — note only.
+        content_class_notes.push({
+          method,
+          path_template: c.path_template,
+          cwl: c.content_class,
+          dna: hit.content_class,
+        });
+      }
     } else {
       missing_in_dna.push({
         method,
@@ -355,12 +435,31 @@ export function compareCwlSurfaceToDna(cwlDnaOrSeed, liveDna, opts = {}) {
     }
   }
 
+  const streamAnns = annotations.filter((a) => a && a.cwl_stream);
+  const multipartAnns = annotations.filter(
+    (a) =>
+      a &&
+      ((Array.isArray(a.cwl_multipart_fields) && a.cwl_multipart_fields.length) ||
+        (Array.isArray(a.cwl_multipart_files) && a.cwl_multipart_files.length)),
+  );
+
+  const identityOk = missing_in_dna.length === 0;
+  const fpOk = !strictFingerprints || fingerprint_mismatches.length === 0;
+  const ok = identityOk && fpOk;
+
   return {
-    ok: missing_in_dna.length === 0,
+    ok,
     matched,
     missing_in_dna,
     in_dna_not_cwl: extra_notes,
     ignore_host: ignoreHost,
+    fingerprints_honored,
+    fingerprint_mismatches,
+    content_class_notes,
+    bridge_annotations: {
+      cwl_stream: streamAnns,
+      multipart: multipartAnns,
+    },
     deploy_profile: profile
       ? {
           schema: profile.schema,
@@ -370,8 +469,10 @@ export function compareCwlSurfaceToDna(cwlDnaOrSeed, liveDna, opts = {}) {
       : profileHost
         ? { host: profileHost }
         : null,
-    cutover: missing_in_dna.length === 0
+    cutover: ok
       ? 'cwl_surface_subseteq_dna'
-      : 'cwl_surface_not_covered',
+      : identityOk
+        ? 'cwl_fingerprint_not_honored'
+        : 'cwl_surface_not_covered',
   };
 }

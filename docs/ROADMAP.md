@@ -12,10 +12,13 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] Dockerfile env surface  
 - [x] GCE prove: `SMOKE_OK` · `HOST_SMOKE_OK` · `NFT_SMOKE_OK`  
 - [x] Static-asset path collapse (`/**/*.<ext>`) + `static-smoke` / `dna-core-smoke`  
+- [x] Static-smoke pack harden — learn collapse · never-learned hashed JS+CSS allow · API deny (`STATIC_SMOKE_OK`; in `gce-smoke` + `test:dna`)  
 - [x] `scripts/gce-sync.ps1` Helix sync+prove  
 - [x] JSON schema drift enforce smoke (`schema-drift-smoke`)  
+- [x] Schema-drift fixture pack harden — fixture learn · allow / extra / missing enforce · shadow (`SCHEMA_DRIFT_SMOKE_OK`; in `gce-smoke` + `test:dna`)  
 - [x] Persistent mini-site behind helix-agent on GCE (`gce-site-up.sh`, port 18085)  
 - [x] Signed DNA (`hmac-sha256`) + `sign-smoke` / `helix verify`  
+- [x] Sign/promote fixture deepen — fixture keys · signed promote ok · unsigned reject (`SIGN_FIXTURE_OK`; in `gce-smoke` + `test:dna`) 
 - [x] Mode B userspace bridge spike (`helix-bridge` + `bridge-smoke`)  
 
 ## Done (continued)
@@ -31,6 +34,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] Mode B L2 / dual-NIC appliance path — design: [MODE-B-L2.md](./MODE-B-L2.md); GCE green via `gce-sync -WithL2`  
 - [x] UT ↔ CWL spine demo path: `npm run ut-gce-demo` → `UT_GCE_DEMO_OK` (CWL `smoke:ut-spine`; Convert does not own)  
 - [x] `npm run test:dna` — DNA pack without CWL (BEGINNING / D5)  
+- [x] GCE DNA ship pack wires soak/SIEM/reload fixtures (`gce-smoke` → `SOAK_PREFLIGHT_OK` · `SIEM_FIXTURE_OK` · `RELOAD_FIXTURE_OK`; also `test:dna`)  
 - [x] Docker Compose out-of-box lab (`docker-compose.yml` + `compose-smoke`)  
 - [x] Request JSON key fingerprint (`request_key_fingerprint` + `HX-REQUEST-SCHEMA-DRIFT`)  
 - [x] `/__helix/healthz` + SIEM NDJSON hole export (`SIEM_LOG`)  
@@ -42,6 +46,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] CWL tip sync check (`cwl-sync-check` → `CWL_SYNC_OK`)  
 - [x] Filebeat SIEM recipe ([FILEBEAT.md](./FILEBEAT.md))  
 - [x] DNA hot reload (`POST /__helix/reload` + SIGHUP) — [MODES.md](./MODES.md)  
+- [x] Reload **fixture** smoke (`reload-fixture-smoke` → `RELOAD_FIXTURE_OK`) — promote onto live DNA + hot reload, same PID  
 - [x] `HELIX_MAX_BODY_BYTES` → `HX-BODY-TOO-LARGE`  
 - [x] Product gap map ([PRODUCT.md](./PRODUCT.md)) + `helix report` / `helix ready`  
 - [x] Mode A systemd install sketch ([INSTALL-MODE-A.md](./INSTALL-MODE-A.md))  
@@ -51,6 +56,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] Splunk HEC recipe ([SPLUNK.md](./SPLUNK.md))  
 - [x] Mode B L2 GCE runbook ([GCE-L2.md](./GCE-L2.md))  
 - [x] RFC-0023 deploy profile apply at seed/compare (Secure consumes CWL gold profile)  
+- [x] Cutover multi-host hygiene — `CUTOVER_MULTIHOST_OK` (non-`default` host=api seed → compare → enforce + `dna_gaps`)  
 - [x] Shadow soak runbook ([SOAK.md](./SOAK.md))  
 - [x] GCE sync DNA pack + nft green (`GCE_SYNC_OK` / `NFT_SMOKE_OK`) — L2 via `sudo` on sync  
 - [x] Mode B L2 **GCE green** (`BRIDGE_L2_SMOKE_OK` via `gce-sync -WithL2` + sudo)  
@@ -61,10 +67,18 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] Local lab flip — `npm run local-lab` + [LOCAL-LAB.md](./LOCAL-LAB.md)  
 - [x] Browser HTML 403 + `/__helix/attack` proof page + `local-lab-tunnel`  
 
-- [x] CWL tip `1.0.17` consume — `@agenticop-io/cwl@1.0.17` (dna-seed path-shape SoR thin-wrap; nested/status/request/query seed parity)  
+- [x] CWL tip `1.0.17` consume — `@agenticop-io/cwl@1.0.17` (dna-seed path-shape SoR thin-wrap; nested/status/request/query seed parity)
+- [x] Rosetta Step 4 Live match — `docs/LIVE-MATCH.md` · `npm run live-match-smoke`  
+- [x] Mode B L2 **deepen** — nft divert + fail-closed + teardown (`BRIDGE_L2_FAILCLOSED_OK` / `TEARDOWN_OK`)  
+- [x] Mode B L2 **Phase 2** — dual-iface NIC-A/NIC-B in appliance ns (`BRIDGE_L2_P2_IFACE_OK` / `CROSS_OK` / `DNA_OK` / `SMOKE_OK`)  
+- [x] Mode A host-redirect **fail-closed** — divert+Helix-down no silent 200 + teardown (`MODE_A_FAILCLOSED_OK` / `MODE_A_TEARDOWN_OK` · `NFT_SMOKE_OK`)  
 
 ## Later
 
-- [ ] Customer traffic soak (operational — follow [SOAK.md](./SOAK.md))  
+- [x] Soak **preflight** smoke (`soak-preflight-smoke` → `SOAK_PREFLIGHT_OK`) — fixture learn→report→shadow→ready; no fake customers  
+- [x] SIEM_LOG **fixture** smoke (`siem-fixture-smoke` → `SIEM_FIXTURE_OK`) — shadow/enforce holes → file sink; no vendor invent  
+- [ ] Customer traffic soak (operational — follow [SOAK.md](./SOAK.md) after preflight green)  
+- [ ] Mode B transparent bridge-nf divert (daddr=server) when Phase 2 stays boring on GCE  
+
 
 **Non-goals (locked):** no NGFW TLS dependency (D1); DNA block/alert only (D2); no UEBA/signature-WAF replacement (D3); host augment / no NAT homework (D4); CWL never required to enforce (D5).
