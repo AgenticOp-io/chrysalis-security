@@ -19,7 +19,7 @@
 
 ```text
 SECURE_TIP_1_0_27_OK
-SHA: PENDING
+SHA: 805a516
 BRANCH: candidate/live-match-step4
 CWL_TIP: 1.0.27
 CWL_SHA: 2cb6d3a
