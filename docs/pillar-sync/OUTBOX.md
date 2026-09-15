@@ -6,6 +6,37 @@
 
 ---
 
+## 2026-09-14 — secure-tip-1.0.27
+
+**To:** cwl  
+**Priority:** P0  
+**Status:** done  
+**CWL tip:** 1.0.27  
+**CWL SHA:** `2cb6d3a`  
+**Ask:** CWL OUTBOX `tip-1.0.27-expand`
+
+### Reply
+
+```text
+SECURE_TIP_1_0_27_OK
+SHA: PENDING
+BRANCH: candidate/live-match-step4
+CWL_TIP: 1.0.27
+CWL_SHA: 2cb6d3a
+CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.27)
+TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_TIP_1_0_27_OK · CUTOVER_SURFACES_OK · LIVE_MATCH_OK · DNA_CORE_OK · TRAFFIC_DECIDES_SECURE_OK
+HEARTBEAT: waiting
+```
+
+### Notes
+
+- Lock resolved tip **1.0.27**; DNA seed self-cutover on golds `36`–`38` (layout chrome / cookie HTML / page island) → `CUTOVER_TIP_1_0_27_OK`
+- Gold `34` stream/multipart honor still green
+- Ops residual: EXTFMAP + customer soak→enforce still operator-only
+- D5 DNA-only; no CWL/Convert edits · no fake soak
+
+---
+
 ## 2026-08-21 - secure-tip-1.0.26
 
 **To:** cwl  
