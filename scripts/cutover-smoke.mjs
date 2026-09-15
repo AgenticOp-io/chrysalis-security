@@ -237,4 +237,39 @@ if (!fs.existsSync(gold34Cwl)) {
   console.log('CUTOVER_SURFACES_OK');
 }
 
+console.log('=== cutover: tip 1.0.28 page golds (layout / cookie / page-island emit reverse) ===');
+const tip28Golds = [
+  { dir: '36-layout-chrome', minRoutes: 2 },
+  { dir: '37-html-cookie-device', minRoutes: 1 },
+  { dir: '38-html-page-island', minRoutes: 1 },
+];
+let tip28Ok = 0;
+for (const g of tip28Golds) {
+  const cwlPath = path.join(cwlRoot, 'fixtures', 'language-gold', g.dir, 'routes.cwl');
+  if (!fs.existsSync(cwlPath)) {
+    console.log(`CUTOVER_TIP28_SKIP (missing ${g.dir})`);
+    continue;
+  }
+  const seeded = await seedDnaFromCwlFile(cwlPath, {
+    app_id: `cutover-${g.dir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${g.dir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((seeded.routes?.length ?? 0) >= g.minRoutes, `${g.dir} route count`);
+  assert(
+    seeded.routes.every((r) => r.content_class === 'html'),
+    `${g.dir} page surfaces seed content_class html`,
+  );
+  const certified = stripBridgeEnvelope(seeded);
+  const cmp = compareCwlSurfaceToDna(seeded, certified);
+  assert(cmp.ok === true, `${g.dir} self-cutover: ${JSON.stringify(cmp.missing_in_dna)}`);
+  tip28Ok += 1;
+}
+if (tip28Ok === tip28Golds.length) {
+  console.log('CUTOVER_TIP_1_0_28_OK');
+} else if (tip28Ok > 0) {
+  console.log(`CUTOVER_TIP_1_0_28_PARTIAL (${tip28Ok}/${tip28Golds.length})`);
+}
+
 console.log('CUTOVER_SMOKE_OK');

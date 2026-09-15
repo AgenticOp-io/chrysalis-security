@@ -41,7 +41,13 @@ When using nft divert (`PUBLIC_PORT` → `HELIX_PORT`):
 
 Prove: `npm run nft-smoke` → `NFT_SMOKE_OK` (Linux/GCE). Win32 → honest `NFT_SMOKE_SKIP`.
 
+## Product example — Cinderpath control plane
+
+Privacy VPN **HTTP** (account / shop / connect mint), not WireGuard: [CINDERPATH.md](./CINDERPATH.md).  
+`APP_UPSTREAM` → `cinderpath-web` on localhost; `tunnel_inspection: false` stays product law.
+
 ## Prove
 
 Local: `npm run ready-smoke` · host path: `npm run host-smoke` · nft: `npm run nft-smoke`  
+Cinderpath genome seed: `npm run cinderpath-control-plane-smoke` → `CINDERPATH_CONTROL_PLANE_OK`  
 GCE: `docs/GCE.md` (default `gce-sync` runs nft smoke)
