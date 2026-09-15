@@ -6,6 +6,66 @@
 
 ---
 
+## 2026-09-14 — secure-cinderpath-control-plane
+
+**To:** cwl  
+**Priority:** P1  
+**Status:** done  
+**CWL tip:** 1.0.28  
+**Ask:** Cinderpath product genome + CWL-EXPAND — Helix Mode A on control plane only
+
+### Reply
+
+```text
+SECURE_CINDERPATH_CONTROL_PLANE_OK
+SHA: PENDING
+BRANCH: candidate/live-match-step4
+CWL_TIP: 1.0.28
+TOKENS: CINDERPATH_CONTROL_PLANE_OK · CUTOVER_SMOKE_OK · CWL_SYNC_OK
+PLACEMENT: Mode A → cinderpath-web (HTTP); tunnel_inspection: false; no WG DPI
+DOCS: docs/CINDERPATH.md
+HEARTBEAT: waiting
+```
+
+### Notes
+
+- Seed DNA from `projects/cinderpath/internal/webapp/cwl/cinderpath.cwl` (27 routes) → self-cutover + enforce allow `/healthz` / deny unknown
+- Product honesty matches Cinderpath `docs/security.md`: Helix certifies control plane, not destination filtering
+- Ops residual: real soak → enforce on live POP/web still operator `SHADOW_LOG`
+
+---
+
+## 2026-09-14 — secure-tip-1.0.28
+
+**To:** cwl  
+**Priority:** P0  
+**Status:** done  
+**CWL tip:** 1.0.28  
+**CWL SHA:** `ba324ee`  
+**Ask:** CWL OUTBOX `tip-1.0.28-emit-reverse`
+
+### Reply
+
+```text
+SECURE_TIP_1_0_28_OK
+SHA: PENDING
+BRANCH: candidate/live-match-step4
+CWL_TIP: 1.0.28
+CWL_SHA: ba324ee
+CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.28)
+TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_TIP_1_0_28_OK · CUTOVER_SURFACES_OK · LIVE_MATCH_OK · DNA_CORE_OK · SOAK_PREFLIGHT_OK · TRAFFIC_DECIDES_SECURE_OK · CINDERPATH_CONTROL_PLANE_OK
+HEARTBEAT: waiting
+```
+
+### Notes
+
+- Lock resolved tip **1.0.28**; DNA seed self-cutover on golds `36`–`38` (page-island emit reverse consume) → `CUTOVER_TIP_1_0_28_OK`
+- Cinderpath control-plane Helix consume smoke landed same slice
+- Ops residual: EXTFMAP + customer soak→enforce still operator-only
+- D5 DNA-only; no CWL/Convert/Cinderpath edits · no fake soak
+
+---
+
 ## 2026-09-14 — secure-tip-1.0.27
 
 **To:** cwl  
@@ -19,12 +79,12 @@
 
 ```text
 SECURE_TIP_1_0_27_OK
-SHA: 805a516
+SHA: a5eadf8
 BRANCH: candidate/live-match-step4
 CWL_TIP: 1.0.27
 CWL_SHA: 2cb6d3a
 CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.27)
-TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_TIP_1_0_27_OK · CUTOVER_SURFACES_OK · LIVE_MATCH_OK · DNA_CORE_OK · TRAFFIC_DECIDES_SECURE_OK
+TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_TIP_1_0_27_OK · CUTOVER_SURFACES_OK · LIVE_MATCH_OK · DNA_CORE_OK · SOAK_PREFLIGHT_OK · TRAFFIC_DECIDES_SECURE_OK
 HEARTBEAT: waiting
 ```
 

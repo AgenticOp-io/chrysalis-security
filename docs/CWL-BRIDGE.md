@@ -19,15 +19,15 @@ npm run helix -- cutover --cwl path/to/routes.cwl --dna certificates/app.json \
 
 Env: `CHRYSALIS_CWL_ROOT` if the language pillar (fixtures) is not at `../chrysalis-cwl`.
 
-## Pin (CWL tip @ 1.0.27)
+## Pin (CWL tip @ 1.0.28)
 
 ```json
 "@agenticop-io/cwl": "file:../chrysalis-cwl/packages/cwl"
 ```
 
-Follows CWL tip DNA seed (nested FP depth ≤2, request/query name FPs, SSE `cwl_stream`, multipart field/file fingerprints, page/layout HTML surfaces, `pathTemplateShapeEqual` SoR). Secure thin-wraps path-shape from dna-seed; cutover honors stream/multipart annotations when present. Protect stays DNA / D5.
+Follows CWL tip DNA seed (nested FP depth ≤2, request/query name FPs, SSE `cwl_stream`, multipart field/file fingerprints, page/layout HTML surfaces + page-island emit reverse, `pathTemplateShapeEqual` SoR). Secure thin-wraps path-shape from dna-seed; cutover honors stream/multipart annotations when present. Protect stays DNA / D5.
 
-GitHub Packages — [`.npmrc.example`](../.npmrc.example). Optional registry `@agenticop-io/cwl@1.0.27` ≡ same tip.
+GitHub Packages — [`.npmrc.example`](../.npmrc.example). Optional registry `@agenticop-io/cwl@1.0.28` ≡ same tip.
 
 | Import | Role |
 | --- | --- |
