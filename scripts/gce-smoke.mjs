@@ -34,6 +34,8 @@ run('scripts/bridge-smoke.mjs');
 run('scripts/soak-preflight-smoke.mjs');
 run('scripts/siem-fixture-smoke.mjs');
 run('scripts/reload-fixture-smoke.mjs');
+run('scripts/triage-smoke.mjs');
+run('scripts/response-surface-smoke.mjs');
 
 try {
   resolveCwlRoot();

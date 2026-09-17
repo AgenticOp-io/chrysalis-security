@@ -31,6 +31,51 @@ export function isStaticAssetPath(path) {
   return STATIC_EXT_RE.test(String(path || '/').split('?')[0] || '/');
 }
 
+/**
+ * Cookie **names** from one or more Set-Cookie headers. Values are never read: a session
+ * token is the secret we are protecting, and DNA is a file operators copy around.
+ * @param {string|string[]|undefined|null} setCookie
+ * @returns {string[]} sorted, deduped
+ */
+export function setCookieNames(setCookie) {
+  if (!setCookie) return [];
+  const list = Array.isArray(setCookie) ? setCookie : [setCookie];
+  const names = new Set();
+  for (const raw of list) {
+    const first = String(raw || '').split(';')[0];
+    const eq = first.indexOf('=');
+    const name = (eq >= 0 ? first.slice(0, eq) : first).trim();
+    if (name) names.add(name);
+  }
+  return [...names].sort();
+}
+
+/**
+ * Where a redirect points, as a certifiable shape rather than a URL.
+ *
+ * Relative and same-host targets collapse to `self` so ordinary navigation does not churn
+ * the certificate; anything else is recorded as the bare hostname, which is the part that
+ * turns an open redirect into an exfiltration path.
+ *
+ * @param {string|undefined|null} location Location header
+ * @param {string|undefined|null} selfHost request host
+ * @returns {string|null} `self`, a hostname, or null when there is no redirect
+ */
+export function redirectTarget(location, selfHost) {
+  const loc = String(location || '').trim();
+  if (!loc) return null;
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(loc)) return 'self';
+  let url;
+  try {
+    url = new URL(loc);
+  } catch {
+    return 'unparseable';
+  }
+  const host = String(selfHost || '').toLowerCase().split(':')[0];
+  const target = url.hostname.toLowerCase();
+  return host && target === host ? 'self' : target;
+}
+
 export function contentClass(contentType) {
   const ct = String(contentType || '').toLowerCase();
   if (ct.includes('json')) return 'json';
@@ -145,6 +190,8 @@ export function learnFromObservations(observations, opts = {}) {
         response_key_fingerprint: klass === 'json' ? responseKeyFingerprint(obs.body) : null,
         request_key_fingerprint: null,
         query_names: new Set(),
+        cookie_names: new Set(),
+        redirect_targets: new Set(),
       };
       byRoute.set(key, route);
     }
@@ -166,6 +213,9 @@ export function learnFromObservations(observations, opts = {}) {
     if (qfp) {
       for (const n of qfp.split(',')) route.query_names.add(n);
     }
+    for (const name of setCookieNames(obs.setCookie)) route.cookie_names.add(name);
+    const target = redirectTarget(obs.location, obs.host);
+    if (target) route.redirect_targets.add(target);
   }
 
   const routes = [...byRoute.values()]
@@ -178,6 +228,10 @@ export function learnFromObservations(observations, opts = {}) {
       response_key_fingerprint: r.content_class === 'json' ? r.response_key_fingerprint : null,
       request_key_fingerprint: r.request_key_fingerprint || null,
       query_key_fingerprint: [...r.query_names].sort().join(','),
+      // Empty arrays are a claim, not a gap: this route was observed and never minted a
+      // cookie / redirected. Absent (legacy DNA) means unknown, and is not enforced.
+      set_cookie_names: [...r.cookie_names].sort(),
+      redirect_targets: [...r.redirect_targets].sort(),
     }))
     .sort((a, b) => routeKey(a).localeCompare(routeKey(b)));
 
@@ -329,6 +383,35 @@ export function scoreResponse(route, res) {
         hole: {
           code: 'HX-STATUS-DRIFT',
           reason: `Status class drifted on ${route.method} ${route.path_template}: got ${sc}, expected one of [${route.status_classes.join(',')}]`,
+        },
+      };
+    }
+  }
+
+  // Response surface is checked before the JSON short-circuit: the routes that mint sessions
+  // and redirect are usually HTML, and they are the ones worth certifying.
+  if (Array.isArray(route.set_cookie_names)) {
+    const seen = setCookieNames(res.setCookie);
+    const uncertified = seen.filter((n) => !route.set_cookie_names.includes(n));
+    if (uncertified.length) {
+      return {
+        allow: false,
+        hole: {
+          code: 'HX-COOKIE-DRIFT',
+          reason: `Uncertified cookie on ${route.method} ${route.path_template}: set [${uncertified.join(',')}], certified [${route.set_cookie_names.join(',') || 'none'}]`,
+        },
+      };
+    }
+  }
+
+  if (Array.isArray(route.redirect_targets)) {
+    const target = redirectTarget(res.location, res.host);
+    if (target && !route.redirect_targets.includes(target)) {
+      return {
+        allow: false,
+        hole: {
+          code: 'HX-REDIRECT-DRIFT',
+          reason: `Uncertified redirect on ${route.method} ${route.path_template}: to ${target}, certified [${route.redirect_targets.join(',') || 'none'}]`,
         },
       };
     }
@@ -936,6 +1019,197 @@ export function countShadowHoles(filePath) {
     return { count: 0, byCode: {}, bySeverity: {}, high: 0, missing: true };
   }
   return countShadowHoleEvents(fs.readFileSync(filePath, 'utf8'));
+}
+
+/** A surface nobody certified. Either the app grew or someone is probing. */
+const TRIAGE_NEW_SURFACE_CODES = new Set(['HX-ROUTE-UNKNOWN']);
+/** A certified surface whose shape moved. Re-learn or fix the app — never blind-certify. */
+const TRIAGE_DRIFT_CODES = new Set([
+  'HX-SCHEMA-DRIFT',
+  'HX-REQUEST-SCHEMA-DRIFT',
+  'HX-QUERY-SCHEMA-DRIFT',
+  'HX-STATUS-DRIFT',
+  'HX-CONTENT-CLASS-DRIFT',
+  'HX-COOKIE-DRIFT',
+  'HX-REDIRECT-DRIFT',
+]);
+
+function triageClass(code, inDna, pathKnown) {
+  if (TRIAGE_DRIFT_CODES.has(code)) return 'certified_surface_drift';
+  if (TRIAGE_NEW_SURFACE_CODES.has(code)) {
+    if (inDna) return 'certified_surface_drift';
+    // Same path, method nobody certified: a POST at a read-only surface reads very
+    // differently from a path the app never had, so it does not get the same bucket.
+    return pathKnown ? 'new_method_on_known_path' : 'new_surface';
+  }
+  return 'policy';
+}
+
+/**
+ * Digest a shadow/SIEM NDJSON log into reviewable groups.
+ *
+ * A soak produces one line per hole; an operator needs surfaces, not lines. Grouping by
+ * path template collapses per-request noise (hashed bundles, id paths) into the handful of
+ * shapes a human can actually decide on.
+ *
+ * Deliberately proposes no DNA: hole events record what was *refused*, not the response
+ * shape a route would need, so certifying from them would be inventing coverage. The honest
+ * next step for a real new surface is another learn pass.
+ *
+ * @param {string|string[]|object[]} input NDJSON text, lines, or parsed events
+ * @param {{ dna?: object|null, since?: string, until?: string, samples?: number }} [opts]
+ */
+export function triageShadowLog(input, opts = {}) {
+  let rows = [];
+  if (typeof input === 'string') {
+    rows = input
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+  } else if (Array.isArray(input)) {
+    rows = input;
+  }
+  const maxSamples = opts.samples != null ? Number(opts.samples) : 3;
+  const since = opts.since ? Date.parse(opts.since) : null;
+  const until = opts.until ? Date.parse(opts.until) : null;
+  const dnaRoutes = Array.isArray(opts.dna?.routes) ? opts.dna.routes : null;
+
+  const groups = new Map();
+  let events = 0;
+  let skipped = 0;
+  let windowed = 0;
+  let firstSeen = null;
+  let lastSeen = null;
+
+  for (const row of rows) {
+    let obj = row;
+    if (typeof row === 'string') {
+      try {
+        obj = JSON.parse(row);
+      } catch {
+        skipped += 1;
+        continue;
+      }
+    }
+    if (!obj || typeof obj !== 'object') {
+      skipped += 1;
+      continue;
+    }
+    if (obj.kind !== 'helix.hole' && !obj.hole?.code) {
+      skipped += 1;
+      continue;
+    }
+    const at = obj.at ? Date.parse(obj.at) : NaN;
+    if ((since != null && Number.isFinite(at) && at < since) ||
+        (until != null && Number.isFinite(at) && at > until)) {
+      windowed += 1;
+      continue;
+    }
+    events += 1;
+    if (obj.at) {
+      if (firstSeen == null || obj.at < firstSeen) firstSeen = obj.at;
+      if (lastSeen == null || obj.at > lastSeen) lastSeen = obj.at;
+    }
+
+    const method = String(obj.method || 'GET').toUpperCase();
+    const rawPath = String(obj.path || '/').split('?')[0] || '/';
+    const template = obj.path_template || pathTemplate(rawPath);
+    const host = String(obj.host || 'default').toLowerCase();
+    const code = obj.hole?.code || 'UNKNOWN';
+    const key = `${method} ${host} ${template} ${code} ${obj.phase || 'request'}`;
+
+    let g = groups.get(key);
+    if (!g) {
+      const inDna = dnaRoutes
+        ? dnaRoutes.some(
+            (r) =>
+              String(r.method).toUpperCase() === method &&
+              String(r.path_template) === template &&
+              (String(r.host || 'default').toLowerCase() === host ||
+                String(r.host || 'default').toLowerCase() === 'default'),
+          )
+        : null;
+      const pathKnown = dnaRoutes
+        ? dnaRoutes.some((r) => String(r.path_template) === template)
+        : false;
+      g = {
+        method,
+        path_template: template,
+        host,
+        code,
+        phase: obj.phase || 'request',
+        reason: obj.hole?.reason || null,
+        class: triageClass(code, inDna === true, pathKnown),
+        severity: 'normal',
+        count: 0,
+        first_seen: obj.at || null,
+        last_seen: obj.at || null,
+        samples: [],
+        in_dna: inDna,
+      };
+      if (obj.sensitivity) g.sensitivity = obj.sensitivity;
+      groups.set(key, g);
+    }
+    g.count += 1;
+    if (obj.severity === 'high') g.severity = 'high';
+    if (obj.sensitivity && !g.sensitivity) g.sensitivity = obj.sensitivity;
+    if (obj.at) {
+      if (!g.first_seen || obj.at < g.first_seen) g.first_seen = obj.at;
+      if (!g.last_seen || obj.at > g.last_seen) g.last_seen = obj.at;
+    }
+    if (g.samples.length < maxSamples && !g.samples.includes(rawPath)) g.samples.push(rawPath);
+  }
+
+  const list = [...groups.values()].sort((a, b) => {
+    if (a.severity !== b.severity) return a.severity === 'high' ? -1 : 1;
+    if (b.count !== a.count) return b.count - a.count;
+    return a.path_template.localeCompare(b.path_template);
+  });
+
+  const byClass = {};
+  const byCode = {};
+  let high = 0;
+  for (const g of list) {
+    byClass[g.class] = (byClass[g.class] || 0) + g.count;
+    byCode[g.code] = (byCode[g.code] || 0) + g.count;
+    if (g.severity === 'high') high += g.count;
+  }
+
+  const blockers = list.filter((g) => g.severity === 'high');
+  let nextStep = 'enforce';
+  if (blockers.length) nextStep = 'investigate_credential_drift';
+  else if (byClass.certified_surface_drift) nextStep = 'relearn_or_fix_app';
+  else if (byClass.new_surface || byClass.new_method_on_known_path) nextStep = 'review_new_surface';
+
+  return {
+    kind: 'helix.triage',
+    events,
+    skipped,
+    outside_window: windowed,
+    window: {
+      since: opts.since || null,
+      until: opts.until || null,
+      first_seen: firstSeen,
+      last_seen: lastSeen,
+    },
+    surfaces: list.length,
+    totals: { holes: events, high, by_class: byClass, by_code: byCode },
+    groups: list,
+    blockers: blockers.map((g) => `${g.method} ${g.path_template} (${g.code})`),
+    next_step: nextStep,
+  };
+}
+
+/**
+ * Digest a shadow/SIEM NDJSON file. Missing file is reported, never silently empty.
+ * @param {string} filePath
+ * @param {{ dna?: object|null, since?: string, until?: string, samples?: number }} [opts]
+ */
+export function triageShadowLogFile(filePath, opts = {}) {
+  if (!filePath || !fs.existsSync(filePath)) {
+    return { ...triageShadowLog([], opts), missing: true, path: filePath || null };
+  }
+  return { ...triageShadowLog(fs.readFileSync(filePath, 'utf8'), opts), missing: false, path: filePath };
 }
 
 function stableStringify(obj) {

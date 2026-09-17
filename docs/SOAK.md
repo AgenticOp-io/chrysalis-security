@@ -37,7 +37,14 @@ npm run soak-preflight-smoke
 
 1. Keep Helix on the **same placement** that preflight assumed (Mode A proxy / Mode B divert / Mode C agent).  
 2. `MODE=shadow` + `SHADOW_LOG` (or SIEM) for the agreed soak window.  
-3. Investigate every `HX-*`; promote legitimate new surface; fix app otherwise.  
+3. Investigate every `HX-*`; promote legitimate new surface; fix app otherwise. Review by **surface**, not by line:
+
+```bash
+helix triage --shadow-log "$SHADOW_LOG" --in certified.dna.json
+# holes → surfaces, classed as new_surface / new_method_on_known_path / certified_surface_drift
+# exit 2 if a credential surface drifted — see docs/TRIAGE.md
+```
+
 4. Gate:
 
 ```bash
@@ -56,7 +63,7 @@ helix ready --target enforce --shadow-log "$SHADOW_LOG" --max-shadow-holes 0 --r
 | `helix report` | Routes look complete for the app’s real surface |
 | `helix promote --from` | Diff reviewed; no surprise admin routes |
 | `MODE=shadow` | Traffic still flows; holes go to `SHADOW_LOG` / `SIEM_LOG` (prove file sink: `npm run siem-fixture-smoke` → `SIEM_FIXTURE_OK`) |
-| Unexpected holes | Investigate each `HX-*` — promote if legitimate, fix app if not |
+| Unexpected holes | `helix triage --shadow-log …` daily — investigate each surface, promote if legitimate, fix app if not ([TRIAGE.md](./TRIAGE.md)) |
 | `helix ready --target enforce --shadow-log …` | Exit 0 with `--max-shadow-holes 0` (or agreed budget) |
 | `MODE=enforce` | Fail closed on out-of-DNA |
 | New deploys | Draft → promote → `POST /__helix/reload` (fixture: `npm run reload-fixture-smoke` → `RELOAD_FIXTURE_OK`) |
@@ -105,4 +112,5 @@ If `ready` fails: extend soak or promote/fix — never invent routes to silence 
 - Install: [INSTALL-MODE-A.md](./INSTALL-MODE-A.md)  
 - Product bar: [PRODUCT.md](./PRODUCT.md)  
 - SIEM file sink: [SIEM.md](./SIEM.md) · `npm run siem-fixture-smoke`  
+- Hole triage: [TRIAGE.md](./TRIAGE.md) · `npm run triage-smoke`  
 - Mode B L2 lab: [MODE-B-L2.md](./MODE-B-L2.md) · [GCE-L2.md](./GCE-L2.md)

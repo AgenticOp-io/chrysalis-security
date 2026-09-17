@@ -277,6 +277,12 @@
       </section>
 
       <section class="tile full">
+        <p class="label">Surfaces to review</p>
+        <div id="triageTable" class="empty">None yet — holes group by surface once traffic finds one.</div>
+        <p class="hint" id="triageHint"></p>
+      </section>
+
+      <section class="tile full">
         <p class="label">Recent holes</p>
         <div id="holeTable" class="empty">None yet — expected in learn mode.</div>
       </section>
@@ -362,6 +368,22 @@
           obsRows,
           "Waiting for traffic… hit /api/health or /api/items",
         );
+
+        const triageRows = (s.triage?.groups || []).map((g) => [
+          g.severity === "high" ? "<strong>high</strong>" : "normal",
+          String(g.count),
+          esc(g.class.replace(/_/g, " ")),
+          `<code>${esc(g.method)} ${esc(g.path_template)}</code>`,
+          `<code>${esc(g.code)}</code>`,
+        ]);
+        $("triageTable").innerHTML = rowsHtml(
+          ["Severity", "Hits", "What", "Surface", "Code"],
+          triageRows,
+          "None yet — holes group by surface once traffic finds one.",
+        );
+        $("triageHint").textContent = s.triage?.surfaces
+          ? `${s.triage.of} holes → ${s.triage.surfaces} surfaces · next: ${s.triage.next_step}`
+          : "";
 
         const holeRows = (s.siem?.recent || []).map((e) => [
           `<code>${esc(e.hole?.code || "—")}</code>`,

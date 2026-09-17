@@ -20,6 +20,8 @@ import {
   assessReadiness,
   loadSensitivityMap,
   severityForRoute,
+  triageShadowLog,
+  setCookieNames,
 } from '../dna-core/index.mjs';
 
 const HEALTHZ = '/__helix/healthz';
@@ -31,6 +33,9 @@ const SNAPSHOT = '/__helix/api/snapshot';
 const PANEL_HTML_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), 'panel.html');
 const ATTACK_HTML_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), 'attack.html');
 const ATTACK_PAGE = '/__helix/attack';
+// The panel polls every few seconds, so it digests a bounded tail rather than a soak-sized log.
+const SNAPSHOT_TRIAGE_LINES = 500;
+const SNAPSHOT_TRIAGE_GROUPS = 8;
 
 function readRecentNdjson(filePath, limit = 12) {
   if (!filePath || !fs.existsSync(filePath)) return { count: 0, recent: [] };
@@ -265,6 +270,20 @@ export function createHelixProxy(opts) {
     if (req.method === 'GET' && pathOnly === SNAPSHOT) {
       const obs = readRecentNdjson(opts.observePath, 15);
       const siem = readRecentNdjson(opts.siemLogPath || opts.shadowLogPath, 15);
+      // A soak floods the raw list — hashed bundles bury the one login hole that matters.
+      // Group the recent tail into surfaces so the panel shows decisions, not lines.
+      const holeTail = readRecentNdjson(opts.siemLogPath || opts.shadowLogPath, SNAPSHOT_TRIAGE_LINES);
+      const digest = triageShadowLog(holeTail.recent, { dna, samples: 2 });
+      const triage = {
+        surfaces: digest.surfaces,
+        high: digest.totals.high,
+        by_class: digest.totals.by_class,
+        next_step: digest.next_step,
+        blockers: digest.blockers,
+        scanned: holeTail.recent.length,
+        of: holeTail.count,
+        groups: digest.groups.slice(0, SNAPSHOT_TRIAGE_GROUPS),
+      };
       const st = dnaStatus();
       let report = null;
       let ready = null;
@@ -317,6 +336,7 @@ export function createHelixProxy(opts) {
           ...st,
           observations: obs,
           siem,
+          triage,
           report,
           ready,
           next,
@@ -468,6 +488,9 @@ export function createHelixProxy(opts) {
               requestContentType: reqCt || undefined,
               requestBody: requestBody,
               query: pathWithQuery.includes('?') ? pathWithQuery.slice(pathWithQuery.indexOf('?')) : '',
+              // Names only — a learned observation file must never carry a session token.
+              setCookie: setCookieNames(pres.headers['set-cookie']),
+              location: pres.headers['location'] || undefined,
             });
           }
 
@@ -476,6 +499,9 @@ export function createHelixProxy(opts) {
               contentType: ct,
               body,
               status: pres.statusCode || 0,
+              setCookie: pres.headers['set-cookie'],
+              location: pres.headers['location'],
+              host,
             });
             if (!rv.allow) {
               emitHole('response', rv.hole, { method, path: pathOnly, host });

@@ -324,6 +324,33 @@ if (auth) {
     (a) => a.path_template === '/logout',
   );
   assert(logout?.cwl_credential_effects.includes('session.revoke'), 'session.revoke tag');
+
+  // A seeded certificate has no response surface — the genome knows a session is minted,
+  // never which cookie carries it. Cutover says so instead of inventing a name.
+  const seededNote = auth.cmp.session_mint_notes.find((n) => n.path_template === '/login');
+  assert(
+    seededNote?.note === 'dna_predates_response_surface',
+    `seed has no cookie opinion: ${JSON.stringify(seededNote)}`,
+  );
+
+  // Once the app has been learned, the two sources are cross-checked.
+  const learned = stripBridgeEnvelope(auth.seeded);
+  const loginRoute = learned.routes.find(
+    (r) => r.method === 'POST' && r.path_template === '/login',
+  );
+  loginRoute.set_cookie_names = [];
+  const silent = compareCwlSurfaceToDna(auth.seeded, learned);
+  assert(
+    silent.session_mint_notes.find((n) => n.path_template === '/login')?.note ===
+      'genome_mints_session_dna_sets_no_cookie',
+    'a session minter that sets no cookie is flagged',
+  );
+  loginRoute.set_cookie_names = ['sid'];
+  const honored = compareCwlSurfaceToDna(auth.seeded, learned);
+  const okNote = honored.session_mint_notes.find((n) => n.path_template === '/login');
+  assert(okNote?.note === 'session_mint_honored', `honored: ${JSON.stringify(okNote)}`);
+  assert(okNote.set_cookie_names.includes('sid'), 'the certificate names the cookie');
+  assert(honored.ok === true, 'a note never fails the cutover — DNA owns observed behaviour');
 }
 
 // 1.0.34 / 1.0.36 — a forwarded route names its full upstream target

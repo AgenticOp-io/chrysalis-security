@@ -22,6 +22,8 @@ That is a category shift only if operators can run it **Monday morning** without
 | Optional CWL cutover | Platform path without requiring CWL (D5) |
 | Cinderpath control-plane Mode A | Privacy VPN HTTP DNA; not tunnel DPI ([CINDERPATH.md](./CINDERPATH.md)) |
 | Credential-surface severity | Login drift outranks brochure noise, and blocks enforce ([SEVERITY.md](./SEVERITY.md)) |
+| Soak triage | A two-week shadow log becomes the few surfaces an operator decides about ([TRIAGE.md](./TRIAGE.md)) |
+| Response surface | A certified page cannot start minting sessions or redirecting off-host ([RESPONSE-SURFACE.md](./RESPONSE-SURFACE.md)) |
 | Whitepaper + threat model | Story is honest |
 
 **Verdict today:** shippable engine + operator path + Mode A/K8s recipes + **L2 GCE green** + soak **preflight** smoke. Remaining for full “changed security” credibility is **living with real customer traffic** (shadow soak → enforce) — not more core fingerprints.
@@ -90,6 +92,7 @@ That sentence is only credible with Tier 1 install + readiness + real-app prove.
 | Ops | Soak preflight (tooling) | **done** (`npm run soak-preflight-smoke` → `SOAK_PREFLIGHT_OK`) |
 | Ops | SIEM_LOG fixture smoke | **done** (`npm run siem-fixture-smoke` → `SIEM_FIXTURE_OK`) — file sink only |
 | Ops | Reload fixture smoke | **done** (`npm run reload-fixture-smoke` → `RELOAD_FIXTURE_OK`) — promote → hot reload, no restart |
+| Ops | Shadow-log triage | **done** (`npm run triage-smoke` → `TRIAGE_SMOKE_OK`) — holes → surfaces; proposes no DNA |
 | Ops | Customer shadow soak | **runbook** ([SOAK.md](./SOAK.md)) — live traffic only; preflight ≠ soak |
 
 Related: [WHITEPAPER.md](./WHITEPAPER.md) · [MODES.md](./MODES.md) · [BEGINNING.md](./BEGINNING.md) · [ROADMAP.md](./ROADMAP.md)

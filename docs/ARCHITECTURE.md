@@ -19,6 +19,7 @@ Host intercept (Mode A) is the path that avoids firewall NAT edits and covers in
 - `content_class` (`json` | `html` | `other`)
 - `response_key_fingerprint` (**json only**)
 - `status_classes`
+- `set_cookie_names` / `redirect_targets` — response surface, names and hostnames only ([RESPONSE-SURFACE.md](./RESPONSE-SURFACE.md))
 
 Skip HTML body hashes and SQL in v0.
 

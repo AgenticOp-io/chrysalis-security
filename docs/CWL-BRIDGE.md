@@ -59,6 +59,8 @@ npm run helix -- sensitivity --cwl app.cwl --out sensitivity.json # credential s
 
 Declared media type vs learned `content_class` is a **note** (`cwl_declared_media_type_vs_dna_content_class`), never a silent DNA rewrite: traffic decides after learn.
 
+`session.mint` gets the same treatment against the certificate's response surface. The genome knows a route mints a session but cannot name the cookie, so cutover reports `session_mint_notes` — `session_mint_honored`, `genome_mints_session_dna_sets_no_cookie`, or `dna_predates_response_surface` — and never seeds a cookie name ([RESPONSE-SURFACE.md](./RESPONSE-SURFACE.md)).
+
 ## Rules (honest)
 
 | In bridge envelope | In certified `app-dna-v1` |
