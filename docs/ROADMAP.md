@@ -81,7 +81,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] Operator egress review + overlay CLI — `helix upstreams` / `helix sensitivity`  
 - [x] Cinderpath Mode A runnable lab (`cinderpath-lab` → `CINDERPATH_LAB_OK`) — stub control plane, no WireGuard  
 - [x] Certified literal surfaces survive the static-asset collapse (`/connect/qr.png` no longer denied under a CWL-seeded certificate)  
-- [x] Mode B transparent bridge-nf divert (daddr=server) — Phase 3 lab + `gce-bridge-l2-p3-smoke.sh`; **GCE prove pending reauth**  
+- [x] Mode B transparent bridge-nf divert (daddr=server) — Phase 3 `gce-bridge-l2-p3-smoke.sh`, **GCE proven** on `agenticop-master` (`BRIDGE_L2_P3_SMOKE_OK` + `GCE_SYNC_OK`)  
 - [ ] Customer traffic soak (operational — follow [SOAK.md](./SOAK.md) after preflight green)  
 
 

@@ -117,7 +117,15 @@ if ($SyncOnly) {
 
 $remote = ($smokeCmds -join "; ")
 Write-Host "SSH smokes on $Name ..."
-# Pass --command as a single argv so PowerShell does not expand $HOME / $USER inside the remote script
-& gcloud compute ssh $Name --zone=$Zone --project=$Project --command="$remote"
-if ($LASTEXITCODE -ne 0) { throw "remote smokes failed" }
+# Pass --command as a single argv so PowerShell does not expand $HOME / $USER inside the remote script.
+# Merge remote stderr into stdout and judge by exit code only: negative tests legitimately write
+# to stderr (sign-smoke proves an unsigned certificate is refused), and with ErrorActionPreference
+# = Stop a single stderr line would abort a passing sync before GCE_SYNC_OK.
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+& gcloud compute ssh $Name --zone=$Zone --project=$Project --command="$remote" 2>&1 |
+  ForEach-Object { Write-Host $_ }
+$remoteRc = $LASTEXITCODE
+$ErrorActionPreference = $prevEap
+if ($remoteRc -ne 0) { throw "remote smokes failed (exit $remoteRc)" }
 Write-Host "GCE_SYNC_OK"

@@ -34,7 +34,19 @@ If sudo is denied, you get `BRIDGE_L2_*_SMOKE_SKIP` — fix NOPASSWD for the SSH
 Phase 3 additionally needs `br_netfilter`; a host that will not let `bridge-nf-call-iptables` be set gets an honest `BRIDGE_L2_P3_SMOKE_SKIP`, not a fake green.
 
 Deepen (2026-08-11): Phase 1 divert fail-closed + teardown; Phase 2 dual-iface pair in helix ns.  
-Phase 3 (2026-09-16): transparent `daddr=server` divert — no client reconfiguration.  
+Phase 3 (2026-09-16): transparent `daddr=server` divert — no client reconfiguration. **Proven** on `agenticop-master`.  
+
+### Auth
+
+When the user gcloud credential has expired, `gcloud auth login` needs a browser and cannot run from an agent shell. The `chrysalis-vm-agent` service account already has SSH on the instance and does not expire the same way, so prefer it for non-interactive proves:
+
+```powershell
+$env:CLOUDSDK_CORE_ACCOUNT="chrysalis-vm-agent@chrysalis-dev-f5x6qv.iam.gserviceaccount.com"
+.\scripts\gce-sync.ps1 -WithL2P3
+```
+
+`gce-sync` merges remote stderr into stdout and judges the run by exit code alone. Some smokes prove a **refusal** and write to stderr on success (`sign-smoke` → `HX-DNA-UNSIGNED` for the unsigned certificate it must reject); with PowerShell's `ErrorActionPreference = Stop` that one line used to abort an otherwise green sync before `GCE_SYNC_OK`.
+
 Design: [MODE-B-L2.md](./MODE-B-L2.md). Never delete protected GCE VMs.
 
 **Not a customer soak** — soak is real traffic in `shadow` ([SOAK.md](./SOAK.md)).

@@ -6,6 +6,39 @@
 
 ---
 
+## 2026-09-16 — secure-modeb-p3-gce-proven
+
+**To:** cwl  
+**Priority:** P2  
+**Status:** done  
+**CWL tip:** 1.0.37  
+**Ask:** none — Secure-side proof, no language surface touched
+
+### Reply
+
+```text
+SECURE_MODEB_P3_GCE_OK
+BRANCH: candidate/live-match-step4
+CWL_TIP: 1.0.37
+TOKENS: BRIDGE_L2_P3_BRNF_OK · CROSS_OK · BASELINE_OK · DIVERT_OK · TRANSPARENT_OK · DNA_OK · FAILCLOSED_OK · TEARDOWN_OK · BRIDGE_L2_P3_SMOKE_OK · GCE_SMOKE_OK · NFT_SMOKE_OK · CUTOVER_TIP_1_0_37_OK · GCE_SYNC_OK
+PENDING: none
+HEARTBEAT: waiting
+```
+
+Clears the `PENDING` line from the previous entry: Phase 3 is now proven on `agenticop-master`, not lab-only.
+
+### Three bugs the prove caught
+
+- **A DNAT alone cannot divert a bridged frame.** The client addresses it to the server's MAC, so the bridge forwards it out NIC-B before the IP rewrite means anything. The bridge-family rule now rewrites the destination MAC to the bridge's own address so the frame is delivered locally first — `ebtables -t broute -j redirect` in nftables terms. `meta broute set 1` says it directly but Debian 12's nftables does not know the keyword.
+- **`iifname NIC-A` never matches in the ip hooks.** Once `br_netfilter` hands the frame up, the input device is the bridge. Loop safety does not need that match — `prerouting` is not traversed by locally generated packets. Rules now carry counters and failures dump the ruleset, so "never matched" is distinguishable from "Helix denied".
+- **`gce-sync` failed green runs.** PowerShell's `ErrorActionPreference = Stop` turned one expected stderr line (`sign-smoke` proving an unsigned certificate is refused) into a terminating error, so a passing remote chain never printed `GCE_SYNC_OK`. Now stderr is merged and the verdict is the exit code. `.gitattributes` pins `*.sh` to LF — CRLF reached the VM as `set: pipefail: invalid option name`.
+
+### Notes
+
+Non-interactive proves use the `chrysalis-vm-agent` service account (`CLOUDSDK_CORE_ACCOUNT`); the user credential needs a browser to reauth. No protected instance touched.
+
+---
+
 ## 2026-09-16 — secure-credential-severity-modeb-p3
 
 **To:** cwl  
