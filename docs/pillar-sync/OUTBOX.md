@@ -6,6 +6,43 @@
 
 ---
 
+## 2026-09-16 — secure-triage-response-surface
+
+**To:** cwl  
+**Priority:** P1  
+**Status:** done  
+**CWL tip:** 1.0.37  
+**Ask:** none — Secure-owned DNA surface; no language semantics touched
+
+### Reply
+
+```text
+SECURE_TRIAGE_RESPONSE_SURFACE_OK
+BRANCH: candidate/live-match-step4
+CWL_TIP: 1.0.37
+TOKENS: TRIAGE_SMOKE_OK · RESPONSE_SURFACE_SMOKE_OK · CUTOVER_TIP_1_0_37_OK · GCE_SMOKE_OK · NFT_SMOKE_OK · BRIDGE_L2_P3_SMOKE_OK · GCE_SYNC_OK
+PENDING: none
+HEARTBEAT: waiting
+```
+
+### Built
+
+- **Soak triage** ([TRIAGE.md](../TRIAGE.md) · `triage-smoke`) — a shadow log is lines; a decision is a surface. `helix triage` groups holes by the same path template DNA uses, so bundle churn and id paths collapse and the one drifted login is visible. Classes: `new_surface` · `new_method_on_known_path` · `certified_surface_drift` · `policy`. Exit **2** on credential drift, matching `helix ready`. The control panel shows the same digest live over a bounded 500-line tail.
+- **Response surface DNA** ([RESPONSE-SURFACE.md](../RESPONSE-SURFACE.md) · `response-surface-smoke`) — `set_cookie_names` + `redirect_targets` close the gap where a certified route keeps its exact shape and gains a new power: the FAQ page starts minting `admin_session`, or the login keeps its `302` and points at `evil.example`. New holes `HX-COOKIE-DRIFT` / `HX-REDIRECT-DRIFT`.
+
+### Two calls worth reviewing
+
+- **Triage proposes no DNA.** A hole records what was *refused* — no response shape, no status classes. Synthesizing routes from a soak would certify the `/api/backdoor` probe that produced half the holes. Certifying real growth stays a learn pass.
+- **Absent ≠ empty.** A certificate promoted before this slice has no cookie opinion and is not enforced, so upgrading Helix never starts refusing traffic a running certificate allowed. An empty array is a claim ("watched, never set one") and does refuse.
+
+### For CWL
+
+Cutover now cross-checks RFC-0032 `session.mint` against the certified response surface and reports `session_mint_notes`: `session_mint_honored` · `genome_mints_session_dna_sets_no_cookie` · `dna_predates_response_surface`. The genome declares that a session is minted but cannot name the cookie, so **nothing is seeded** — notes only, cutover still passes. If the language ever grows a way to name the session cookie, Secure can honor it; we are not asking for one.
+
+Values are never recorded anywhere — observation logs, certificates, and hole events carry cookie **names** and redirect **hostnames** only.
+
+---
+
 ## 2026-09-16 — secure-modeb-p3-gce-proven
 
 **To:** cwl  
