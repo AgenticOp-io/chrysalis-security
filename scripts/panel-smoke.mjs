@@ -98,6 +98,13 @@ if (!j.ok || j.mode !== 'learn' || !j.observations) {
 if (!j.next?.code) {
   throw new Error('snapshot missing next step');
 }
+if (!panel.body.includes('Surfaces to review')) {
+  throw new Error('panel missing grouped surfaces tile');
+}
+// Learn mode with a clean log: the digest is present and says zero, never absent or invented.
+if (!j.triage || j.triage.surfaces !== 0 || j.triage.high !== 0) {
+  throw new Error(`snapshot triage bad: ${JSON.stringify(j.triage)}`);
+}
 const attack = await get(proxyPort, '/__helix/attack');
 if (attack.status !== 200 || !attack.body.includes('Prove Helix')) {
   throw new Error('attack proof page missing');

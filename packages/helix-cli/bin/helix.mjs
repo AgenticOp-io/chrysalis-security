@@ -10,6 +10,7 @@ import {
   reportDna,
   assessReadiness,
   countShadowHoles,
+  triageShadowLogFile,
 } from '../../dna-core/index.mjs';
 import {
   seedDnaFromCwlFile,
@@ -31,6 +32,9 @@ Usage:
                    [--min-routes n] [--require-signed]
                    [--shadow-log <shadow.ndjson>] [--shadow-holes n] [--max-shadow-holes n]
                    [--max-credential-holes n]   # default 0 — login/session drift blocks enforce
+  helix triage     --shadow-log <shadow.ndjson> [--in <dna.json>]
+                   [--since <iso>] [--until <iso>] [--top n] [--samples n] [--out <report.json>]
+                   # soak digest: holes → surfaces to review. Exit 2 if credential surfaces drifted
   helix diff       --a <dna.json> --b <dna.json>
   helix promote    --in <draft.json> --out <certified.json>
                    [--from <prev-certified.json>]   # default: --out if it already exists
@@ -54,7 +58,8 @@ Usage:
 Signing: hmac-sha256 (shared secret) or ed25519 (PEM/raw private promote, public verify).
 Env: HELIX_DNA_KEY, HELIX_DNA_KEY_ID, HELIX_DNA_ALG. Canon: docs/SIGNED-DNA.md
 Lifecycle: docs/CERT-LIFECYCLE.md · Product: docs/PRODUCT.md · Modes: docs/MODES.md
-CWL bridge: RFC-0022/0023 (chrysalis-cwl). Pin: @agenticop-io/cwl@1.0.17. Canon: docs/CANON.md
+Soak: docs/SOAK.md · Triage: docs/TRIAGE.md · Severity: docs/SEVERITY.md
+CWL bridge: RFC-0022/0023 (chrysalis-cwl). Pin: @agenticop-io/cwl@1.0.37. Canon: docs/CANON.md
 `);
 }
 
@@ -164,6 +169,48 @@ if (cmd === 'ready') {
   if (shadowMeta) result.shadow_log = shadowMeta;
   console.log(JSON.stringify(result, null, 2));
   process.exit(result.ok ? 0 : 2);
+}
+
+if (cmd === 'triage') {
+  const shadowLog = flag(rest, '--shadow-log');
+  if (!shadowLog) {
+    usage();
+    process.exit(1);
+  }
+  const dnaPath = flag(rest, '--in');
+  const top = flag(rest, '--top');
+  const samples = flag(rest, '--samples');
+  const out = flag(rest, '--out');
+  const result = triageShadowLogFile(shadowLog, {
+    dna: dnaPath ? readJson(dnaPath) : null,
+    since: flag(rest, '--since'),
+    until: flag(rest, '--until'),
+    samples: samples != null ? Number(samples) : undefined,
+  });
+  if (result.missing) {
+    console.error(`No shadow log at ${shadowLog} — a soak with no log is not a clean soak.`);
+    process.exit(1);
+  }
+  const limit = top != null ? Number(top) : 20;
+  console.log(`${result.events} holes → ${result.surfaces} surfaces (${shadowLog})`);
+  for (const g of result.groups.slice(0, limit)) {
+    const mark = g.severity === 'high' ? '!' : ' ';
+    console.log(
+      `${mark} ${String(g.count).padStart(6)}  ${g.class.padEnd(26)} ${g.method} ${g.path_template} [${g.code}]`,
+    );
+  }
+  if (result.groups.length > limit) {
+    console.log(`  … ${result.groups.length - limit} more (--top ${result.groups.length})`);
+  }
+  if (out) {
+    fs.mkdirSync(path.dirname(out), { recursive: true });
+    fs.writeFileSync(out, JSON.stringify(result, null, 2) + '\n');
+    console.log(`Wrote triage → ${out}`);
+  } else {
+    console.log(JSON.stringify(result, null, 2));
+  }
+  // Credential drift is never "read it later" — same gate as `helix ready`.
+  process.exit(result.blockers.length ? 2 : 0);
 }
 
 if (cmd === 'diff') {
