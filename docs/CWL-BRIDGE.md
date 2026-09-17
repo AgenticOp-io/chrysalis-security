@@ -46,7 +46,16 @@ Some CWL declarations are route meaning that `dna-seed` does not carry as DNA ro
 | `cwl_hole_reason` · `cwl_host_bytes` | `hub-cwl:keypair-gen` / `hub-cwl:binary-render` | Bytes stay host-owned |
 | `cwl_content_type` · `cwl_declared_content_class` | `content-type "…"` next to a hole | Host-byte routes keep their media type in live-match |
 
-`buildUpstreamTargetsReport(seed)` lists declared forward origins for the operator's egress review. A target CWL rejected (`cwl:unknown-proxy-param:*`) is reported as **unresolved** and never becomes a destination. Helix scores inbound DNA — **egress filtering is not a Helix control**.
+Two operator commands read these facts:
+
+```bash
+npm run helix -- upstreams   --cwl app.cwl                       # declared forwards, exit 2 if any unresolved
+npm run helix -- sensitivity --cwl app.cwl --out sensitivity.json # credential surfaces → severity overlay
+```
+
+`upstreams` lists declared forward origins for egress review. A target CWL rejected (`cwl:unknown-proxy-param:*`) is reported as **unresolved** and never becomes a destination. Helix scores inbound DNA — **egress filtering is not a Helix control**.
+
+`sensitivity` writes the ops overlay described in [SEVERITY.md](./SEVERITY.md). It sits beside the certificate, never inside it.
 
 Declared media type vs learned `content_class` is a **note** (`cwl_declared_media_type_vs_dna_content_class`), never a silent DNA rewrite: traffic decides after learn.
 

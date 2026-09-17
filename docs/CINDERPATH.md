@@ -52,6 +52,23 @@ npm run cinderpath-control-plane-smoke
 # → CINDERPATH_CONTROL_PLANE_OK
 ```
 
+## Runnable lab
+
+```bash
+npm run cinderpath-lab   # → CINDERPATH_LAB_OK
+```
+
+Boots Helix in **enforce** in front of a **stub** control plane that answers the shapes the genome certifies, then proves the placement rather than describing it:
+
+| Probe | Result |
+| --- | --- |
+| `GET /healthz` | 200 — certified surface passes |
+| `GET /connect/qr.png` | 200, `image/png` — host bytes flow through untouched |
+| `GET /admin/backdoor` | **403** `HX-ROUTE-UNKNOWN` |
+| `POST /login` with an extra key | **403**, logged `severity: high` ([SEVERITY.md](./SEVERITY.md)) |
+
+The upstream is a stub, not `cinderpath-web`, and there is no WireGuard anywhere in the lab. It proves the control-plane hop only — which is the whole claim.
+
 ## Operator path (control plane only)
 
 1. Point Helix `APP_UPSTREAM` at localhost `cinderpath-web`.

@@ -21,6 +21,7 @@ That is a category shift only if operators can run it **Monday morning** without
 | Mode A agent / compose / SIEM NDJSON | Fits NGFW world (D1–D4) |
 | Optional CWL cutover | Platform path without requiring CWL (D5) |
 | Cinderpath control-plane Mode A | Privacy VPN HTTP DNA; not tunnel DPI ([CINDERPATH.md](./CINDERPATH.md)) |
+| Credential-surface severity | Login drift outranks brochure noise, and blocks enforce ([SEVERITY.md](./SEVERITY.md)) |
 | Whitepaper + threat model | Story is honest |
 
 **Verdict today:** shippable engine + operator path + Mode A/K8s recipes + **L2 GCE green** + soak **preflight** smoke. Remaining for full “changed security” credibility is **living with real customer traffic** (shadow soak → enforce) — not more core fingerprints.

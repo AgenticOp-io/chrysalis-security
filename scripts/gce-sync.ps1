@@ -9,6 +9,7 @@
   .\scripts\gce-sync.ps1 -WithCwl   # also sync sibling chrysalis-cwl for cutover / CWL bridge
   .\scripts\gce-sync.ps1 -WithL2    # Mode B L2 Phase 1 netns smoke (implies CWL pack + link)
   .\scripts\gce-sync.ps1 -WithL2P2  # Mode B L2 Phase 2 dual-iface smoke (implies CWL pack + link)
+  .\scripts\gce-sync.ps1 -WithL2P3  # Mode B L2 Phase 3 transparent daddr=server divert (implies CWL pack + link)
 #>
 param(
   [string] $Project = "chrysalis-dev-f5x6qv",
@@ -20,7 +21,8 @@ param(
   [switch] $Relearn,
   [switch] $WithCwl,
   [switch] $WithL2,
-  [switch] $WithL2P2
+  [switch] $WithL2P2,
+  [switch] $WithL2P3
 )
 
 $ErrorActionPreference = "Stop"
@@ -32,9 +34,9 @@ if (-not (Test-Path (Join-Path $Root "package.json"))) {
 # L2 + gce-smoke import cwl-bridge (static @agenticop-io/cwl) — pack sibling when present.
 $cwlRootSibling = Join-Path (Split-Path -Parent $Root) "chrysalis-cwl"
 $cwlPresent = Test-Path (Join-Path $cwlRootSibling "LANGUAGE_VERSION.md")
-if ($WithL2 -or $WithL2P2) { $WithCwl = $true }
+if ($WithL2 -or $WithL2P2 -or $WithL2P3) { $WithCwl = $true }
 if ($WithCwl -and -not $cwlPresent) {
-  throw "-WithCwl/-WithL2/-WithL2P2 requires sibling chrysalis-cwl at $cwlRootSibling"
+  throw "-WithCwl/-WithL2/-WithL2P2/-WithL2P3 requires sibling chrysalis-cwl at $cwlRootSibling"
 }
 # Always pack CWL when sibling exists so remote node can resolve @agenticop-io/cwl via symlink.
 $packCwl = $cwlPresent
@@ -95,6 +97,9 @@ if ($WithL2) {
 }
 if ($WithL2P2) {
   [void]$smokeCmds.Add('sudo -n env CHRYSALIS_CWL_ROOT=$HOME/chrysalis-cwl node scripts/bridge-l2-p2-smoke.mjs || sudo env CHRYSALIS_CWL_ROOT=$HOME/chrysalis-cwl node scripts/bridge-l2-p2-smoke.mjs')
+}
+if ($WithL2P3) {
+  [void]$smokeCmds.Add('sudo -n env CHRYSALIS_CWL_ROOT=$HOME/chrysalis-cwl node scripts/bridge-l2-p3-smoke.mjs || sudo env CHRYSALIS_CWL_ROOT=$HOME/chrysalis-cwl node scripts/bridge-l2-p3-smoke.mjs')
 }
 if ($SiteUp) {
   if ($Relearn) { [void]$smokeCmds.Add("RELEARN=1 bash scripts/gce-site-up.sh") }

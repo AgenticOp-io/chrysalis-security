@@ -77,8 +77,12 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 
 - [x] Soak **preflight** smoke (`soak-preflight-smoke` → `SOAK_PREFLIGHT_OK`) — fixture learn→report→shadow→ready; no fake customers  
 - [x] SIEM_LOG **fixture** smoke (`siem-fixture-smoke` → `SIEM_FIXTURE_OK`) — shadow/enforce holes → file sink; no vendor invent  
+- [x] Credential-surface hole severity ([SEVERITY.md](./SEVERITY.md) · `severity-smoke` → `SEVERITY_SMOKE_OK`) — ops overlay, not certified content; enforce gate blocks on login/session drift  
+- [x] Operator egress review + overlay CLI — `helix upstreams` / `helix sensitivity`  
+- [x] Cinderpath Mode A runnable lab (`cinderpath-lab` → `CINDERPATH_LAB_OK`) — stub control plane, no WireGuard  
+- [x] Certified literal surfaces survive the static-asset collapse (`/connect/qr.png` no longer denied under a CWL-seeded certificate)  
+- [x] Mode B transparent bridge-nf divert (daddr=server) — Phase 3 lab + `gce-bridge-l2-p3-smoke.sh`; **GCE prove pending reauth**  
 - [ ] Customer traffic soak (operational — follow [SOAK.md](./SOAK.md) after preflight green)  
-- [ ] Mode B transparent bridge-nf divert (daddr=server) when Phase 2 stays boring on GCE  
 
 
 **Non-goals (locked):** no NGFW TLS dependency (D1); DNA block/alert only (D2); no UEBA/signature-WAF replacement (D3); host augment / no NAT homework (D4); CWL never required to enforce (D5).

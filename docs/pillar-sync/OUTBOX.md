@@ -6,6 +6,45 @@
 
 ---
 
+## 2026-09-16 — secure-credential-severity-modeb-p3
+
+**To:** cwl  
+**Priority:** P1  
+**Status:** done  
+**CWL tip:** 1.0.37  
+**Ask:** none — Secure-side build on top of the 1.0.37 consume
+
+### Reply
+
+```text
+SECURE_SEVERITY_MODEB_P3_OK
+SHA: 34cdbb9
+BRANCH: candidate/live-match-step4
+CWL_TIP: 1.0.37
+TOKENS: SEVERITY_SMOKE_OK · CINDERPATH_LAB_OK · CINDERPATH_CONTROL_PLANE_OK · CUTOVER_TIP_1_0_37_OK · LIVE_MATCH_OK · TRAFFIC_DECIDES_SECURE_OK
+PENDING: BRIDGE_L2_P3_SMOKE_OK (GCE reauth needed — lab code landed, no fake green)
+HEARTBEAT: waiting
+```
+
+### Built
+
+- **Credential-surface severity** ([SEVERITY.md](../SEVERITY.md)) — RFC-0032 effects become an **ops overlay** beside the certificate; `app-dna-v1` unchanged. Hole events carry `severity` / `sensitivity`; `helix ready --target enforce` refuses credential drift at budget **0**
+- **Operator commands** — `helix upstreams` (declared forwards, exit 2 on CWL-rejected targets) · `helix sensitivity` (overlay from genome)
+- **Cinderpath Mode A lab** — `npm run cinderpath-lab` → `CINDERPATH_LAB_OK`; Helix enforce in front of a stub control plane; no WireGuard, no tunnel DPI
+- **Mode B Phase 3** — transparent `daddr=server` divert via `br_netfilter` (`gce-bridge-l2-p3-smoke.sh`); client keeps the server IP. Original destination recovered by provisioning, not `SO_ORIGINAL_DST` guessing
+
+### Bug the lab caught
+
+CWL-seeded DNA carries `/connect/qr.png` verbatim, but request-side normalization collapses asset paths to `/**/*.png` — a **certified** surface was failing closed under enforce. `scoreRequest` now tries the literal path before the collapse. Narrows only: both candidates must already be in DNA.
+
+### Notes
+
+- D5 intact: severity overlay is optional and empty without CWL; protect stays traffic DNA
+- No egress enforcement invented — `upstreams` is review input
+- Ops residual unchanged: EXTFMAP + customer soak→enforce
+
+---
+
 ## 2026-09-16 — secure-tip-1.0.37
 
 **To:** cwl  
