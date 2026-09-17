@@ -10,7 +10,7 @@ Locks: [DECISIONS.md](./DECISIONS.md) · placement: [AUGMENT.md](./AUGMENT.md) �
 |-------|-------|----------|
 | DNA learn / promote / enforce | Ships (`dna-core` + proxy) | Unchanged |
 | Mode B code | `packages/helix-bridge` + `bridge-smoke` | Userspace **placement label** only |
-| Dual-NIC / L2 forwarding | **Phase 1–3 lab landed** | P1: netns + nft divert + fail-closed; P2: dual-iface pair in appliance ns; P3: transparent `daddr=server` divert (`gce-bridge-l2-p3-smoke.sh`) |
+| Dual-NIC / L2 forwarding | **Phase 1–3 GCE proven** | P1: netns + nft divert + fail-closed; P2: dual-iface pair in appliance ns; P3: transparent `daddr=server` divert (`gce-bridge-l2-p3-smoke.sh`) |
 
 **Design-only for this slice.** No production kernel modules. No custom OS image beyond stock Linux + Helix userspace.
 
@@ -233,15 +233,18 @@ Prove tokens (`gce-bridge-l2-p2-smoke.sh`):
 
 Optional hardware second NIC (same checks, still no deletes): attach an extra NIC to a lab VM or use a non-protected scratch instance if one exists — never `gcloud compute instances delete` on **agenticop-master** / **fusion-lab**.
 
-### Phase 3 — transparent `daddr=server` divert (**lab landed; GCE prove pending**)
+### Phase 3 — transparent `daddr=server` divert (**GCE proven**)
 
 Phase 2 still asked the client to target the **appliance** IP. That is an on-path L3 hop, not the Mode B claim. Phase 3 closes it: the client keeps using the **server's own IP** and never learns Helix exists.
 
 ```text
 client ──► http://SERVER_IP:80 ─┐
-                                │  bridged frame, br_netfilter hands it to ip prerouting
+                                │  frame carries the SERVER's MAC
                                 ▼
-                    nft: iifname NIC-A · ip daddr SERVER_IP · tcp dport 80
+          nft bridge prerouting: iifname NIC-A · ip daddr SERVER_IP · tcp dport 80
+                                │  ether daddr set <bridge MAC>  → deliver locally
+                                ▼
+                 nft ip prerouting (via br_netfilter, iif = the bridge)
                                 │  dnat → appliance:HELIX_LISTEN
                                 ▼
                          helix-bridge (DNA)
@@ -250,9 +253,11 @@ client ──► http://SERVER_IP:80 ─┐
                           real server, IP unchanged
 ```
 
-How the original destination is recovered: **by provisioning, not by guessing.** One divert rule names one server and Helix's upstream is that server. Node cannot read `SO_ORIGINAL_DST` and we ship no kernel module, so TPROXY-style recovery is deliberately out of scope — an appliance is configured with the servers it protects anyway.
+**Two rules, because a DNAT alone is not enough.** The client addressed the frame to the server's MAC, so the bridge forwards it out NIC-B regardless of what the IP layer decides — a lone DNAT rule rewrites a packet that has already left. The bridge-family rule rewrites the destination MAC to the bridge's own address, which makes the bridge deliver that one flow locally; only then does the ip-family DNAT see it. This is the `ebtables -t broute ... -j redirect` idea expressed in nftables. `meta broute set 1` would say it more directly but is absent from the nftables build on Debian 12 (`unexpected broute`), so the MAC rewrite is what we ship — stock tooling, no module.
 
-No loop: the rule is pinned to `iifname NIC-A`, so Helix's own upstream connection (locally generated → `output` chain) can never re-enter the divert.
+Note the asymmetry in the two rules: the bridge-family rule pins `iifname NIC-A`, the ip-family rule does not. Once `br_netfilter` hands a bridged frame to the ip hooks, the input device is the **bridge**, not NIC-A, so an `iifname NIC-A` match there silently never fires (the failure mode is `HTTP 0` with the divert counter at zero). Loop safety does not depend on that match: locally generated packets never traverse `prerouting`, so Helix's own upstream connection cannot re-enter the divert.
+
+How the original destination is recovered: **by provisioning, not by guessing.** One divert rule names one server and Helix's upstream is that server. Node cannot read `SO_ORIGINAL_DST` and we ship no kernel module, so TPROXY-style recovery is deliberately out of scope — an appliance is configured with the servers it protects anyway.
 
 | Check | Token |
 | --- | --- |
@@ -277,6 +282,8 @@ bash scripts/gce-bridge-l2-p3-smoke.sh   # → BRIDGE_L2_P3_SMOKE_OK
 
 Honest skips (never a fake green): no root, no `nft`/`ip`, no `br_netfilter`, or a host that will not let `bridge-nf-call-iptables` be set.
 
+Proven on `agenticop-master` (Debian 12, kernel 6.1 cloud) — all eight tokens plus `GCE_SYNC_OK`. When the transparent check fails the script dumps the nftables ruleset with per-rule counters and the appliance's listeners, so a zero counter immediately separates "rule never matched" from "Helix refused the request".
+
 ### Sync
 
 - Phase 1: `scripts/gce-sync.ps1 -WithL2`  
@@ -287,7 +294,7 @@ Honest skips (never a fake green): no root, no `nft`/`ip`, no `br_netfilter`, or
 
 ## Recommended next code slice (small, non-dangerous)
 
-**Phase 1 deepen + Phase 2 dual-iface + Phase 3 transparent divert landed.**
+**Phase 1 deepen + Phase 2 dual-iface + Phase 3 transparent divert landed and proven on GCE.**
 
 When coding further Mode B:
 

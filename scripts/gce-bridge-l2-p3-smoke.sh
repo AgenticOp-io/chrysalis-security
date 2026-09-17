@@ -25,12 +25,14 @@ PUBLIC_PORT=18095
 LISTEN=18096
 UPSTREAM_PORT=18097
 NFT_TABLE="helix_l2p3_divert"
+NFT_BROUTE="helix_l2p3_broute"
 APPLIANCE_IP="10.69.0.1"
 CLIENT_IP="10.69.0.10"
 SERVER_IP="10.69.0.20"
 
 cleanup() {
   ip netns exec "$NS_HX" nft delete table ip "$NFT_TABLE" 2>/dev/null || true
+  ip netns exec "$NS_HX" nft delete table bridge "$NFT_BROUTE" 2>/dev/null || true
   [[ -n "${HX_PID:-}" ]] && kill "$HX_PID" 2>/dev/null || true
   [[ -n "${UP_PID:-}" ]] && kill "$UP_PID" 2>/dev/null || true
   ip netns del "$NS_HX" 2>/dev/null || true
@@ -157,18 +159,49 @@ ip netns exec "$NS_HX" env \
 HX_PID=$!
 sleep 0.5
 
-# Transparent divert: frames arriving on NIC-A addressed to the SERVER are handed to Helix.
-# iifname pins the rule to the client side, so Helix's own upstream connection (locally
-# generated, output chain) can never re-enter the divert — no loop.
+# Transparent divert, two halves:
+#
+#   1. The client addressed the frame to the SERVER's MAC, so the bridge would forward it out
+#      NIC-B regardless of what the IP layer decides. Rewriting the destination MAC to the
+#      bridge's own address makes the bridge deliver this one flow locally instead — the
+#      nftables equivalent of an ebtables BROUTING redirect, with no extra tooling.
+#   2. Now visible to ip prerouting, it is DNAT'd to the Helix listener.
+#
+# iifname pins both to the client side, so Helix's own upstream connection (locally generated,
+# output chain) can never re-enter the divert — no loop.
+ip netns exec "$NS_HX" sysctl -qw net.ipv4.ip_forward=1
+BR_MAC=$(ip -n "$NS_HX" -o link show "$BR" | sed -n 's/.*link\/ether \([0-9a-f:]*\).*/\1/p')
+if [[ -z "$BR_MAC" ]]; then
+  echo "BRIDGE_L2_P3_SMOKE_FAIL could not read $BR MAC"
+  exit 1
+fi
+ip netns exec "$NS_HX" nft -f - <<EOF
+table bridge $NFT_BROUTE {
+  chain broute {
+    type filter hook prerouting priority -300; policy accept;
+    iifname "$NIC_A" ip daddr $SERVER_IP tcp dport $PUBLIC_PORT counter ether daddr set $BR_MAC
+  }
+}
+EOF
+# No iifname here: once br_netfilter hands a bridged frame to the ip hooks the input device is
+# the bridge, not NIC-A. Locally generated traffic never traverses prerouting, so Helix's own
+# upstream connection still cannot loop back in.
 ip netns exec "$NS_HX" nft -f - <<EOF
 table ip $NFT_TABLE {
   chain divert {
     type nat hook prerouting priority dstnat; policy accept;
-    iifname "$NIC_A" ip daddr $SERVER_IP tcp dport $PUBLIC_PORT dnat to ${APPLIANCE_IP}:${LISTEN}
+    ip daddr $SERVER_IP tcp dport $PUBLIC_PORT counter dnat to ${APPLIANCE_IP}:${LISTEN}
   }
 }
 EOF
 echo "BRIDGE_L2_P3_DIVERT_OK"
+
+dump_divert_state() {
+  echo "--- nft ruleset (appliance ns)"
+  ip netns exec "$NS_HX" nft list ruleset || true
+  echo "--- listeners"
+  ip netns exec "$NS_HX" ss -lntp 2>/dev/null || true
+}
 
 # Client still speaks to the SERVER IP — no client reconfiguration, no NGFW NAT homework (D4).
 CODE=$(from_client "http://${SERVER_IP}:${PUBLIC_PORT}/api/health")
@@ -176,6 +209,7 @@ BAD=$(from_client "http://${SERVER_IP}:${PUBLIC_PORT}/api/backdoor")
 
 if [[ "$CODE" != "200" ]]; then
   echo "BRIDGE_L2_P3_SMOKE_FAIL known route via transparent divert got HTTP $CODE"
+  dump_divert_state
   exit 1
 fi
 echo "BRIDGE_L2_P3_TRANSPARENT_OK"
@@ -199,6 +233,7 @@ echo "BRIDGE_L2_P3_FAILCLOSED_OK"
 
 # Teardown restores the wire: public port dead again, server's own port still serving.
 ip netns exec "$NS_HX" nft delete table ip "$NFT_TABLE"
+ip netns exec "$NS_HX" nft delete table bridge "$NFT_BROUTE"
 AFTER=$(from_client "http://${SERVER_IP}:${PUBLIC_PORT}/api/health")
 DIRECT=$(from_client "http://${SERVER_IP}:${UPSTREAM_PORT}/api/health")
 if [[ "$AFTER" == "200" ]]; then
