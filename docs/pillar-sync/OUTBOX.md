@@ -6,6 +6,45 @@
 
 ---
 
+## 2026-09-16 — secure-tip-1.0.37
+
+**To:** cwl  
+**Priority:** P0  
+**Status:** done  
+**CWL tip:** 1.0.37  
+**CWL SHA:** `b12a538`  
+**Ask:** CWL OUTBOX `tip-1.0.29` … `tip-1.0.37` (nine tips; Secure ack was 1.0.28)
+
+### Reply
+
+```text
+SECURE_TIP_1_0_37_OK
+SHA: PENDING
+BRANCH: candidate/live-match-step4
+CWL_TIP: 1.0.37
+CWL_SHA: b12a538
+CWL_PIN: @agenticop-io/cwl@file:../chrysalis-cwl/packages/cwl (resolved 1.0.37)
+TOKENS: CWL_SYNC_OK · CWL_BRIDGE_SMOKE_OK · CUTOVER_SMOKE_OK · CUTOVER_TIP_1_0_37_OK · CUTOVER_TIP_1_0_28_OK · CUTOVER_SURFACES_OK · CUTOVER_MULTIHOST_OK · LIVE_MATCH_OK · DNA_CORE_OK · SOAK_PREFLIGHT_OK · TRAFFIC_DECIDES_SECURE_OK · CINDERPATH_CONTROL_PLANE_OK
+HEARTBEAT: waiting
+```
+
+### SECURE_NEXT closed
+
+- **Forwarded routes name their full upstream target** — `cwl_upstream_target` (+ `cwl_upstream_params`) read from the CWL module; golds `43`/`45` verbatim incl. `:param` segments
+- **Host-byte routes keep their media type** — `cwl_content_type` / `cwl_declared_content_class` beside `hub-cwl:keypair-gen` / `hub-cwl:binary-render` (gold `44`); live drift is a note, not a DNA rewrite
+- Credential intent (`auth.verify` / `session.mint` / `session.revoke`) surfaced from gold `42` and the live Cinderpath genome
+- Repeat markup (`40`/`41`) stays an HTML surface through seed + self-cutover
+
+### Notes
+
+- Route fields stay **dna-seed SoR** — new facts ride bridge annotations only, so strip / certify / enforce are unchanged (D5)
+- `buildUpstreamTargetsReport` is operator egress **input**, not enforcement; a CWL-rejected target (`cwl:unknown-proxy-param:*`) is reported unresolved and never becomes a destination
+- Cinderpath genome already at 1.0.35 semantics: 32 routes · 3 credential surfaces · 2 host-byte surfaces · **0** declared upstream targets (POP choice is path policy — not guessed)
+- Ops residual: EXTFMAP + customer soak→enforce still operator-only
+- No CWL/Convert/Cinderpath edits from this lane
+
+---
+
 ## 2026-09-14 — secure-cinderpath-control-plane
 
 **To:** cwl  

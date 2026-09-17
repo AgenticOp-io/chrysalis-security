@@ -15,6 +15,7 @@ import {
   seedDnaFromCwlFile,
   stripBridgeEnvelope,
   compareCwlSurfaceToDna,
+  buildUpstreamTargetsReport,
 } from "../packages/cwl-bridge/index.mjs";
 import { signDna, verifyDna, scoreRequest } from "../packages/dna-core/index.mjs";
 
@@ -82,6 +83,34 @@ const connectHole = seeded.bridge?.annotations?.find(
 );
 assert(connectHole, "POST /connect annotation present (WireGuard mint stays hole in genome)");
 
+console.log("=== cinderpath: genome facts Helix reads (CWL 1.0.33/1.0.35) ===");
+const anns = seeded.bridge?.annotations ?? [];
+const login = anns.find((a) => a.method === "POST" && a.path_template === "/login");
+assert(
+  login?.cwl_credential_effects?.includes("auth.verify"),
+  "POST /login declares auth.verify",
+);
+assert(login.cwl_credential_effects.includes("session.mint"), "POST /login mints a session");
+const logout = anns.find((a) => a.method === "POST" && a.path_template === "/logout");
+assert(logout?.cwl_credential_effects?.includes("session.revoke"), "POST /logout revokes");
+
+const qr = anns.find((a) => a.path_template === "/connect/qr.png");
+assert(qr?.cwl_host_bytes === true, "QR is host-rendered bytes");
+assert(qr.cwl_content_type === "image/png", `QR media type: ${qr.cwl_content_type}`);
+const conf = anns.find((a) => a.path_template === "/connect/conf");
+assert(
+  conf?.cwl_content_type === "application/octet-stream",
+  `conf media type: ${conf?.cwl_content_type}`,
+);
+assert(
+  connectHole.cwl_hole_reason === "hub-cwl:upstream-proxy",
+  `connect mint stays transfer-mechanics hole: ${connectHole.cwl_hole_reason}`,
+);
+
+// POP selection is path policy, not a literal this genome declares — Helix must not guess one.
+const egress = buildUpstreamTargetsReport(seeded);
+assert(egress.targets.length === 0, "no invented upstream destination");
+
 console.log("=== cinderpath: strip → promote → cutover self-match ===");
 let certified = {
   ...stripBridgeEnvelope(seeded),
@@ -124,6 +153,9 @@ console.log(
       cinderpathRoot: cpRoot.replace(/\\/g, "/"),
       cwlTip: "file: pin via chrysalis-cwl",
       routes: seeded.routes.length,
+      credential_surfaces: anns.filter((a) => a.cwl_credential_effects).length,
+      host_byte_surfaces: anns.filter((a) => a.cwl_host_bytes).length,
+      declared_upstream_targets: egress.targets.length,
       tunnel_inspection: false,
       placement: "Mode A — Helix in front of cinderpath-web only",
     },

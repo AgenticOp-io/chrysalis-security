@@ -17,6 +17,7 @@ import {
   loadDeployProfile,
   resolveDeployProfilePath,
   buildHolesBridgeReport,
+  buildUpstreamTargetsReport,
 } from '../packages/cwl-bridge/index.mjs';
 import { scoreRequest, signDna, verifyDna } from '../packages/dna-core/index.mjs';
 
@@ -270,6 +271,139 @@ if (tip28Ok === tip28Golds.length) {
   console.log('CUTOVER_TIP_1_0_28_OK');
 } else if (tip28Ok > 0) {
   console.log(`CUTOVER_TIP_1_0_28_PARTIAL (${tip28Ok}/${tip28Golds.length})`);
+}
+
+console.log('=== cutover: tip 1.0.37 golds 39-45 (repeats / credentials / forwards / host bytes) ===');
+const tip37Golds = [
+  { dir: '39-cinderpath-holes', minRoutes: 3 },
+  { dir: '40-html-repeat', minRoutes: 1, allHtml: true },
+  { dir: '41-html-repeat-fields', minRoutes: 1, allHtml: true },
+  { dir: '42-auth-effects-v2', minRoutes: 2 },
+  { dir: '43-proxy-upstream', minRoutes: 2 },
+  { dir: '44-host-bytes-holes', minRoutes: 3 },
+  { dir: '45-proxy-upstream-params', minRoutes: 3 },
+];
+const tip37Seen = new Map();
+let tip37Ok = 0;
+for (const g of tip37Golds) {
+  const cwlPath = path.join(cwlRoot, 'fixtures', 'language-gold', g.dir, 'routes.cwl');
+  if (!fs.existsSync(cwlPath)) {
+    console.log(`CUTOVER_TIP37_SKIP (missing ${g.dir})`);
+    continue;
+  }
+  const seeded = await seedDnaFromCwlFile(cwlPath, {
+    app_id: `cutover-${g.dir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${g.dir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((seeded.routes?.length ?? 0) >= g.minRoutes, `${g.dir} route count`);
+  if (g.allHtml) {
+    assert(
+      seeded.routes.every((r) => r.content_class === 'html'),
+      `${g.dir} repeat markup stays an HTML surface`,
+    );
+  }
+  const certified = stripBridgeEnvelope(seeded);
+  const cmp = compareCwlSurfaceToDna(seeded, certified);
+  assert(cmp.ok === true, `${g.dir} self-cutover: ${JSON.stringify(cmp.missing_in_dna)}`);
+  tip37Seen.set(g.dir, { seeded, cmp });
+  tip37Ok += 1;
+}
+
+// 1.0.33 — login intent is genome data, not a hole
+const auth = tip37Seen.get('42-auth-effects-v2');
+if (auth) {
+  const login = auth.cmp.bridge_annotations.credential.find(
+    (a) => a.method === 'POST' && a.path_template === '/login',
+  );
+  assert(login, 'login carries credential effects');
+  assert(login.cwl_credential_effects.includes('auth.verify'), 'auth.verify tag');
+  assert(login.cwl_credential_effects.includes('session.mint'), 'session.mint tag');
+  const logout = auth.cmp.bridge_annotations.credential.find(
+    (a) => a.path_template === '/logout',
+  );
+  assert(logout?.cwl_credential_effects.includes('session.revoke'), 'session.revoke tag');
+}
+
+// 1.0.34 / 1.0.36 — a forwarded route names its full upstream target
+const proxy = tip37Seen.get('43-proxy-upstream');
+if (proxy) {
+  const fwd = proxy.cmp.bridge_annotations.upstream_proxy.find(
+    (a) => a.path_template === '/api/tower-status',
+  );
+  assert(
+    fwd?.cwl_upstream_target === 'https://backend-services.internal/tower-status',
+    `upstream target: ${fwd?.cwl_upstream_target}`,
+  );
+  const egress = buildUpstreamTargetsReport(proxy.seeded);
+  assert(
+    egress.origins.includes('https://backend-services.internal'),
+    `egress origins: ${JSON.stringify(egress.origins)}`,
+  );
+}
+
+const proxyParams = tip37Seen.get('45-proxy-upstream-params');
+if (proxyParams) {
+  const withParams = proxyParams.cmp.bridge_annotations.upstream_proxy.find(
+    (a) => a.path_template === '/api/site/:site/tower/:tower',
+  );
+  assert(
+    withParams?.cwl_upstream_target ===
+      'https://backend-services.internal/sites/:site/towers/:tower',
+    'param target kept verbatim',
+  );
+  assert(
+    withParams.cwl_upstream_params.join(',') === 'site,tower',
+    `param names: ${withParams.cwl_upstream_params}`,
+  );
+  // `:region` is not a param of /api/pop/:id/health — CWL keeps it a hole, Helix must not guess
+  const egress = buildUpstreamTargetsReport(proxyParams.seeded);
+  assert(
+    egress.unresolved.some((u) => u.reason === 'cwl:unknown-proxy-param:region'),
+    `unresolved proxy param: ${JSON.stringify(egress.unresolved)}`,
+  );
+  assert(
+    !egress.targets.some((t) => t.path_template === '/api/pop/:id/health'),
+    'rejected proxy target never becomes an egress destination',
+  );
+}
+
+// 1.0.35 — host-byte routes keep their media type next to the hole
+const hostBytes = tip37Seen.get('44-host-bytes-holes');
+if (hostBytes) {
+  const qr = hostBytes.cmp.bridge_annotations.host_bytes.find(
+    (a) => a.path_template === '/device/:id/qr',
+  );
+  assert(qr?.cwl_hole_reason === 'hub-cwl:binary-render', `qr reason: ${qr?.cwl_hole_reason}`);
+  assert(qr.cwl_content_type === 'image/png', `qr media type: ${qr.cwl_content_type}`);
+  const keypair = hostBytes.cmp.bridge_annotations.host_bytes.find(
+    (a) => a.path_template === '/device/:id/keypair',
+  );
+  assert(keypair?.cwl_hole_reason === 'hub-cwl:keypair-gen', 'keypair reason');
+  assert(keypair.cwl_declared_content_class === 'json', 'declared media type maps to DNA class');
+
+  // Declared media type vs learned class is a note, never a silent DNA rewrite
+  const learned = {
+    ...stripBridgeEnvelope(hostBytes.seeded),
+    routes: hostBytes.seeded.routes.map((r) =>
+      r.path_template === '/device/:id/keypair' ? { ...r, content_class: 'html' } : r,
+    ),
+  };
+  const drift = compareCwlSurfaceToDna(hostBytes.seeded, learned);
+  assert(
+    drift.content_class_notes.some(
+      (n) => n.note === 'cwl_declared_media_type_vs_dna_content_class',
+    ),
+    'media type drift noted',
+  );
+  assert(drift.ok === true, 'media type drift stays a note, not a cutover failure');
+}
+
+if (tip37Ok === tip37Golds.length) {
+  console.log('CUTOVER_TIP_1_0_37_OK');
+} else if (tip37Ok > 0) {
+  console.log(`CUTOVER_TIP_1_0_37_PARTIAL (${tip37Ok}/${tip37Golds.length})`);
 }
 
 console.log('CUTOVER_SMOKE_OK');

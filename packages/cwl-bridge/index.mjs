@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 import {
   pathTemplateShapeEqual as cwlPathTemplateShapeEqual,
 } from '@agenticop-io/cwl/dna-seed';
-import { routeKey } from '../dna-core/index.mjs';
+import { routeKey, contentClass } from '../dna-core/index.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const requireFromHere = createRequire(import.meta.url);
@@ -187,6 +187,164 @@ export async function loadDeployProfile(profilePath) {
 }
 
 /**
+ * Resolve a CWL module (import graph when the pillar exposes it, else single-file parse).
+ * @param {string} cwlPath
+ * @param {{ cwlRoot?: string }} [opts]
+ */
+export async function resolveCwlModuleForPath(cwlPath, opts = {}) {
+  try {
+    const root = resolveCwlRoot(opts.cwlRoot);
+    const staged = path.join(root, 'packages', 'cwl', 'lib', 'cwl-module-graph.mjs');
+    const hub = path.join(root, 'scripts', 'hub-ingest', 'cwl-module-graph.mjs');
+    const gPath = fs.existsSync(staged) ? staged : hub;
+    if (fs.existsSync(gPath)) {
+      const { resolveCwlModuleFromPath } = await import(pathToFileUrl(gPath));
+      return resolveCwlModuleFromPath(cwlPath);
+    }
+  } catch {
+    /* fall through to single-file parse */
+  }
+  const { parseCwlModule } = await loadCwlParser(opts.cwlRoot);
+  return parseCwlModule(fs.readFileSync(cwlPath, 'utf8'), path.basename(cwlPath));
+}
+
+/** Credential / session intent (CWL 1.0.33, RFC-0032). */
+const CREDENTIAL_EFFECTS = Object.freeze(['auth.verify', 'session.mint', 'session.revoke']);
+
+/** Host-byte hole reasons (CWL 1.0.35) — bytes stay host-owned, media type is genome data. */
+const HOST_BYTE_REASONS = Object.freeze(['hub-cwl:keypair-gen', 'hub-cwl:binary-render']);
+
+function proxyParamNames(target) {
+  return [...String(target).matchAll(/:([A-Za-z_][A-Za-z0-9_]*)/g)]
+    .map((m) => m[1])
+    // `https://host:8080/...` — a port is not a path param
+    .filter((n) => !/^\d/.test(n));
+}
+
+/**
+ * Genome facts CWL declares per route that the DNA seed does not carry as route fields:
+ * declared upstream forward targets (RFC-0033 / 1.0.34+1.0.36) and host-byte media types
+ * next to a hole (1.0.35). Read from the CWL module — Helix does not re-grammar them.
+ *
+ * @param {{ routes?: object[] }} mod — parsed CWL module
+ * @returns {object[]} annotation fragments keyed by method + path_template
+ */
+export function genomeRouteAnnotations(mod) {
+  const out = [];
+  for (const r of mod?.routes || []) {
+    const method = String(r.method || 'GET').toUpperCase();
+    const fragment = { method, path_template: r.path };
+    let carries = false;
+
+    const body = r.body || null;
+    if (body?.kind === 'proxy' && body.target) {
+      const params = proxyParamNames(body.target);
+      const declared = new Set(r.pathParams || []);
+      fragment.cwl_upstream_target = body.target;
+      if (params.length) {
+        fragment.cwl_upstream_params = params;
+        const unknown = params.filter((p) => !declared.has(p));
+        if (unknown.length) fragment.cwl_upstream_unknown_params = unknown;
+      }
+      carries = true;
+    }
+
+    const holeReason = body?.kind === 'hole' ? body.reason : null;
+    if (holeReason) {
+      fragment.cwl_hole_reason = holeReason;
+      if (HOST_BYTE_REASONS.includes(holeReason)) fragment.cwl_host_bytes = true;
+      carries = true;
+    }
+
+    if (r.responseContentType) {
+      fragment.cwl_content_type = r.responseContentType;
+      fragment.cwl_declared_content_class = contentClass(r.responseContentType);
+      carries = true;
+    }
+
+    const credential = (r.effects || []).filter((e) => CREDENTIAL_EFFECTS.includes(e));
+    if (credential.length) {
+      fragment.cwl_credential_effects = credential;
+      carries = true;
+    }
+
+    if (carries) out.push(fragment);
+  }
+  return out;
+}
+
+/**
+ * Merge `genomeRouteAnnotations` into a seeded DNA bridge envelope (annotations only —
+ * DNA routes stay dna-seed SoR, so strip/certify/enforce are unchanged).
+ * @param {object} seeded
+ * @param {{ routes?: object[] }} mod
+ */
+export function annotateSeedWithGenomeFacts(seeded, mod) {
+  if (!seeded?.bridge || typeof seeded.bridge !== 'object') return seeded;
+  const fragments = genomeRouteAnnotations(mod);
+  if (!fragments.length) return seeded;
+
+  const annotations = Array.isArray(seeded.bridge.annotations)
+    ? [...seeded.bridge.annotations]
+    : [];
+  for (const f of fragments) {
+    const idx = annotations.findIndex(
+      (a) =>
+        String(a?.method || '').toUpperCase() === f.method &&
+        String(a?.path_template) === String(f.path_template),
+    );
+    if (idx >= 0) annotations[idx] = { ...annotations[idx], ...f };
+    else annotations.push(f);
+  }
+  seeded.bridge.annotations = annotations;
+  return seeded;
+}
+
+/**
+ * Declared upstream forwards from the genome — operator egress input, not enforcement.
+ * Helix scores inbound requests; it does not proxy or filter egress today.
+ * @param {{ bridge?: { annotations?: object[] } }} seed
+ */
+export function buildUpstreamTargetsReport(seed, opts = {}) {
+  const annotations = Array.isArray(seed?.bridge?.annotations) ? seed.bridge.annotations : [];
+  const targets = [];
+  const unresolved = [];
+  for (const a of annotations) {
+    if (a?.cwl_upstream_target) {
+      let origin = null;
+      try {
+        origin = new URL(a.cwl_upstream_target).origin;
+      } catch {
+        origin = null;
+      }
+      targets.push({
+        method: a.method,
+        path_template: a.path_template,
+        target: a.cwl_upstream_target,
+        origin,
+        params: a.cwl_upstream_params || [],
+      });
+    }
+    if (a?.cwl_hole_reason?.startsWith('cwl:unknown-proxy-param:')) {
+      unresolved.push({
+        method: a.method,
+        path_template: a.path_template,
+        reason: a.cwl_hole_reason,
+      });
+    }
+  }
+  return {
+    kind: 'chrysalis.helix.upstream-targets',
+    schemaVersion: 1,
+    app_id: seed?.app_id ?? opts.app_id ?? null,
+    origins: [...new Set(targets.map((t) => t.origin).filter(Boolean))].sort(),
+    targets,
+    unresolved,
+    note: 'Declared forwards from CWL (RFC-0033). Helix scores inbound DNA; egress filtering is not a Helix control.',
+  };
+}
+
+/**
  * Parse .cwl → draft DNA via CWL dna-seed (no Helix mapping fork).
  * @param {string} cwlPath
  * @param {object} [opts]
@@ -223,6 +381,15 @@ export async function seedDnaFromCwlFile(cwlPath, opts = {}) {
       seeded.bridge.rfc = '0022+0023';
     }
   }
+
+  if (opts.genomeFacts !== false && seeded?.bridge) {
+    try {
+      const mod = await resolveCwlModuleForPath(cwlPath, { cwlRoot: opts.cwlRoot });
+      annotateSeedWithGenomeFacts(seeded, mod);
+    } catch {
+      /* annotations are additive — a parse-path miss must not fail the seed */
+    }
+  }
   return seeded;
 }
 
@@ -252,26 +419,7 @@ export function fillDnaGapsInHolesReport(holesReport, compareReport) {
  */
 export async function buildHolesBridgeReport(cwlPath, opts = {}) {
   const seed = await loadCwlDnaSeed();
-  const { parseCwlModule } = await loadCwlParser(opts.cwlRoot);
-  // Prefer package seed module graph when available via seedDraft path's resolve —
-  // for holes report, parse the single file; multi-file golds use pillar resolve in seed.
-  let mod;
-  try {
-    const root = resolveCwlRoot(opts.cwlRoot);
-    const graph = path.join(root, 'packages', 'cwl', 'lib', 'cwl-module-graph.mjs');
-    const hubGraph = path.join(root, 'scripts', 'hub-ingest', 'cwl-module-graph.mjs');
-    const gPath = fs.existsSync(graph) ? graph : hubGraph;
-    if (fs.existsSync(gPath)) {
-      const { resolveCwlModuleFromPath } = await import(pathToFileUrl(gPath));
-      mod = resolveCwlModuleFromPath(cwlPath);
-    }
-  } catch {
-    /* fall through */
-  }
-  if (!mod) {
-    const source = fs.readFileSync(cwlPath, 'utf8');
-    mod = parseCwlModule(source, path.basename(cwlPath));
-  }
+  const mod = await resolveCwlModuleForPath(cwlPath, { cwlRoot: opts.cwlRoot });
   let report = seed.cwlHolesBridgeReport(mod, {
     fixture: opts.fixture || cwlPath,
   });
@@ -442,6 +590,42 @@ export function compareCwlSurfaceToDna(cwlDnaOrSeed, liveDna, opts = {}) {
       ((Array.isArray(a.cwl_multipart_fields) && a.cwl_multipart_fields.length) ||
         (Array.isArray(a.cwl_multipart_files) && a.cwl_multipart_files.length)),
   );
+  const upstreamAnns = annotations.filter((a) => a && a.cwl_upstream_target);
+  const hostByteAnns = annotations.filter((a) => a && a.cwl_host_bytes);
+  const credentialAnns = annotations.filter(
+    (a) => a && Array.isArray(a.cwl_credential_effects) && a.cwl_credential_effects.length,
+  );
+
+  // Declared media type (1.0.35) vs learned content_class — DNA stays owner after learn, so note only.
+  for (const a of annotations) {
+    if (!a?.cwl_declared_content_class) continue;
+    const method = String(a.method || 'GET').toUpperCase();
+    const hit = liveRoutes.find(
+      (l) =>
+        String(l.method || '').toUpperCase() === method &&
+        (pathShape
+          ? pathTemplateShapeEqual(a.path_template, l.path_template)
+          : String(a.path_template) === String(l.path_template)),
+    );
+    if (!hit?.content_class) continue;
+    if (String(hit.content_class) === String(a.cwl_declared_content_class)) {
+      fingerprints_honored.push({
+        method,
+        path_template: a.path_template,
+        field: 'content_type',
+        value: a.cwl_content_type,
+      });
+    } else {
+      content_class_notes.push({
+        method,
+        path_template: a.path_template,
+        field: 'content_type',
+        cwl: a.cwl_content_type,
+        dna: hit.content_class,
+        note: 'cwl_declared_media_type_vs_dna_content_class',
+      });
+    }
+  }
 
   const identityOk = missing_in_dna.length === 0;
   const fpOk = !strictFingerprints || fingerprint_mismatches.length === 0;
@@ -459,6 +643,9 @@ export function compareCwlSurfaceToDna(cwlDnaOrSeed, liveDna, opts = {}) {
     bridge_annotations: {
       cwl_stream: streamAnns,
       multipart: multipartAnns,
+      upstream_proxy: upstreamAnns,
+      host_bytes: hostByteAnns,
+      credential: credentialAnns,
     },
     deploy_profile: profile
       ? {

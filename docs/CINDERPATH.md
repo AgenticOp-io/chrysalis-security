@@ -31,6 +31,18 @@ Optional second Helix instance on **ingress API** (`CINDERPATH_LISTEN`, often `:
 - Language SoR: `engines/chrysalis-cwl` (pin `@agenticop-io/cwl` / `file:`)
 - Expand process: CWL [`CWL-EXPAND.md`](../../chrysalis-cwl/docs/history/CWL-EXPAND.md)
 
+### What Helix reads from it (tip 1.0.33–1.0.36)
+
+| Genome declaration | Helix use |
+| --- | --- |
+| `POST /login` → `auth.verify`, `session.mint` | Credential surface is genome data, not a hole |
+| `POST /logout` → `session.revoke` | Session teardown is a known surface |
+| `/connect/qr.png` `content-type "image/png"` + `hole hub-cwl:binary-render` | Host renders the bytes; the media type still belongs to live-match |
+| `/connect/conf` `application/octet-stream` + same hole | Same |
+| `POST /connect` `hole hub-cwl:upstream-proxy` | POP selection is path policy — **no** declared destination, so Helix reports zero upstream targets rather than guessing one |
+
+See the annotation table in [CWL-BRIDGE.md](./CWL-BRIDGE.md).
+
 Seed / cutover:
 
 ```bash
