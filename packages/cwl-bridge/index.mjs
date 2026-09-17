@@ -657,6 +657,47 @@ export function compareCwlSurfaceToDna(cwlDnaOrSeed, liveDna, opts = {}) {
     }
   }
 
+  // RFC-0032 says which routes mint a session; the certificate says which cookies they set.
+  // The genome cannot name a cookie, so this is a cross-check, never a seed: a route the
+  // genome calls a session minter whose certificate says it sets nothing means one of the
+  // two is stale. Notes only — DNA stays the owner of observed behaviour.
+  /** @type {object[]} */
+  const session_mint_notes = [];
+  for (const a of credentialAnns) {
+    if (!a.cwl_credential_effects.some((e) => String(e).startsWith('session.mint'))) continue;
+    const method = String(a.method || 'GET').toUpperCase();
+    const hit = liveRoutes.find(
+      (l) =>
+        String(l.method || '').toUpperCase() === method &&
+        (pathShape
+          ? pathTemplateShapeEqual(a.path_template, l.path_template)
+          : String(a.path_template) === String(l.path_template)),
+    );
+    if (!hit) continue;
+    if (!Array.isArray(hit.set_cookie_names)) {
+      session_mint_notes.push({
+        method,
+        path_template: a.path_template,
+        note: 'dna_predates_response_surface',
+        hint: 'learn again to certify which cookie this route mints',
+      });
+    } else if (hit.set_cookie_names.length === 0) {
+      session_mint_notes.push({
+        method,
+        path_template: a.path_template,
+        note: 'genome_mints_session_dna_sets_no_cookie',
+        hint: 'learn window may have missed a successful login, or the genome is stale',
+      });
+    } else {
+      session_mint_notes.push({
+        method,
+        path_template: a.path_template,
+        note: 'session_mint_honored',
+        set_cookie_names: hit.set_cookie_names,
+      });
+    }
+  }
+
   const identityOk = missing_in_dna.length === 0;
   const fpOk = !strictFingerprints || fingerprint_mismatches.length === 0;
   const ok = identityOk && fpOk;
@@ -670,6 +711,7 @@ export function compareCwlSurfaceToDna(cwlDnaOrSeed, liveDna, opts = {}) {
     fingerprints_honored,
     fingerprint_mismatches,
     content_class_notes,
+    session_mint_notes,
     bridge_annotations: {
       cwl_stream: streamAnns,
       multipart: multipartAnns,

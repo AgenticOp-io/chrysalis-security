@@ -35,6 +35,16 @@ If the login only mints `sid` on success and the learn window saw nothing but fa
 
 A genome can declare that a route mints a session (RFC-0032 `session.mint`), but it does not name the cookie, so `helix seed-cwl` does not invent one — seeded routes leave these fields absent. Cookie certification comes from watching the app, which is the only place the real name exists.
 
+`helix cutover` cross-checks the two afterwards and reports `session_mint_notes`:
+
+| Note | Meaning |
+| --- | --- |
+| `session_mint_honored` | Genome says the route mints a session; the certificate names the cookie it sets |
+| `genome_mints_session_dna_sets_no_cookie` | The certificate watched this route and saw no cookie — the learn window likely missed a successful login, or the genome is stale |
+| `dna_predates_response_surface` | The certificate has no opinion yet; learn again |
+
+These are notes, not cutover failures. DNA owns observed behaviour, and a disagreement means a human should look — not that traffic should stop.
+
 ## Prove
 
 ```bash
