@@ -10,7 +10,7 @@ Locks: [DECISIONS.md](./DECISIONS.md) · placement: [AUGMENT.md](./AUGMENT.md) �
 |-------|-------|----------|
 | DNA learn / promote / enforce | Ships (`dna-core` + proxy) | Unchanged |
 | Mode B code | `packages/helix-bridge` + `bridge-smoke` | Userspace **placement label** only |
-| Dual-NIC / L2 forwarding | **Phase 1 + Phase 2 lab landed** | P1: netns + nft divert + fail-closed; P2: dual-iface pair in appliance ns (`gce-bridge-l2-p2-smoke.sh`) |
+| Dual-NIC / L2 forwarding | **Phase 1–3 lab landed** | P1: netns + nft divert + fail-closed; P2: dual-iface pair in appliance ns; P3: transparent `daddr=server` divert (`gce-bridge-l2-p3-smoke.sh`) |
 
 **Design-only for this slice.** No production kernel modules. No custom OS image beyond stock Linux + Helix userspace.
 
@@ -233,22 +233,67 @@ Prove tokens (`gce-bridge-l2-p2-smoke.sh`):
 
 Optional hardware second NIC (same checks, still no deletes): attach an extra NIC to a lab VM or use a non-protected scratch instance if one exists — never `gcloud compute instances delete` on **agenticop-master** / **fusion-lab**.
 
+### Phase 3 — transparent `daddr=server` divert (**lab landed; GCE prove pending**)
+
+Phase 2 still asked the client to target the **appliance** IP. That is an on-path L3 hop, not the Mode B claim. Phase 3 closes it: the client keeps using the **server's own IP** and never learns Helix exists.
+
+```text
+client ──► http://SERVER_IP:80 ─┐
+                                │  bridged frame, br_netfilter hands it to ip prerouting
+                                ▼
+                    nft: iifname NIC-A · ip daddr SERVER_IP · tcp dport 80
+                                │  dnat → appliance:HELIX_LISTEN
+                                ▼
+                         helix-bridge (DNA)
+                                │  APP_UPSTREAM = SERVER_IP:app-port
+                                ▼
+                          real server, IP unchanged
+```
+
+How the original destination is recovered: **by provisioning, not by guessing.** One divert rule names one server and Helix's upstream is that server. Node cannot read `SO_ORIGINAL_DST` and we ship no kernel module, so TPROXY-style recovery is deliberately out of scope — an appliance is configured with the servers it protects anyway.
+
+No loop: the rule is pinned to `iifname NIC-A`, so Helix's own upstream connection (locally generated → `output` chain) can never re-enter the divert.
+
+| Check | Token |
+| --- | --- |
+| `br_netfilter` present and `bridge-nf-call-iptables=1` | `BRIDGE_L2_P3_BRNF_OK` |
+| ICMP client → server across the appliance | `BRIDGE_L2_P3_CROSS_OK` |
+| Server IP + public port **dead before divert** (transparency is real, not staged) | `BRIDGE_L2_P3_BASELINE_OK` |
+| Divert installed | `BRIDGE_L2_P3_DIVERT_OK` |
+| Client → **server IP** answers 200 through Helix | `BRIDGE_L2_P3_TRANSPARENT_OK` |
+| `/api/backdoor` → **403** at the server IP | `BRIDGE_L2_P3_DNA_OK` |
+| Helix down + divert on → no silent allow | `BRIDGE_L2_P3_FAILCLOSED_OK` |
+| Divert removed → public port dead, server's own port serving | `BRIDGE_L2_P3_TEARDOWN_OK` |
+| Composite | `BRIDGE_L2_P3_SMOKE_OK` |
+
+```bash
+# Local Windows / no root → BRIDGE_L2_P3_SMOKE_SKIP (honest)
+npm run bridge-l2-p3-smoke
+
+# GCE Linux as root (after sync):
+bash scripts/gce-bridge-l2-p3-smoke.sh   # → BRIDGE_L2_P3_SMOKE_OK
+# or: .\scripts\gce-sync.ps1 -WithL2P3
+```
+
+Honest skips (never a fake green): no root, no `nft`/`ip`, no `br_netfilter`, or a host that will not let `bridge-nf-call-iptables` be set.
+
 ### Sync
 
 - Phase 1: `scripts/gce-sync.ps1 -WithL2`  
-- Phase 2: `scripts/gce-sync.ps1 -WithL2P2` (implies CWL pack like `-WithL2`; does not break `SMOKE_OK` / `NFT_SMOKE_OK`)
+- Phase 2: `scripts/gce-sync.ps1 -WithL2P2` (implies CWL pack like `-WithL2`; does not break `SMOKE_OK` / `NFT_SMOKE_OK`)  
+- Phase 3: `scripts/gce-sync.ps1 -WithL2P3` (same CWL pack rule)
 
 ---
 
 ## Recommended next code slice (small, non-dangerous)
 
-**Phase 1 deepen + Phase 2 dual-iface landed.**
+**Phase 1 deepen + Phase 2 dual-iface + Phase 3 transparent divert landed.**
 
 When coding further Mode B:
 
 1. **Keep** `helix-bridge` as the userspace DNA worker.  
 2. **Reuse** Mode A nft patterns; do not fork DNA logic.  
-3. **Defer** TC/eBPF and transparent `br_netfilter` divert until Phase 2 stays boring on GCE.  
+3. **Defer** TC/eBPF until Phase 3 stays boring on GCE; TPROXY original-dst recovery needs a socket option Node does not expose, so it waits for a real need, not novelty.  
 4. **Ops:** customer shadow soak remains live-traffic only ([SOAK.md](./SOAK.md)) — never fake soak traffic in lab smokes.
 
 That is the straight line from spike → honest appliance path without inventing an OS.

@@ -29,6 +29,8 @@ npm run soak-preflight-smoke
 
 **Preflight green ≠ soak complete.** Ops still owes real peak/off-peak traffic, durable `SHADOW_LOG`, and a written hole budget (see gaps below).
 
+**Credential surfaces are not budget material.** With an overlay loaded ([SEVERITY.md](./SEVERITY.md)), `helix ready --target enforce` counts login/session holes separately and refuses at **zero** by default — a tolerated total of 20 will not carry one unexplained `POST /login` drift into enforce.
+
 **Traffic-decides bar (Secure half):** `npm run traffic-decides-bar-smoke` composes preflight (`SOAK_PREFLIGHT_OK`) and live-match (`LIVE_MATCH_OK`, CWL tip pin ≥ 1.0.23) into `TRAFFIC_DECIDES_SECURE_OK` — Helix shadow-ready for the portfolio bar “AI drafts. Traffic decides.” That composite proves fixture tooling + CWL ⊆ DNA bridging only; live customer soak → enforce still requires ops `SHADOW_LOG` (see [TRAFFIC-DECIDES-BAR.md](https://github.com/AgenticOp-io/chrysalis-cwl/blob/main/docs/history/TRAFFIC-DECIDES-BAR.md)).
 
 ### Operator path after preflight green → enforce

@@ -17,6 +17,8 @@ import {
   compareCwlSurfaceToDna,
   loadDeployProfile,
   resolveDeployProfilePath,
+  buildUpstreamTargetsReport,
+  buildSensitivityMap,
 } from '../../cwl-bridge/index.mjs';
 
 function usage() {
@@ -28,6 +30,7 @@ Usage:
   helix ready      --in <dna.json> --target shadow|enforce
                    [--min-routes n] [--require-signed]
                    [--shadow-log <shadow.ndjson>] [--shadow-holes n] [--max-shadow-holes n]
+                   [--max-credential-holes n]   # default 0 — login/session drift blocks enforce
   helix diff       --a <dna.json> --b <dna.json>
   helix promote    --in <draft.json> --out <certified.json>
                    [--from <prev-certified.json>]   # default: --out if it already exists
@@ -43,6 +46,10 @@ Usage:
                    [--deploy-profile <path>] [--cwl-root <path>]
                    # default cutover: CWL surface ⊆ live DNA (RFC-0022 / 0023)
   helix compare-cwl …   # alias of cutover
+  helix upstreams  --cwl <routes.cwl|seed.json> [--cwl-root <path>]
+                   # declared forwards (RFC-0033) for operator egress review — Helix does not filter egress
+  helix sensitivity --cwl <routes.cwl|seed.json> --out <sensitivity.json> [--cwl-root <path>]
+                   # credential surfaces → hole severity overlay (HELIX_SENSITIVITY); not part of app-dna-v1
 
 Signing: hmac-sha256 (shared secret) or ed25519 (PEM/raw private promote, public verify).
 Env: HELIX_DNA_KEY, HELIX_DNA_KEY_ID, HELIX_DNA_ALG. Canon: docs/SIGNED-DNA.md
@@ -145,11 +152,14 @@ if (cmd === 'ready') {
     shadowMeta = countShadowHoles(shadowLog);
     if (shadowHoles == null) shadowHoles = shadowMeta.count;
   }
+  const maxCredentialHoles = flag(rest, '--max-credential-holes');
   const result = assessReadiness(target, readJson(input), {
     minRoutes: minRoutes != null ? Number(minRoutes) : undefined,
     requireSigned: hasFlag(rest, '--require-signed'),
     shadowHoles,
     maxShadowHoles: maxHoles != null ? Number(maxHoles) : target === 'enforce' && shadowHoles != null ? 0 : undefined,
+    highShadowHoles: shadowMeta ? shadowMeta.high : undefined,
+    maxHighShadowHoles: maxCredentialHoles != null ? Number(maxCredentialHoles) : undefined,
   });
   if (shadowMeta) result.shadow_log = shadowMeta;
   console.log(JSON.stringify(result, null, 2));
@@ -297,6 +307,42 @@ if (cmd === 'cutover' || cmd === 'compare-cwl') {
   const report = compareCwlSurfaceToDna(cwlSide, live, { deployProfile });
   console.log(JSON.stringify(report, null, 2));
   process.exit(report.ok ? 0 : 2);
+}
+
+if (cmd === 'upstreams' || cmd === 'sensitivity') {
+  const cwlIn = flag(rest, '--cwl');
+  const out = flag(rest, '--out');
+  if (!cwlIn || (cmd === 'sensitivity' && !out)) {
+    usage();
+    process.exit(1);
+  }
+  const seed = String(cwlIn).endsWith('.json')
+    ? readJson(cwlIn)
+    : await seedDnaFromCwlFile(cwlIn, {
+        cwlRoot: flag(rest, '--cwl-root') || process.env.CHRYSALIS_CWL_ROOT,
+      });
+  if (!seed?.bridge) {
+    console.error(
+      'No bridge envelope on the seed — re-run seed-cwl without --strip-bridge, or pass the .cwl file',
+    );
+    process.exit(1);
+  }
+
+  if (cmd === 'upstreams') {
+    const report = buildUpstreamTargetsReport(seed);
+    console.log(JSON.stringify(report, null, 2));
+    // Unresolved targets are CWL-rejected params — honest exit 2 so review does not pass silently
+    process.exit(report.unresolved.length === 0 ? 0 : 2);
+  }
+
+  const map = buildSensitivityMap(seed);
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  fs.writeFileSync(out, JSON.stringify(map, null, 2) + '\n');
+  console.log(
+    `Wrote sensitivity overlay (${map.routes.length} credential surfaces) → ${out}\n` +
+      'Point the agent at it with HELIX_SENSITIVITY= to raise hole severity on those routes.',
+  );
+  process.exit(0);
 }
 
 console.error(`Unknown command: ${cmd}`);

@@ -18,6 +18,8 @@ import {
   signDna,
   reportDna,
   assessReadiness,
+  loadSensitivityMap,
+  severityForRoute,
 } from '../dna-core/index.mjs';
 
 const HEALTHZ = '/__helix/healthz';
@@ -139,6 +141,8 @@ function parseJsonBody(raw, contentType) {
  *   observePath?: string,
  *   shadowLogPath?: string,
  *   siemLogPath?: string,
+ *   sensitivityPath?: string,
+ *   sensitivity?: { routes: object[] },
  *   dnaKey?: string,
  *   dnaKeyId?: string,
  *   requireSignedDna?: boolean,
@@ -158,6 +162,8 @@ export function createHelixProxy(opts) {
       : null;
 
   let dna = loadDna(opts.dnaPath, verifyOpts);
+  // Ops overlay (optional): credential surfaces get louder holes. Absent ⇒ all holes normal.
+  const sensitivity = opts.sensitivity || loadSensitivityMap(opts.sensitivityPath);
   const placement = opts.placement || 'proxy';
   const maxBodyBytes =
     opts.maxBodyBytes != null && Number(opts.maxBodyBytes) > 0 ? Number(opts.maxBodyBytes) : 0;
@@ -180,6 +186,7 @@ export function createHelixProxy(opts) {
       dnaPath: opts.dnaPath || null,
       routes: Array.isArray(dna?.routes) ? dna.routes.length : 0,
       maxBodyBytes: maxBodyBytes || null,
+      credentialSurfaces: Array.isArray(sensitivity?.routes) ? sensitivity.routes.length : 0,
     };
   }
 
@@ -206,6 +213,11 @@ export function createHelixProxy(opts) {
   }
 
   function emitHole(phase, hole, meta) {
+    const sev = severityForRoute(sensitivity, {
+      method: meta?.method,
+      path: meta?.path,
+      host: meta?.host,
+    });
     const event = {
       at: new Date().toISOString(),
       kind: 'helix.hole',
@@ -213,6 +225,8 @@ export function createHelixProxy(opts) {
       placement,
       phase,
       hole,
+      severity: sev.severity,
+      ...(sev.sensitivity ? { sensitivity: sev.sensitivity, sensitivity_effects: sev.effects } : {}),
       ...meta,
     };
     if (opts.mode === 'shadow') {

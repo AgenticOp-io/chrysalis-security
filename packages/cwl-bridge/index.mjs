@@ -345,6 +345,36 @@ export function buildUpstreamTargetsReport(seed, opts = {}) {
 }
 
 /**
+ * Ops severity overlay from the genome: which certified routes are credential surfaces
+ * (RFC-0032 `auth.verify` / `session.mint` / `session.revoke`).
+ *
+ * Written beside the certificate, never inside it — `app-dna-v1` stays identity only.
+ * Hand-authored overlays are equally valid when there is no CWL (D5).
+ * @param {{ app_id?: string, bridge?: { annotations?: object[] } }} seed
+ */
+export function buildSensitivityMap(seed) {
+  const annotations = Array.isArray(seed?.bridge?.annotations) ? seed.bridge.annotations : [];
+  const routes = annotations
+    .filter((a) => Array.isArray(a?.cwl_credential_effects) && a.cwl_credential_effects.length)
+    .map((a) => ({
+      method: String(a.method || 'GET').toUpperCase(),
+      path_template: a.path_template,
+      host: a.host || 'default',
+      severity: 'high',
+      sensitivity: 'credential',
+      effects: a.cwl_credential_effects,
+    }));
+  return {
+    kind: 'chrysalis.helix.sensitivity-map',
+    schemaVersion: 1,
+    app_id: seed?.app_id ?? null,
+    source: 'cwl-genome',
+    routes,
+    note: 'Ops overlay for hole severity. Not part of app-dna-v1 — enforce identity is unchanged.',
+  };
+}
+
+/**
  * Parse .cwl → draft DNA via CWL dna-seed (no Helix mapping fork).
  * @param {string} cwlPath
  * @param {object} [opts]

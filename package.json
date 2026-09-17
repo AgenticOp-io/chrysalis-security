@@ -40,6 +40,7 @@
     "bridge-smoke": "node scripts/bridge-smoke.mjs",
     "bridge-l2-smoke": "node scripts/bridge-l2-smoke.mjs",
     "bridge-l2-p2-smoke": "node scripts/bridge-l2-p2-smoke.mjs",
+    "bridge-l2-p3-smoke": "node scripts/bridge-l2-p3-smoke.mjs",
     "compose-smoke": "node scripts/compose-smoke.mjs",
     "cwl-bridge-smoke": "node scripts/cwl-bridge-smoke.mjs",
     "cutover-smoke": "node scripts/cutover-smoke.mjs",
@@ -47,11 +48,13 @@
     "gce-smoke": "node scripts/gce-smoke.mjs",
     "nft-smoke": "node scripts/nft-smoke.mjs",
     "agent": "node packages/helix-agent/bin/helix-agent.mjs",
-    "test:dna": "node scripts/cwl-sync-check.mjs && node scripts/dna-core-smoke.mjs && node scripts/smoke.mjs && node scripts/host-smoke.mjs && node scripts/static-smoke.mjs && node scripts/schema-drift-smoke.mjs && node scripts/request-drift-smoke.mjs && node scripts/query-drift-smoke.mjs && node scripts/status-smoke.mjs && node scripts/nested-drift-smoke.mjs && node scripts/reload-smoke.mjs && node scripts/reload-fixture-smoke.mjs && node scripts/body-limit-smoke.mjs && node scripts/ready-smoke.mjs && node scripts/soak-preflight-smoke.mjs && node scripts/siem-fixture-smoke.mjs && node scripts/real-site-smoke.mjs && node scripts/sign-smoke.mjs && node scripts/promote-chain-smoke.mjs && node scripts/panel-smoke.mjs && node scripts/local-lab-smoke.mjs && node scripts/bridge-smoke.mjs && node scripts/tls-smoke.mjs",
-    "test": "npm run test:dna && node scripts/cwl-bridge-smoke.mjs && node scripts/cutover-smoke.mjs && node scripts/nft-smoke.mjs && node scripts/bridge-l2-smoke.mjs && node scripts/bridge-l2-p2-smoke.mjs && node scripts/compose-smoke.mjs && node scripts/k8s-image-smoke.mjs && node scripts/k8s-push.mjs",
+    "test:dna": "node scripts/cwl-sync-check.mjs && node scripts/dna-core-smoke.mjs && node scripts/smoke.mjs && node scripts/host-smoke.mjs && node scripts/static-smoke.mjs && node scripts/schema-drift-smoke.mjs && node scripts/request-drift-smoke.mjs && node scripts/query-drift-smoke.mjs && node scripts/status-smoke.mjs && node scripts/nested-drift-smoke.mjs && node scripts/reload-smoke.mjs && node scripts/reload-fixture-smoke.mjs && node scripts/body-limit-smoke.mjs && node scripts/ready-smoke.mjs && node scripts/soak-preflight-smoke.mjs && node scripts/siem-fixture-smoke.mjs && node scripts/real-site-smoke.mjs && node scripts/sign-smoke.mjs && node scripts/promote-chain-smoke.mjs && node scripts/panel-smoke.mjs && node scripts/local-lab-smoke.mjs && node scripts/bridge-smoke.mjs && node scripts/severity-smoke.mjs && node scripts/tls-smoke.mjs",
+    "test": "npm run test:dna && node scripts/cwl-bridge-smoke.mjs && node scripts/cutover-smoke.mjs && node scripts/nft-smoke.mjs && node scripts/bridge-l2-smoke.mjs && node scripts/bridge-l2-p2-smoke.mjs && node scripts/bridge-l2-p3-smoke.mjs && node scripts/compose-smoke.mjs && node scripts/k8s-image-smoke.mjs && node scripts/k8s-push.mjs",
     "live-match-smoke": "node scripts/live-match-smoke.mjs",
     "traffic-decides-bar-smoke": "node scripts/traffic-decides-bar-smoke.mjs",
-    "cinderpath-control-plane-smoke": "node scripts/cinderpath-control-plane-smoke.mjs"
+    "cinderpath-control-plane-smoke": "node scripts/cinderpath-control-plane-smoke.mjs",
+    "severity-smoke": "node scripts/severity-smoke.mjs",
+    "cinderpath-lab": "node scripts/cinderpath-lab.mjs"
   },
   "dependencies": {
     "@agenticop-io/cwl": "file:../chrysalis-cwl/packages/cwl"

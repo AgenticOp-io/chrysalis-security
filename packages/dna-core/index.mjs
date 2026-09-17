@@ -254,15 +254,24 @@ export function scoreRequest(dna, req) {
   }
   const method = String(req.method || 'GET').toUpperCase();
   const host = String(req.host || 'default').toLowerCase();
+  const rawPath = String(req.path || '/').split('?')[0] || '/';
   const path_template = pathTemplate(req.path);
+  // A certified literal surface wins over the static-asset collapse: CWL-seeded DNA carries
+  // `/connect/qr.png` verbatim, while learn collapses hashed bundles to `/**/*.png`. Both must
+  // match, and only routes already in DNA can match either way — this narrows, never loosens.
+  const candidates = rawPath === path_template ? [path_template] : [rawPath, path_template];
   // RFC-0023: when DNA stamps any non-default host, host is part of identity (no cross-host fallback).
   const hostBound = dna.routes.some((r) => String(r.host || 'default').toLowerCase() !== 'default');
-  let route = dna.routes.find(
-    (r) => r.method === method && r.path_template === path_template && (r.host || 'default') === host,
-  );
-  if (!route && !hostBound) {
-    // Default-only DNA: allow method+path match when Host header omitted/mismatched.
-    route = dna.routes.find((r) => r.method === method && r.path_template === path_template);
+  let route = null;
+  for (const candidate of candidates) {
+    route = dna.routes.find(
+      (r) => r.method === method && r.path_template === candidate && (r.host || 'default') === host,
+    );
+    if (!route && !hostBound) {
+      // Default-only DNA: allow method+path match when Host header omitted/mismatched.
+      route = dna.routes.find((r) => r.method === method && r.path_template === candidate);
+    }
+    if (route) break;
   }
   if (!route) {
     return {
@@ -760,13 +769,18 @@ export function reportDna(dna, extra = {}) {
  * Gate before flipping modes. Exit semantics for CLI: ok → 0, not ready → 2.
  * @param {'shadow'|'enforce'} target
  * @param {AppDna|null|undefined} dna
- * @param {{ minRoutes?: number, requireSigned?: boolean, shadowHoles?: number, maxShadowHoles?: number }} [opts]
+ * @param {{ minRoutes?: number, requireSigned?: boolean, shadowHoles?: number, maxShadowHoles?: number,
+ *   highShadowHoles?: number, maxHighShadowHoles?: number }} [opts]
  */
 export function assessReadiness(target, dna, opts = {}) {
   const minRoutes = opts.minRoutes != null ? Number(opts.minRoutes) : target === 'enforce' ? 3 : 1;
   const requireSigned = Boolean(opts.requireSigned);
   const maxShadowHoles = opts.maxShadowHoles != null ? Number(opts.maxShadowHoles) : Infinity;
   const shadowHoles = opts.shadowHoles != null ? Number(opts.shadowHoles) : null;
+  const highShadowHoles = opts.highShadowHoles != null ? Number(opts.highShadowHoles) : null;
+  // Credential-surface drift is never "tolerated noise" — default budget is zero.
+  const maxHighShadowHoles =
+    opts.maxHighShadowHoles != null ? Number(opts.maxHighShadowHoles) : 0;
   const checks = [];
   const fail = (id, reason) => {
     checks.push({ id, ok: false, reason });
@@ -802,6 +816,17 @@ export function assessReadiness(target, dna, opts = {}) {
     }
   }
 
+  if (target === 'enforce' && highShadowHoles != null) {
+    if (highShadowHoles > maxHighShadowHoles) {
+      fail(
+        'shadow_clean_credential',
+        `${highShadowHoles} shadow holes on credential surfaces > max ${maxHighShadowHoles} — explain login/session drift before enforce`,
+      );
+    } else {
+      pass('shadow_clean_credential', `${highShadowHoles} <= ${maxHighShadowHoles}`);
+    }
+  }
+
   const ok = checks.every((c) => c.ok);
   return {
     kind: 'helix.ready',
@@ -813,6 +838,52 @@ export function assessReadiness(target, dna, opts = {}) {
         ? 'Set MODE=shadow; watch SIEM_LOG / SHADOW_LOG; then helix ready --target enforce'
         : 'Set MODE=enforce; keep DNA signed if required; POST /__helix/reload after promote'
       : 'Stay in learn/shadow until checks pass — see docs/MODES.md and docs/PRODUCT.md',
+  };
+}
+
+/**
+ * Ops severity overlay — which certified routes are credential surfaces.
+ *
+ * Deliberately NOT part of `app-dna-v1`: the certificate stays identity only, so promote /
+ * sign / enforce are unchanged. Drift at a login surface is louder than drift at a brochure
+ * page, and that judgement is an operator overlay, not certified content.
+ *
+ * Absent overlay ⇒ every hole is `normal` (D5: DNA alone still protects).
+ */
+export const HOLE_SEVERITIES = Object.freeze(['normal', 'high']);
+
+/**
+ * @param {string} filePath
+ * @returns {{ routes: object[] }|null}
+ */
+export function loadSensitivityMap(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) return null;
+  const doc = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  return Array.isArray(doc?.routes) ? doc : null;
+}
+
+/**
+ * Severity for one request shape against the overlay.
+ * @param {{ routes?: object[] }|null} sensitivity
+ * @param {{ method?: string, path?: string, path_template?: string, host?: string }} req
+ */
+export function severityForRoute(sensitivity, req) {
+  const routes = Array.isArray(sensitivity?.routes) ? sensitivity.routes : null;
+  if (!routes) return { severity: 'normal', sensitivity: null };
+  const method = String(req.method || 'GET').toUpperCase();
+  const template = req.path_template || pathTemplate(req.path);
+  const host = String(req.host || 'default').toLowerCase();
+  const hit = routes.find((r) => {
+    if (String(r.method || '').toUpperCase() !== method) return false;
+    if (String(r.path_template) !== String(template)) return false;
+    const rHost = String(r.host || 'default').toLowerCase();
+    return rHost === 'default' || rHost === host;
+  });
+  if (!hit) return { severity: 'normal', sensitivity: null };
+  return {
+    severity: hit.severity && HOLE_SEVERITIES.includes(hit.severity) ? hit.severity : 'high',
+    sensitivity: hit.sensitivity || 'credential',
+    effects: hit.effects || [],
   };
 }
 
@@ -831,7 +902,9 @@ export function countShadowHoleEvents(input) {
     lines = input;
   }
   const byCode = {};
+  const bySeverity = {};
   let count = 0;
+  let high = 0;
   for (const row of lines) {
     let obj = row;
     if (typeof row === 'string') {
@@ -846,9 +919,12 @@ export function countShadowHoleEvents(input) {
       count += 1;
       const code = obj.hole?.code || 'UNKNOWN';
       byCode[code] = (byCode[code] || 0) + 1;
+      const sev = obj.severity || 'normal';
+      bySeverity[sev] = (bySeverity[sev] || 0) + 1;
+      if (sev === 'high') high += 1;
     }
   }
-  return { count, byCode, missing: false };
+  return { count, byCode, bySeverity, high, missing: false };
 }
 
 /**
@@ -857,7 +933,7 @@ export function countShadowHoleEvents(input) {
  */
 export function countShadowHoles(filePath) {
   if (!filePath || !fs.existsSync(filePath)) {
-    return { count: 0, byCode: {}, missing: true };
+    return { count: 0, byCode: {}, bySeverity: {}, high: 0, missing: true };
   }
   return countShadowHoleEvents(fs.readFileSync(filePath, 'utf8'));
 }
