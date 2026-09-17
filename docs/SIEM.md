@@ -36,7 +36,9 @@ Each deny (enforce) or shadow hole appends one NDJSON line:
 }
 ```
 
-Codes: `HX-NO-DNA` · `HX-ROUTE-UNKNOWN` · `HX-SCHEMA-DRIFT` · `HX-REQUEST-SCHEMA-DRIFT` · `HX-QUERY-SCHEMA-DRIFT` · `HX-STATUS-DRIFT` · `HX-CONTENT-CLASS-DRIFT` · `HX-BODY-TOO-LARGE` · …
+Codes: `HX-NO-DNA` · `HX-ROUTE-UNKNOWN` · `HX-SCHEMA-DRIFT` · `HX-REQUEST-SCHEMA-DRIFT` · `HX-QUERY-SCHEMA-DRIFT` · `HX-STATUS-DRIFT` · `HX-CONTENT-CLASS-DRIFT` · `HX-COOKIE-DRIFT` · `HX-REDIRECT-DRIFT` · `HX-BODY-TOO-LARGE` · …
+
+`HX-COOKIE-DRIFT` / `HX-REDIRECT-DRIFT` name the cookie or destination host and never the value ([RESPONSE-SURFACE.md](./RESPONSE-SURFACE.md)), so these events are safe to ship to a shared sink.
 
 Ship to Splunk/Elastic/Chronicle via filebeat / fluent-bit / sidecar tail — Helix does not ship vendor connectors in v0.
 

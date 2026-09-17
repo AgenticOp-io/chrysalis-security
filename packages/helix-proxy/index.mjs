@@ -21,6 +21,7 @@ import {
   loadSensitivityMap,
   severityForRoute,
   triageShadowLog,
+  setCookieNames,
 } from '../dna-core/index.mjs';
 
 const HEALTHZ = '/__helix/healthz';
@@ -487,6 +488,9 @@ export function createHelixProxy(opts) {
               requestContentType: reqCt || undefined,
               requestBody: requestBody,
               query: pathWithQuery.includes('?') ? pathWithQuery.slice(pathWithQuery.indexOf('?')) : '',
+              // Names only — a learned observation file must never carry a session token.
+              setCookie: setCookieNames(pres.headers['set-cookie']),
+              location: pres.headers['location'] || undefined,
             });
           }
 
@@ -495,6 +499,9 @@ export function createHelixProxy(opts) {
               contentType: ct,
               body,
               status: pres.statusCode || 0,
+              setCookie: pres.headers['set-cookie'],
+              location: pres.headers['location'],
+              host,
             });
             if (!rv.allow) {
               emitHole('response', rv.hole, { method, path: pathOnly, host });

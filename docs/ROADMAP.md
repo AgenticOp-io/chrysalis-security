@@ -83,6 +83,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] Certified literal surfaces survive the static-asset collapse (`/connect/qr.png` no longer denied under a CWL-seeded certificate)  
 - [x] Mode B transparent bridge-nf divert (daddr=server) — Phase 3 `gce-bridge-l2-p3-smoke.sh`, **GCE proven** on `agenticop-master` (`BRIDGE_L2_P3_SMOKE_OK` + `GCE_SYNC_OK`)  
 - [x] Shadow-log triage ([TRIAGE.md](./TRIAGE.md) · `triage-smoke` → `TRIAGE_SMOKE_OK`) — holes group into surfaces + classes; credential drift exits 2; panel shows the same digest live  
+- [x] Response surface DNA ([RESPONSE-SURFACE.md](./RESPONSE-SURFACE.md) · `response-surface-smoke`) — `set_cookie_names` / `redirect_targets`; `HX-COOKIE-DRIFT` / `HX-REDIRECT-DRIFT`; names and hostnames only, absent ≠ empty  
 - [ ] Customer traffic soak (operational — follow [SOAK.md](./SOAK.md) after preflight green)  
 
 

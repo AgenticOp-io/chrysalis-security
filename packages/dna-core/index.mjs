@@ -31,6 +31,51 @@ export function isStaticAssetPath(path) {
   return STATIC_EXT_RE.test(String(path || '/').split('?')[0] || '/');
 }
 
+/**
+ * Cookie **names** from one or more Set-Cookie headers. Values are never read: a session
+ * token is the secret we are protecting, and DNA is a file operators copy around.
+ * @param {string|string[]|undefined|null} setCookie
+ * @returns {string[]} sorted, deduped
+ */
+export function setCookieNames(setCookie) {
+  if (!setCookie) return [];
+  const list = Array.isArray(setCookie) ? setCookie : [setCookie];
+  const names = new Set();
+  for (const raw of list) {
+    const first = String(raw || '').split(';')[0];
+    const eq = first.indexOf('=');
+    const name = (eq >= 0 ? first.slice(0, eq) : first).trim();
+    if (name) names.add(name);
+  }
+  return [...names].sort();
+}
+
+/**
+ * Where a redirect points, as a certifiable shape rather than a URL.
+ *
+ * Relative and same-host targets collapse to `self` so ordinary navigation does not churn
+ * the certificate; anything else is recorded as the bare hostname, which is the part that
+ * turns an open redirect into an exfiltration path.
+ *
+ * @param {string|undefined|null} location Location header
+ * @param {string|undefined|null} selfHost request host
+ * @returns {string|null} `self`, a hostname, or null when there is no redirect
+ */
+export function redirectTarget(location, selfHost) {
+  const loc = String(location || '').trim();
+  if (!loc) return null;
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(loc)) return 'self';
+  let url;
+  try {
+    url = new URL(loc);
+  } catch {
+    return 'unparseable';
+  }
+  const host = String(selfHost || '').toLowerCase().split(':')[0];
+  const target = url.hostname.toLowerCase();
+  return host && target === host ? 'self' : target;
+}
+
 export function contentClass(contentType) {
   const ct = String(contentType || '').toLowerCase();
   if (ct.includes('json')) return 'json';
@@ -145,6 +190,8 @@ export function learnFromObservations(observations, opts = {}) {
         response_key_fingerprint: klass === 'json' ? responseKeyFingerprint(obs.body) : null,
         request_key_fingerprint: null,
         query_names: new Set(),
+        cookie_names: new Set(),
+        redirect_targets: new Set(),
       };
       byRoute.set(key, route);
     }
@@ -166,6 +213,9 @@ export function learnFromObservations(observations, opts = {}) {
     if (qfp) {
       for (const n of qfp.split(',')) route.query_names.add(n);
     }
+    for (const name of setCookieNames(obs.setCookie)) route.cookie_names.add(name);
+    const target = redirectTarget(obs.location, obs.host);
+    if (target) route.redirect_targets.add(target);
   }
 
   const routes = [...byRoute.values()]
@@ -178,6 +228,10 @@ export function learnFromObservations(observations, opts = {}) {
       response_key_fingerprint: r.content_class === 'json' ? r.response_key_fingerprint : null,
       request_key_fingerprint: r.request_key_fingerprint || null,
       query_key_fingerprint: [...r.query_names].sort().join(','),
+      // Empty arrays are a claim, not a gap: this route was observed and never minted a
+      // cookie / redirected. Absent (legacy DNA) means unknown, and is not enforced.
+      set_cookie_names: [...r.cookie_names].sort(),
+      redirect_targets: [...r.redirect_targets].sort(),
     }))
     .sort((a, b) => routeKey(a).localeCompare(routeKey(b)));
 
@@ -329,6 +383,35 @@ export function scoreResponse(route, res) {
         hole: {
           code: 'HX-STATUS-DRIFT',
           reason: `Status class drifted on ${route.method} ${route.path_template}: got ${sc}, expected one of [${route.status_classes.join(',')}]`,
+        },
+      };
+    }
+  }
+
+  // Response surface is checked before the JSON short-circuit: the routes that mint sessions
+  // and redirect are usually HTML, and they are the ones worth certifying.
+  if (Array.isArray(route.set_cookie_names)) {
+    const seen = setCookieNames(res.setCookie);
+    const uncertified = seen.filter((n) => !route.set_cookie_names.includes(n));
+    if (uncertified.length) {
+      return {
+        allow: false,
+        hole: {
+          code: 'HX-COOKIE-DRIFT',
+          reason: `Uncertified cookie on ${route.method} ${route.path_template}: set [${uncertified.join(',')}], certified [${route.set_cookie_names.join(',') || 'none'}]`,
+        },
+      };
+    }
+  }
+
+  if (Array.isArray(route.redirect_targets)) {
+    const target = redirectTarget(res.location, res.host);
+    if (target && !route.redirect_targets.includes(target)) {
+      return {
+        allow: false,
+        hole: {
+          code: 'HX-REDIRECT-DRIFT',
+          reason: `Uncertified redirect on ${route.method} ${route.path_template}: to ${target}, certified [${route.redirect_targets.join(',') || 'none'}]`,
         },
       };
     }
@@ -947,6 +1030,8 @@ const TRIAGE_DRIFT_CODES = new Set([
   'HX-QUERY-SCHEMA-DRIFT',
   'HX-STATUS-DRIFT',
   'HX-CONTENT-CLASS-DRIFT',
+  'HX-COOKIE-DRIFT',
+  'HX-REDIRECT-DRIFT',
 ]);
 
 function triageClass(code, inDna, pathKnown) {
