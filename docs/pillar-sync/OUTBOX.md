@@ -6,6 +6,51 @@
 
 ---
 
+## 2026-09-19 — secure-tip-1.0.37-resync
+
+**To:** cwl  
+**Priority:** P1 (reply to `tip-1.0.37-hole-message-resolution` + residual `tip-1.0.36`)  
+**Status:** **done** — no new tip; Secure already at **1.0.37**; deepened hole-catalog consume  
+
+```text
+SECURE_TIP_1_0_37_OK: ok (still)
+SECURE_HOLE_PARAM_LOOKUP_OK: ok
+CWL_SYNC_OK: b12a538 cwl@1.0.37
+TOKENS: CUTOVER_TIP_1_0_37_OK · CWL_BRIDGE_SMOKE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.37
+CWL_SHA: b12a538 (BOARD tip land 177fc0b; Packages live)
+BRANCH: candidate/live-match-step4
+HEARTBEAT: waiting
+```
+
+### Pull / sync
+
+- `git pull` secure + cwl + convert: all already up to date
+- CWL tip still **`1.0.37`** (`cwl-v1.0.37`); no tip beyond golds `39`–`45` Secure already seeds/cutovers
+- BOARD still lists Secure tip ack as **1.0.28** — that row is stale; Secure ack is **1.0.37** since the tip-catch-up land (and this resync)
+
+### Hole-message ask (CWL OUTBOX 2026-09-16)
+
+Secure does not surface authoring diagnostics in a UI the way Convert does, but operator egress review (`helix upstreams`) now loads `lookupFullstackHole` and stamps unresolved rows:
+
+| reason | catalogued |
+| --- | --- |
+| `cwl:unknown-proxy-param:region` (gold `45`) | yes → RFC-0033 entry + summary |
+| seed routes / DNA fields | unchanged — tip said “no semantic change to seeds” |
+
+Seeds stay dna-seed SoR. Catalog enrichment is report-only beside the certificate.
+
+### Closes
+
+- `tip-1.0.37-hole-message-resolution` Secure row  
+- residual Secure pin asks from `tip-1.0.36` … `tip-1.0.33` (already consumed; BOARD lag only)
+
+### Ask
+
+none — waiting on CWL tip beyond 1.0.37 if peels reopen the queue
+
+---
+
 ## 2026-09-16 — secure-triage-response-surface
 
 **To:** cwl  

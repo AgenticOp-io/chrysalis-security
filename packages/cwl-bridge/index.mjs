@@ -90,6 +90,74 @@ export async function loadCwlDnaSeed() {
 }
 
 /**
+ * Load `lookupFullstackHole` (CWL tip 1.0.37+) — parameterized reasons like
+ * `cwl:unknown-proxy-param:region` resolve to their catalog entry.
+ * Soft: returns null when the pillar/package is absent (D5).
+ * @param {string} [cwlRoot]
+ * @returns {Promise<((reason: string) => object|null)|null>}
+ */
+export async function loadCwlHoleLookup(cwlRoot) {
+  const tryPaths = [];
+  if (cwlRoot || process.env.CHRYSALIS_CWL_ROOT) {
+    const root = resolveCwlRoot(cwlRoot);
+    tryPaths.push(
+      path.join(root, 'packages', 'cwl', 'lib', 'cwl-fullstack-holes.mjs'),
+      path.join(root, 'scripts', 'hub-ingest', 'cwl-fullstack-holes.mjs'),
+    );
+  } else {
+    for (const name of CWL_PKG_NAMES) {
+      try {
+        const pkgJson = requireFromHere.resolve(`${name}/package.json`);
+        const pkgDir = path.dirname(pkgJson);
+        tryPaths.push(path.join(pkgDir, 'lib', 'cwl-fullstack-holes.mjs'));
+      } catch {
+        /* try next */
+      }
+    }
+    try {
+      const root = resolveCwlRoot();
+      tryPaths.push(
+        path.join(root, 'packages', 'cwl', 'lib', 'cwl-fullstack-holes.mjs'),
+        path.join(root, 'scripts', 'hub-ingest', 'cwl-fullstack-holes.mjs'),
+      );
+    } catch {
+      /* pillar absent */
+    }
+  }
+  for (const p of tryPaths) {
+    if (!p || !fs.existsSync(p)) continue;
+    try {
+      const mod = await import(pathToFileUrl(p));
+      if (typeof mod.lookupFullstackHole === 'function') return mod.lookupFullstackHole;
+    } catch {
+      /* try next */
+    }
+  }
+  return null;
+}
+
+/**
+ * Catalog facts for one hole reason. Parameterized reasons (tip 1.0.37) resolve by prefix
+ * when the entry opts in with `param`; everything else stays exact-match.
+ * @param {string} reason
+ * @param {((reason: string) => object|null)|null} [lookup]
+ */
+export function catalogHoleReason(reason, lookup = null) {
+  if (!reason || typeof lookup !== 'function') {
+    return { reason, catalogued: null };
+  }
+  const entry = lookup(reason);
+  if (!entry) return { reason, catalogued: false };
+  return {
+    reason,
+    catalogued: true,
+    rfc: entry.rfc || null,
+    summary: entry.summary || null,
+    param: entry.param || null,
+  };
+}
+
+/**
  * Load parseCwlModule via package subpath else pillar.
  * @param {string} [cwlRoot]
  */
@@ -304,9 +372,11 @@ export function annotateSeedWithGenomeFacts(seeded, mod) {
  * Declared upstream forwards from the genome — operator egress input, not enforcement.
  * Helix scores inbound requests; it does not proxy or filter egress today.
  * @param {{ bridge?: { annotations?: object[] } }} seed
+ * @param {{ app_id?: string, lookupHole?: ((reason: string) => object|null)|null }} [opts]
  */
 export function buildUpstreamTargetsReport(seed, opts = {}) {
   const annotations = Array.isArray(seed?.bridge?.annotations) ? seed.bridge.annotations : [];
+  const lookup = opts.lookupHole || null;
   const targets = [];
   const unresolved = [];
   for (const a of annotations) {
@@ -325,11 +395,21 @@ export function buildUpstreamTargetsReport(seed, opts = {}) {
         params: a.cwl_upstream_params || [],
       });
     }
+    // Rejected proxy params become holes (cwl:unknown-proxy-param:<name>). Tip 1.0.37
+    // resolves those parameterized reasons to their catalog entry for operator copy.
+    const reasons = [];
     if (a?.cwl_hole_reason?.startsWith('cwl:unknown-proxy-param:')) {
+      reasons.push(a.cwl_hole_reason);
+    } else if (Array.isArray(a?.cwl_upstream_unknown_params) && a.cwl_upstream_unknown_params.length) {
+      for (const p of a.cwl_upstream_unknown_params) {
+        reasons.push(`cwl:unknown-proxy-param:${p}`);
+      }
+    }
+    for (const reason of reasons) {
       unresolved.push({
         method: a.method,
         path_template: a.path_template,
-        reason: a.cwl_hole_reason,
+        ...catalogHoleReason(reason, lookup),
       });
     }
   }

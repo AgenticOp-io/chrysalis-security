@@ -18,6 +18,7 @@ import {
   resolveDeployProfilePath,
   buildHolesBridgeReport,
   buildUpstreamTargetsReport,
+  loadCwlHoleLookup,
 } from '../packages/cwl-bridge/index.mjs';
 import { scoreRequest, signDna, verifyDna } from '../packages/dna-core/index.mjs';
 
@@ -385,11 +386,17 @@ if (proxyParams) {
     `param names: ${withParams.cwl_upstream_params}`,
   );
   // `:region` is not a param of /api/pop/:id/health — CWL keeps it a hole, Helix must not guess
-  const egress = buildUpstreamTargetsReport(proxyParams.seeded);
+  const lookupHole = await loadCwlHoleLookup(cwlRoot);
+  assert(typeof lookupHole === 'function', 'tip 1.0.37 hole lookup loads from the pillar');
+  const egress = buildUpstreamTargetsReport(proxyParams.seeded, { lookupHole });
+  const region = egress.unresolved.find((u) => u.reason === 'cwl:unknown-proxy-param:region');
+  assert(region, `unresolved proxy param: ${JSON.stringify(egress.unresolved)}`);
+  assert(region.catalogued === true, 'parameterized reason resolves to catalog entry');
   assert(
-    egress.unresolved.some((u) => u.reason === 'cwl:unknown-proxy-param:region'),
-    `unresolved proxy param: ${JSON.stringify(egress.unresolved)}`,
+    /proxy upstream/.test(region.summary || ''),
+    `catalog summary rides the report: ${region.summary}`,
   );
+  assert(region.rfc === '0033', `rfc: ${region.rfc}`);
   assert(
     !egress.targets.some((t) => t.path_template === '/api/pop/:id/health'),
     'rejected proxy target never becomes an egress destination',

@@ -53,7 +53,7 @@ npm run helix -- upstreams   --cwl app.cwl                       # declared forw
 npm run helix -- sensitivity --cwl app.cwl --out sensitivity.json # credential surfaces → severity overlay
 ```
 
-`upstreams` lists declared forward origins for egress review. A target CWL rejected (`cwl:unknown-proxy-param:*`) is reported as **unresolved** and never becomes a destination. Helix scores inbound DNA — **egress filtering is not a Helix control**.
+`upstreams` lists declared forward origins for egress review. A target CWL rejected (`cwl:unknown-proxy-param:*`) is reported as **unresolved** and never becomes a destination. Tip **1.0.37** resolves those parameterized reasons through `lookupFullstackHole` so the report carries the catalog `summary` / `rfc` (exact match for non-`param` entries; prefix only when the entry opts in). Helix scores inbound DNA — **egress filtering is not a Helix control**.
 
 `sensitivity` writes the ops overlay described in [SEVERITY.md](./SEVERITY.md). It sits beside the certificate, never inside it.
 
