@@ -19,21 +19,21 @@ npm run helix -- cutover --cwl path/to/routes.cwl --dna certificates/app.json \
 
 Env: `CHRYSALIS_CWL_ROOT` if the language pillar (fixtures) is not at `../chrysalis-cwl`.
 
-## Pin (CWL tip @ 1.0.37)
+## Pin (CWL tip @ 1.0.39)
 
 ```json
 "@agenticop-io/cwl": "file:../chrysalis-cwl/packages/cwl"
 ```
 
-Follows CWL tip DNA seed (nested FP depth ≤2, request/query name FPs, SSE `cwl_stream`, multipart field/file fingerprints, page/layout HTML surfaces + page-island emit reverse, repeated markup as a CWL surface, `pathTemplateShapeEqual` SoR). Secure thin-wraps path-shape from dna-seed; cutover honors stream/multipart annotations when present. Protect stays DNA / D5.
+Follows CWL tip DNA seed (nested FP depth ≤2, request/query name FPs, SSE `cwl_stream`, multipart field/file fingerprints, page/layout HTML surfaces + page-island emit reverse, repeated markup as a CWL surface incl. `if` filter, `pathTemplateShapeEqual` SoR, session cookie **names** on RFC-0032 effects). Secure thin-wraps path-shape from dna-seed; cutover honors stream/multipart annotations when present. Protect stays DNA / D5.
 
-GitHub Packages — [`.npmrc.example`](../.npmrc.example). Optional registry `@agenticop-io/cwl@1.0.37` ≡ same tip.
+GitHub Packages — [`.npmrc.example`](../.npmrc.example). Optional registry `@agenticop-io/cwl@1.0.39` ≡ same tip.
 
 | Import | Role |
 | --- | --- |
 | `@agenticop-io/cwl/dna-seed` | Seed / profile / holes report (SoR) |
 | `@agenticop-io/cwl/parser` | Parse fallback |
-| Sibling fixtures | Gold `24` · `34` (SSE/multipart) · `36`–`38` (layout/cookie/page-island) · `39`–`45` (repeats / credentials / forwards / host bytes) |
+| Sibling fixtures | Gold `24` · `34` (SSE/multipart) · `36`–`38` (layout/cookie/page-island) · `39`–`45` (repeats / credentials / forwards / host bytes) · `46` (session cookie name) · `47` (repeat if) |
 
 ## Genome facts beside the seed (tip 1.0.33–1.0.36)
 
@@ -41,7 +41,8 @@ Some CWL declarations are route meaning that `dna-seed` does not carry as DNA ro
 
 | Annotation | Source | Use |
 | --- | --- | --- |
-| `cwl_credential_effects` | RFC-0032 `auth.verify` / `session.mint` / `session.revoke` | Login intent is genome data, not a hole |
+| `cwl_credential_effects` | RFC-0032 `auth.verify` / `session.mint` / `session.revoke` (+ optional `cookie <name>` from tip **1.0.38**) | Login intent is genome data, not a hole |
+| `cwl_session_cookies` | `session.mint cookie sid` / `session.revoke cookie sid` | Name only — never seeded into DNA routes |
 | `cwl_upstream_target` (+ `cwl_upstream_params`) | RFC-0033 `proxy upstream "…"` incl. `:param` targets | A forwarded route names its full destination |
 | `cwl_hole_reason` · `cwl_host_bytes` | `hub-cwl:keypair-gen` / `hub-cwl:binary-render` | Bytes stay host-owned |
 | `cwl_content_type` · `cwl_declared_content_class` | `content-type "…"` next to a hole | Host-byte routes keep their media type in live-match |
@@ -59,7 +60,7 @@ npm run helix -- sensitivity --cwl app.cwl --out sensitivity.json # credential s
 
 Declared media type vs learned `content_class` is a **note** (`cwl_declared_media_type_vs_dna_content_class`), never a silent DNA rewrite: traffic decides after learn.
 
-`session.mint` gets the same treatment against the certificate's response surface. The genome knows a route mints a session but cannot name the cookie, so cutover reports `session_mint_notes` — `session_mint_honored`, `genome_mints_session_dna_sets_no_cookie`, or `dna_predates_response_surface` — and never seeds a cookie name ([RESPONSE-SURFACE.md](./RESPONSE-SURFACE.md)).
+`session.mint` is cross-checked against the certificate's response surface ([RESPONSE-SURFACE.md](./RESPONSE-SURFACE.md)). Tip **1.0.38** may name the cookie (`session.mint cookie sid`); cutover reports `session_mint_notes` — `session_mint_honored`, `genome_mints_session_dna_sets_no_cookie`, `genome_cookie_not_in_dna`, or `dna_predates_response_surface` — and **never** seeds a cookie name or value into DNA routes. Tip **1.0.39** repeat `if` is page DNA only — no new Secure surface.
 
 ## Rules (honest)
 

@@ -60,7 +60,7 @@ Signing: hmac-sha256 (shared secret) or ed25519 (PEM/raw private promote, public
 Env: HELIX_DNA_KEY, HELIX_DNA_KEY_ID, HELIX_DNA_ALG. Canon: docs/SIGNED-DNA.md
 Lifecycle: docs/CERT-LIFECYCLE.md · Product: docs/PRODUCT.md · Modes: docs/MODES.md
 Soak: docs/SOAK.md · Triage: docs/TRIAGE.md · Severity: docs/SEVERITY.md
-CWL bridge: RFC-0022/0023 (chrysalis-cwl). Pin: @agenticop-io/cwl@1.0.37. Canon: docs/CANON.md
+CWL bridge: RFC-0022/0023 (chrysalis-cwl). Pin: @agenticop-io/cwl@1.0.39. Canon: docs/CANON.md
 `);
 }
 
