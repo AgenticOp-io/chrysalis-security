@@ -276,8 +276,43 @@ export async function resolveCwlModuleForPath(cwlPath, opts = {}) {
   return parseCwlModule(fs.readFileSync(cwlPath, 'utf8'), path.basename(cwlPath));
 }
 
-/** Credential / session intent (CWL 1.0.33, RFC-0032). */
-const CREDENTIAL_EFFECTS = Object.freeze(['auth.verify', 'session.mint', 'session.revoke']);
+/** Credential / session intent (CWL 1.0.33+, RFC-0032). Tip 1.0.38 may name the cookie. */
+const CREDENTIAL_EFFECT_BASES = Object.freeze(['auth.verify', 'session.mint', 'session.revoke']);
+
+/**
+ * True when an effect tag is credential intent — bare `session.mint` or
+ * `session.mint cookie sid` (tip 1.0.38).
+ * @param {unknown} effect
+ */
+export function isCredentialEffect(effect) {
+  const s = String(effect || '');
+  return CREDENTIAL_EFFECT_BASES.some((b) => s === b || s.startsWith(`${b} `) || s.startsWith(`${b} cookie `));
+}
+
+/**
+ * Cookie **name** from `session.mint cookie <name>` / `session.revoke cookie <name>`.
+ * Never a value — CWL forbids inventing one when omitted.
+ * @param {unknown} effect
+ * @returns {string|null}
+ */
+export function sessionCookieNameFromEffect(effect) {
+  const m = String(effect || '').match(/^session\.(?:mint|revoke)\s+cookie\s+([A-Za-z_][A-Za-z0-9_-]*)$/);
+  return m ? m[1] : null;
+}
+
+/**
+ * Session cookie names declared on a route's credential effects (mint or revoke).
+ * @param {string[]} effects
+ * @returns {string[]}
+ */
+export function sessionCookieNamesFromEffects(effects) {
+  const names = new Set();
+  for (const e of effects || []) {
+    const n = sessionCookieNameFromEffect(e);
+    if (n) names.add(n);
+  }
+  return [...names];
+}
 
 /** Host-byte hole reasons (CWL 1.0.35) — bytes stay host-owned, media type is genome data. */
 const HOST_BYTE_REASONS = Object.freeze(['hub-cwl:keypair-gen', 'hub-cwl:binary-render']);
@@ -330,9 +365,12 @@ export function genomeRouteAnnotations(mod) {
       carries = true;
     }
 
-    const credential = (r.effects || []).filter((e) => CREDENTIAL_EFFECTS.includes(e));
+    const credential = (r.effects || []).filter((e) => isCredentialEffect(e));
     if (credential.length) {
       fragment.cwl_credential_effects = credential;
+      const cookies = sessionCookieNamesFromEffects(credential);
+      // Tip 1.0.38 — genome may name the cookie; never seed a value into DNA routes.
+      if (cookies.length) fragment.cwl_session_cookies = cookies;
       carries = true;
     }
 
@@ -737,10 +775,8 @@ export function compareCwlSurfaceToDna(cwlDnaOrSeed, liveDna, opts = {}) {
     }
   }
 
-  // RFC-0032 says which routes mint a session; the certificate says which cookies they set.
-  // The genome cannot name a cookie, so this is a cross-check, never a seed: a route the
-  // genome calls a session minter whose certificate says it sets nothing means one of the
-  // two is stale. Notes only — DNA stays the owner of observed behaviour.
+  // RFC-0032: which routes mint a session. Tip 1.0.38 may also name the cookie.
+  // Cross-check only — DNA routes stay traffic-owned; we never seed a cookie value.
   /** @type {object[]} */
   const session_mint_notes = [];
   for (const a of credentialAnns) {
@@ -754,28 +790,57 @@ export function compareCwlSurfaceToDna(cwlDnaOrSeed, liveDna, opts = {}) {
           : String(a.path_template) === String(l.path_template)),
     );
     if (!hit) continue;
+    const genomeCookies = Array.isArray(a.cwl_session_cookies)
+      ? a.cwl_session_cookies
+      : sessionCookieNamesFromEffects(a.cwl_credential_effects);
+
     if (!Array.isArray(hit.set_cookie_names)) {
       session_mint_notes.push({
         method,
         path_template: a.path_template,
         note: 'dna_predates_response_surface',
-        hint: 'learn again to certify which cookie this route mints',
+        genome_cookies: genomeCookies.length ? genomeCookies : undefined,
+        hint: genomeCookies.length
+          ? `learn again — genome names cookie [${genomeCookies.join(',')}]`
+          : 'learn again to certify which cookie this route mints',
       });
-    } else if (hit.set_cookie_names.length === 0) {
+      continue;
+    }
+
+    if (hit.set_cookie_names.length === 0) {
       session_mint_notes.push({
         method,
         path_template: a.path_template,
         note: 'genome_mints_session_dna_sets_no_cookie',
+        genome_cookies: genomeCookies.length ? genomeCookies : undefined,
         hint: 'learn window may have missed a successful login, or the genome is stale',
       });
-    } else {
-      session_mint_notes.push({
-        method,
-        path_template: a.path_template,
-        note: 'session_mint_honored',
-        set_cookie_names: hit.set_cookie_names,
-      });
+      continue;
     }
+
+    if (genomeCookies.length) {
+      const missing = genomeCookies.filter((n) => !hit.set_cookie_names.includes(n));
+      if (missing.length) {
+        session_mint_notes.push({
+          method,
+          path_template: a.path_template,
+          note: 'genome_cookie_not_in_dna',
+          genome_cookies: genomeCookies,
+          set_cookie_names: hit.set_cookie_names,
+          missing,
+          hint: 'certificate saw other cookies, or the genome name is wrong — name only, never invent a value',
+        });
+        continue;
+      }
+    }
+
+    session_mint_notes.push({
+      method,
+      path_template: a.path_template,
+      note: 'session_mint_honored',
+      set_cookie_names: hit.set_cookie_names,
+      genome_cookies: genomeCookies.length ? genomeCookies : undefined,
+    });
   }
 
   const identityOk = missing_in_dna.length === 0;

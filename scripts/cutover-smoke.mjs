@@ -440,4 +440,103 @@ if (tip37Ok === tip37Golds.length) {
   console.log(`CUTOVER_TIP_1_0_37_PARTIAL (${tip37Ok}/${tip37Golds.length})`);
 }
 
+console.log('=== cutover: tip 1.0.38–1.0.39 (session cookie name / repeat if) ===');
+const tip39Golds = [
+  { dir: '46-session-cookie-name', minRoutes: 2 },
+  { dir: '47-html-repeat-if', minRoutes: 1, allHtml: true },
+];
+const tip39Seen = new Map();
+let tip39Ok = 0;
+for (const g of tip39Golds) {
+  const cwlPath = path.join(cwlRoot, 'fixtures', 'language-gold', g.dir, 'routes.cwl');
+  if (!fs.existsSync(cwlPath)) {
+    console.log(`CUTOVER_TIP39_SKIP (missing ${g.dir})`);
+    continue;
+  }
+  const seeded = await seedDnaFromCwlFile(cwlPath, {
+    app_id: `cutover-${g.dir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${g.dir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((seeded.routes?.length ?? 0) >= g.minRoutes, `${g.dir} route count`);
+  if (g.allHtml) {
+    assert(
+      seeded.routes.every((r) => r.content_class === 'html'),
+      `${g.dir} filtered repeat stays an HTML surface`,
+    );
+  }
+  const certified = stripBridgeEnvelope(seeded);
+  const cmp = compareCwlSurfaceToDna(seeded, certified);
+  assert(cmp.ok === true, `${g.dir} self-cutover: ${JSON.stringify(cmp.missing_in_dna)}`);
+  tip39Seen.set(g.dir, { seeded, cmp });
+  tip39Ok += 1;
+}
+
+// 1.0.38 — genome may name the session cookie; cutover honors name-only against DNA
+const named = tip39Seen.get('46-session-cookie-name');
+if (named) {
+  const login = named.cmp.bridge_annotations.credential.find(
+    (a) => a.method === 'POST' && a.path_template === '/login',
+  );
+  assert(login, 'named-cookie login carries credential effects');
+  assert(
+    login.cwl_credential_effects.includes('session.mint cookie sid'),
+    `mint with name: ${JSON.stringify(login.cwl_credential_effects)}`,
+  );
+  assert(
+    login.cwl_session_cookies?.includes('sid'),
+    `annotation carries cookie name: ${JSON.stringify(login.cwl_session_cookies)}`,
+  );
+  assert(
+    named.seeded.routes.every((r) => !Array.isArray(r.set_cookie_names)),
+    'seeded DNA routes do not invent set_cookie_names from the genome',
+  );
+
+  const seededNote = named.cmp.session_mint_notes.find((n) => n.path_template === '/login');
+  assert(
+    seededNote?.note === 'dna_predates_response_surface',
+    `seed still has no cookie opinion: ${JSON.stringify(seededNote)}`,
+  );
+  assert(seededNote.genome_cookies?.includes('sid'), 'note remembers the genome name');
+
+  const learned = stripBridgeEnvelope(named.seeded);
+  const loginRoute = learned.routes.find(
+    (r) => r.method === 'POST' && r.path_template === '/login',
+  );
+  loginRoute.set_cookie_names = ['sid'];
+  const honored = compareCwlSurfaceToDna(named.seeded, learned);
+  const okNote = honored.session_mint_notes.find((n) => n.path_template === '/login');
+  assert(okNote?.note === 'session_mint_honored', `named cookie honored: ${JSON.stringify(okNote)}`);
+  assert(okNote.genome_cookies.includes('sid'), 'genome name rides the honor note');
+
+  loginRoute.set_cookie_names = ['other'];
+  const mismatch = compareCwlSurfaceToDna(named.seeded, learned);
+  const bad = mismatch.session_mint_notes.find((n) => n.path_template === '/login');
+  assert(bad?.note === 'genome_cookie_not_in_dna', `name mismatch: ${JSON.stringify(bad)}`);
+  assert(bad.missing.includes('sid'), 'missing names the genome cookie');
+  assert(mismatch.ok === true, 'cookie name mismatch is a note, not a cutover failure');
+
+  const logout = named.cmp.bridge_annotations.credential.find((a) => a.path_template === '/logout');
+  assert(
+    logout?.cwl_credential_effects.includes('session.revoke cookie sid'),
+    'revoke carries the same cookie name',
+  );
+}
+
+// 1.0.39 — repeat if is page DNA; Secure only needs self-cutover (done above)
+const repeatIf = tip39Seen.get('47-html-repeat-if');
+if (repeatIf) {
+  assert(
+    repeatIf.seeded.routes.some((r) => r.path_template === '/sessions'),
+    'filtered repeat page is a DNA surface',
+  );
+}
+
+if (tip39Ok === tip39Golds.length) {
+  console.log('CUTOVER_TIP_1_0_39_OK');
+} else if (tip39Ok > 0) {
+  console.log(`CUTOVER_TIP_1_0_39_PARTIAL (${tip39Ok}/${tip39Golds.length})`);
+}
+
 console.log('CUTOVER_SMOKE_OK');

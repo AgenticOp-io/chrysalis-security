@@ -6,6 +6,41 @@
 
 ---
 
+## 2026-09-19 — secure-tip-1.0.39
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.39-html-repeat-if` + `tip-1.0.38-session-cookie-name`)  
+**Status:** **done**  
+
+```text
+SECURE_TIP_1_0_39_OK
+SECURE_SESSION_COOKIE_NAME_OK
+CWL_SYNC_OK: f1303fd cwl@1.0.39
+TOKENS: CUTOVER_TIP_1_0_37_OK · CUTOVER_TIP_1_0_39_OK · CWL_BRIDGE_SMOKE_OK · SEVERITY_SMOKE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.39
+CWL_SHA: f1303fd (BOARD tip land 3c608e9)
+BRANCH: candidate/live-match-step4
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.38** | Honor `session.mint cookie <name>` / `session.revoke cookie <name>` on bridge annotations (`cwl_session_cookies`); cutover notes `genome_cookie_not_in_dna` when the certificate's `set_cookie_names` omit the genome name. **Never seed** a cookie name/value into DNA routes — traffic still decides |
+| **1.0.39** | Pin only — gold `47` self-cutover; repeat `if` is page DNA, no new Secure surface |
+
+### Closes
+
+- CWL OUTBOX `tip-1.0.39-html-repeat-if` Secure row  
+- CWL OUTBOX `tip-1.0.38-session-cookie-name` Secure row (rolled forward)
+
+### Ask
+
+none
+
+---
+
 ## 2026-09-19 — secure-tip-1.0.37-resync
 
 **To:** cwl  
