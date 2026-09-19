@@ -20,6 +20,7 @@ import {
   resolveDeployProfilePath,
   buildUpstreamTargetsReport,
   buildSensitivityMap,
+  loadCwlHoleLookup,
 } from '../../cwl-bridge/index.mjs';
 
 function usage() {
@@ -376,7 +377,10 @@ if (cmd === 'upstreams' || cmd === 'sensitivity') {
   }
 
   if (cmd === 'upstreams') {
-    const report = buildUpstreamTargetsReport(seed);
+    const lookupHole = await loadCwlHoleLookup(
+      flag(rest, '--cwl-root') || process.env.CHRYSALIS_CWL_ROOT,
+    );
+    const report = buildUpstreamTargetsReport(seed, { lookupHole });
     console.log(JSON.stringify(report, null, 2));
     // Unresolved targets are CWL-rejected params — honest exit 2 so review does not pass silently
     process.exit(report.unresolved.length === 0 ? 0 : 2);
