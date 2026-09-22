@@ -2,6 +2,16 @@
 
 DNA firewall: **if it isn’t in certified DNA, it doesn’t pass.**
 
+## Chrysalis (open source)
+
+| Pillar | Repository | Role |
+|--------|------------|------|
+| **CWL** | [chrysalis-cwl](https://github.com/AgenticOp-io/chrysalis-cwl) | Chrysalis Web Language — DNA of the web |
+| **Convert** | [chrysalis](https://github.com/AgenticOp-io/chrysalis) | Universal Translator — origin → WebIR/CWL → emit |
+| **Secure** | [chrysalis-security](https://github.com/AgenticOp-io/chrysalis-security) | Helix DNA firewall — allow only what certified traffic proves |
+
+Helix protects with **traffic DNA** out of the box (D5). Any CWL bridge consumes `chrysalis-cwl`; this repo does not own the language.
+
 Locks: [`docs/DECISIONS.md`](./docs/DECISIONS.md) · Beginning: [`docs/BEGINNING.md`](./docs/BEGINNING.md) · NGFW: [`docs/AUGMENT.md`](./docs/AUGMENT.md)
 
 ## Prove

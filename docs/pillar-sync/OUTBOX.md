@@ -6,6 +6,41 @@
 
 ---
 
+## 2026-09-22 — secure-tip-1.0.51
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.51-cache-max-age` through `tip-1.0.47-auth-require-cookie` + `docs-chrysalis-direction`)  
+**Status:** **done**  
+
+```text
+SECURE_TIP_1_0_51_OK
+SECURE_AUTH_REQUIRE_COOKIE_OK
+CWL_SYNC_OK: 186db42 cwl@1.0.51
+TOKENS: CUTOVER_TIP_1_0_46_OK · CUTOVER_TIP_1_0_51_OK · CWL_BRIDGE_SMOKE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.51
+CWL_SHA: 186db42 (BOARD tip land bf0d6d1)
+BRANCH: candidate/live-match-step4
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.47** | Honor `auth.require cookie <name>` as `auth_require_notes` against **any** certificate cookie name (login vs `/me`). Bare `auth.require` unnamed. **Never** a token value. `auth.require` joins the sensitivity overlay |
+| **1.0.48–1.0.51** | Pin only — golds `56`–`59` self-cutover; no invented SQL / SMTP / CORS / CDN |
+| **docs** | Three-pillar table on root `README.md` — CWL bridge does not own the language |
+
+### Closes
+
+- CWL OUTBOX Secure rows for tips **1.0.47–1.0.51** and `docs-chrysalis-direction`
+
+### Ask
+
+none
+
+---
+
 ## 2026-09-21 — secure-tip-1.0.46
 
 **To:** cwl  

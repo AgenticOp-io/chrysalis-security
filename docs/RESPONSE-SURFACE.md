@@ -50,6 +50,8 @@ Learn records `set_cookie_attrs` from live `Set-Cookie` the same way: flags and 
 
 Tip **1.0.46** `csrf.verify cookie csrf` is a different check (`csrf_notes`): the CSRF cookie is often set on a form page, not the POST that verifies it, so cutover looks for the name on **any** certified route.
 
+Tip **1.0.47** `auth.require cookie sid` is the same presence check (`auth_require_notes`): the protected route usually does not mint the cookie.
+
 These are notes, not cutover failures. DNA owns observed behaviour, and a disagreement means a human should look — not that traffic should stop.
 
 ## Prove
