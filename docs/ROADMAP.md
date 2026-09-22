@@ -69,6 +69,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 
 - [x] CWL tip `1.0.17` consume — `@agenticop-io/cwl@1.0.17` (dna-seed path-shape SoR thin-wrap; nested/status/request/query seed parity)
 - [x] CWL tip `1.0.39` consume — session cookie **names** on RFC-0032 (`CUTOVER_TIP_1_0_39_OK`); repeat `if` pin-only; hole-catalog lookup on upstreams
+- [x] CWL tip `1.0.46` consume — session cookie **policy attrs** (`CUTOVER_TIP_1_0_46_OK`); CSRF cookie **names**; golds 48–50/52–53 pin-only
 - [x] Rosetta Step 4 Live match — `docs/LIVE-MATCH.md` · `npm run live-match-smoke`  
 - [x] Mode B L2 **deepen** — nft divert + fail-closed + teardown (`BRIDGE_L2_FAILCLOSED_OK` / `TEARDOWN_OK`)  
 - [x] Mode B L2 **Phase 2** — dual-iface NIC-A/NIC-B in appliance ns (`BRIDGE_L2_P2_IFACE_OK` / `CROSS_OK` / `DNA_OK` / `SMOKE_OK`)  

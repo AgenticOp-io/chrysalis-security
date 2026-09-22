@@ -281,7 +281,7 @@ const CREDENTIAL_EFFECT_BASES = Object.freeze(['auth.verify', 'session.mint', 's
 
 /**
  * True when an effect tag is credential intent — bare `session.mint` or
- * `session.mint cookie sid` (tip 1.0.38).
+ * `session.mint cookie sid` (tip 1.0.38) / with policy attrs (tip 1.0.43).
  * @param {unknown} effect
  */
 export function isCredentialEffect(effect) {
@@ -291,13 +291,55 @@ export function isCredentialEffect(effect) {
 
 /**
  * Cookie **name** from `session.mint cookie <name>` / `session.revoke cookie <name>`.
- * Never a value — CWL forbids inventing one when omitted.
+ * Trailing policy attrs (tip 1.0.43) are ignored here. Never a value.
  * @param {unknown} effect
  * @returns {string|null}
  */
 export function sessionCookieNameFromEffect(effect) {
-  const m = String(effect || '').match(/^session\.(?:mint|revoke)\s+cookie\s+([A-Za-z_][A-Za-z0-9_-]*)$/);
+  const m = String(effect || '').match(
+    /^session\.(?:mint|revoke)\s+cookie\s+([A-Za-z_][A-Za-z0-9_-]*)(?:\s|$)/,
+  );
   return m ? m[1] : null;
+}
+
+/**
+ * Cookie **policy** attrs from a mint/revoke effect (tip 1.0.43). Flags and path only.
+ * @param {unknown} effect
+ * @returns {{ httponly?: boolean, secure?: boolean, path?: string, samesite?: string }|null}
+ */
+export function sessionCookieAttrsFromEffect(effect) {
+  const m = String(effect || '').match(
+    /^session\.(?:mint|revoke)\s+cookie\s+[A-Za-z_][A-Za-z0-9_-]*\s+(.+)$/,
+  );
+  if (!m) return null;
+  const tokens = m[1].trim().split(/\s+/).filter(Boolean);
+  /** @type {{ httponly?: boolean, secure?: boolean, path?: string, samesite?: string }} */
+  const attrs = {};
+  for (let i = 0; i < tokens.length; i++) {
+    const tok = tokens[i];
+    if (tok === 'httponly') {
+      attrs.httponly = true;
+      continue;
+    }
+    if (tok === 'secure') {
+      attrs.secure = true;
+      continue;
+    }
+    if (tok === 'path') {
+      const p = tokens[++i];
+      if (!p || !/^\/[A-Za-z0-9_./-]*$/.test(p)) return null;
+      attrs.path = p;
+      continue;
+    }
+    if (tok === 'samesite') {
+      const ss = tokens[++i];
+      if (!ss || !/^(lax|strict|none)$/.test(ss)) return null;
+      attrs.samesite = ss;
+      continue;
+    }
+    return null;
+  }
+  return Object.keys(attrs).length ? attrs : null;
 }
 
 /**
@@ -312,6 +354,70 @@ export function sessionCookieNamesFromEffects(effects) {
     if (n) names.add(n);
   }
   return [...names];
+}
+
+/**
+ * Genome cookie policy keyed by name (mint wins over revoke when both name the same cookie).
+ * @param {string[]} effects
+ * @returns {Record<string, { httponly?: boolean, secure?: boolean, path?: string, samesite?: string }>}
+ */
+export function sessionCookieAttrsFromEffects(effects) {
+  /** @type {Record<string, { httponly?: boolean, secure?: boolean, path?: string, samesite?: string }>} */
+  const out = {};
+  for (const e of effects || []) {
+    const name = sessionCookieNameFromEffect(e);
+    const attrs = sessionCookieAttrsFromEffect(e);
+    if (name && attrs) out[name] = attrs;
+  }
+  return out;
+}
+
+/**
+ * CSRF cookie **name** from `csrf.verify cookie <name>` (tip 1.0.46). Never a token value.
+ * @param {unknown} effect
+ * @returns {string|null}
+ */
+export function csrfCookieNameFromEffect(effect) {
+  const m = String(effect || '').match(/^csrf\.verify\s+cookie\s+([A-Za-z_][A-Za-z0-9_-]*)$/);
+  return m ? m[1] : null;
+}
+
+/**
+ * @param {unknown} effect
+ */
+export function isCsrfEffect(effect) {
+  const s = String(effect || '');
+  return s === 'csrf.verify' || s.startsWith('csrf.verify cookie ');
+}
+
+/**
+ * @param {string[]} effects
+ * @returns {string[]}
+ */
+export function csrfCookieNamesFromEffects(effects) {
+  const names = new Set();
+  for (const e of effects || []) {
+    const n = csrfCookieNameFromEffect(e);
+    if (n) names.add(n);
+  }
+  return [...names];
+}
+
+/**
+ * Genome cookie policy flags the certificate does not honor (subset check — extra DNA flags are fine).
+ * @param {{ httponly?: boolean, secure?: boolean, path?: string, samesite?: string }} genome
+ * @param {{ httponly?: boolean, secure?: boolean, path?: string, samesite?: string }|undefined} learned
+ * @returns {string[]}
+ */
+export function cookieAttrGaps(genome, learned) {
+  /** @type {string[]} */
+  const missing = [];
+  if (!genome) return missing;
+  if (genome.httponly && !learned?.httponly) missing.push('httponly');
+  if (genome.secure && !learned?.secure) missing.push('secure');
+  if (genome.path && genome.path !== learned?.path) missing.push(`path ${genome.path}`);
+  if (genome.samesite && genome.samesite !== learned?.samesite) missing.push(`samesite ${genome.samesite}`);
+  return missing;
 }
 
 /** Host-byte hole reasons (CWL 1.0.35) — bytes stay host-owned, media type is genome data. */
@@ -371,6 +477,17 @@ export function genomeRouteAnnotations(mod) {
       const cookies = sessionCookieNamesFromEffects(credential);
       // Tip 1.0.38 — genome may name the cookie; never seed a value into DNA routes.
       if (cookies.length) fragment.cwl_session_cookies = cookies;
+      const attrs = sessionCookieAttrsFromEffects(credential);
+      // Tip 1.0.43 — policy flags only; still never a token value.
+      if (Object.keys(attrs).length) fragment.cwl_session_cookie_attrs = attrs;
+      carries = true;
+    }
+
+    const csrf = (r.effects || []).filter((e) => isCsrfEffect(e));
+    if (csrf.length) {
+      fragment.cwl_csrf_effects = csrf;
+      const csrfCookies = csrfCookieNamesFromEffects(csrf);
+      if (csrfCookies.length) fragment.cwl_csrf_cookies = csrfCookies;
       carries = true;
     }
 
@@ -743,6 +860,9 @@ export function compareCwlSurfaceToDna(cwlDnaOrSeed, liveDna, opts = {}) {
   const credentialAnns = annotations.filter(
     (a) => a && Array.isArray(a.cwl_credential_effects) && a.cwl_credential_effects.length,
   );
+  const csrfAnns = annotations.filter(
+    (a) => a && Array.isArray(a.cwl_csrf_effects) && a.cwl_csrf_effects.length,
+  );
 
   // Declared media type (1.0.35) vs learned content_class — DNA stays owner after learn, so note only.
   for (const a of annotations) {
@@ -834,13 +954,102 @@ export function compareCwlSurfaceToDna(cwlDnaOrSeed, liveDna, opts = {}) {
       }
     }
 
+    const genomeAttrs =
+      a.cwl_session_cookie_attrs && typeof a.cwl_session_cookie_attrs === 'object'
+        ? a.cwl_session_cookie_attrs
+        : sessionCookieAttrsFromEffects(a.cwl_credential_effects);
+    const attrNames = Object.keys(genomeAttrs);
+    /** @type {object[]|undefined} */
+    let attr_notes;
+    if (attrNames.length) {
+      if (!hit.set_cookie_attrs || typeof hit.set_cookie_attrs !== 'object') {
+        attr_notes = attrNames.map((name) => ({
+          name,
+          note: 'dna_predates_cookie_attrs',
+          genome: genomeAttrs[name],
+          hint: 'learn again — genome declares httponly/secure/path/samesite, never a token value',
+        }));
+      } else {
+        attr_notes = [];
+        for (const name of attrNames) {
+          const gaps = cookieAttrGaps(genomeAttrs[name], hit.set_cookie_attrs[name]);
+          if (gaps.length) {
+            attr_notes.push({
+              name,
+              note: 'genome_cookie_attrs_not_in_dna',
+              missing: gaps,
+              genome: genomeAttrs[name],
+              dna: hit.set_cookie_attrs[name],
+              hint: 'certificate flags differ from genome policy — flags only, never a value',
+            });
+          } else {
+            attr_notes.push({
+              name,
+              note: 'cookie_attrs_honored',
+              genome: genomeAttrs[name],
+              dna: hit.set_cookie_attrs[name],
+            });
+          }
+        }
+      }
+    }
+
     session_mint_notes.push({
       method,
       path_template: a.path_template,
       note: 'session_mint_honored',
       set_cookie_names: hit.set_cookie_names,
       genome_cookies: genomeCookies.length ? genomeCookies : undefined,
+      genome_cookie_attrs: attrNames.length ? genomeAttrs : undefined,
+      attr_notes: attr_notes?.length ? attr_notes : undefined,
     });
+  }
+
+  // Tip 1.0.46 — CSRF cookie **name** vs any cookie the certificate has seen.
+  // The verify route often does not Set-Cookie; the form page does. Never a token value.
+  /** @type {object[]} */
+  const csrf_notes = [];
+  const dnaCookieNames = new Set();
+  let dnaHasCookieOpinion = false;
+  for (const l of liveRoutes) {
+    if (!Array.isArray(l.set_cookie_names)) continue;
+    dnaHasCookieOpinion = true;
+    for (const n of l.set_cookie_names) dnaCookieNames.add(n);
+  }
+  for (const a of csrfAnns) {
+    const genomeCookies = Array.isArray(a.cwl_csrf_cookies)
+      ? a.cwl_csrf_cookies
+      : csrfCookieNamesFromEffects(a.cwl_csrf_effects);
+    if (!genomeCookies.length) continue;
+    const method = String(a.method || 'GET').toUpperCase();
+    if (!dnaHasCookieOpinion) {
+      csrf_notes.push({
+        method,
+        path_template: a.path_template,
+        note: 'dna_predates_response_surface',
+        genome_cookies: genomeCookies,
+        hint: 'learn again — genome names the CSRF cookie, never the token',
+      });
+      continue;
+    }
+    const missing = genomeCookies.filter((n) => !dnaCookieNames.has(n));
+    if (missing.length) {
+      csrf_notes.push({
+        method,
+        path_template: a.path_template,
+        note: 'csrf_cookie_not_in_dna',
+        genome_cookies: genomeCookies,
+        missing,
+        hint: 'certificate never saw this CSRF cookie name — name only, never invent a value',
+      });
+    } else {
+      csrf_notes.push({
+        method,
+        path_template: a.path_template,
+        note: 'csrf_cookie_honored',
+        genome_cookies: genomeCookies,
+      });
+    }
   }
 
   const identityOk = missing_in_dna.length === 0;
@@ -857,12 +1066,14 @@ export function compareCwlSurfaceToDna(cwlDnaOrSeed, liveDna, opts = {}) {
     fingerprint_mismatches,
     content_class_notes,
     session_mint_notes,
+    csrf_notes,
     bridge_annotations: {
       cwl_stream: streamAnns,
       multipart: multipartAnns,
       upstream_proxy: upstreamAnns,
       host_bytes: hostByteAnns,
       credential: credentialAnns,
+      csrf: csrfAnns,
     },
     deploy_profile: profile
       ? {

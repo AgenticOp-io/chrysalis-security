@@ -17,6 +17,8 @@ import { fileURLToPath } from 'node:url';
 import { createHelixProxy } from '../packages/helix-proxy/index.mjs';
 import {
   setCookieNames,
+  setCookiePolicy,
+  setCookieObservation,
   redirectTarget,
   learnFromObservations,
   scoreResponse,
@@ -83,6 +85,20 @@ assert(setCookieNames(undefined).length === 0, 'no cookies is an empty list, not
 assert(
   JSON.stringify(setCookieNames(['a=1', 'a=2'])) === JSON.stringify(['a']),
   'names dedupe',
+);
+assert(
+  JSON.stringify(setCookiePolicy('sid=s3cr3t-session-value; HttpOnly; Secure; Path=/; SameSite=Lax')) ===
+    JSON.stringify({ sid: { httponly: true, secure: true, path: '/', samesite: 'lax' } }),
+  'policy flags are learned; the value is discarded',
+);
+assert(
+  !JSON.stringify(setCookiePolicy('sid=s3cr3t-session-value; HttpOnly')).includes('s3cr3t'),
+  'policy parser never keeps the token',
+);
+assert(
+  JSON.stringify(setCookieObservation('sid=s3cr3t-session-value; HttpOnly; Path=/')) ===
+    JSON.stringify(['sid; HttpOnly; Path=/']),
+  'learn log keeps flags and drops the value',
 );
 
 assert(redirectTarget('/dashboard', 'app.example') === 'self', 'relative redirect is self');
@@ -162,6 +178,10 @@ assert(login, 'login learned');
 assert(
   JSON.stringify(login.set_cookie_names) === JSON.stringify(['sid']),
   `login mints sid: ${JSON.stringify(login.set_cookie_names)}`,
+);
+assert(
+  login.set_cookie_attrs?.sid?.httponly === true && login.set_cookie_attrs?.sid?.path === '/',
+  `login cookie flags: ${JSON.stringify(login.set_cookie_attrs)}`,
 );
 assert(
   JSON.stringify(login.redirect_targets) === JSON.stringify(['self']),

@@ -539,4 +539,144 @@ if (tip39Ok === tip39Golds.length) {
   console.log(`CUTOVER_TIP_1_0_39_PARTIAL (${tip39Ok}/${tip39Golds.length})`);
 }
 
+console.log('=== cutover: tip 1.0.40–1.0.46 (repeats / cookie attrs / CSRF name) ===');
+const tip46Golds = [
+  { dir: '48-html-repeat-else', minRoutes: 1, allHtml: true },
+  { dir: '49-html-repeat-nested', minRoutes: 1, allHtml: true },
+  { dir: '50-html-repeat-nested-filter', minRoutes: 1, allHtml: true },
+  { dir: '51-session-cookie-attrs', minRoutes: 2 },
+  { dir: '52-cors-allow-origin', minRoutes: 2 },
+  { dir: '53-rate-limit-rpm', minRoutes: 2 },
+  { dir: '54-csrf-verify-cookie', minRoutes: 2 },
+];
+const tip46Seen = new Map();
+let tip46Ok = 0;
+for (const g of tip46Golds) {
+  const cwlPath = path.join(cwlRoot, 'fixtures', 'language-gold', g.dir, 'routes.cwl');
+  if (!fs.existsSync(cwlPath)) {
+    console.log(`CUTOVER_TIP46_SKIP (missing ${g.dir})`);
+    continue;
+  }
+  const seeded = await seedDnaFromCwlFile(cwlPath, {
+    app_id: `cutover-${g.dir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${g.dir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((seeded.routes?.length ?? 0) >= g.minRoutes, `${g.dir} route count`);
+  if (g.allHtml) {
+    assert(
+      seeded.routes.every((r) => r.content_class === 'html'),
+      `${g.dir} page DNA stays HTML`,
+    );
+  }
+  assert(
+    seeded.routes.every((r) => !Array.isArray(r.set_cookie_names)),
+    `${g.dir} seed does not invent set_cookie_names`,
+  );
+  assert(
+    seeded.routes.every((r) => r.set_cookie_attrs == null || Object.keys(r.set_cookie_attrs).length === 0),
+    `${g.dir} seed does not invent cookie attrs`,
+  );
+  const certified = stripBridgeEnvelope(seeded);
+  const cmp = compareCwlSurfaceToDna(seeded, certified);
+  assert(cmp.ok === true, `${g.dir} self-cutover: ${JSON.stringify(cmp.missing_in_dna)}`);
+  tip46Seen.set(g.dir, { seeded, cmp });
+  tip46Ok += 1;
+}
+
+// 1.0.40–1.0.42 / 1.0.44–1.0.45 — pin-only page or middleware DNA; no new Secure surface
+const repeatElse = tip46Seen.get('48-html-repeat-else');
+if (repeatElse) {
+  assert(
+    repeatElse.seeded.routes.some((r) => r.path_template === '/sessions'),
+    'empty-collection repeat page is a DNA surface',
+  );
+}
+const nested = tip46Seen.get('49-html-repeat-nested');
+if (nested) {
+  assert(
+    nested.seeded.routes.some((r) => r.path_template === '/regions'),
+    'nested repeat page is a DNA surface',
+  );
+}
+
+// 1.0.43 — genome policy attrs vs live Set-Cookie flags (never a token value)
+const attrGold = tip46Seen.get('51-session-cookie-attrs');
+if (attrGold) {
+  const login = attrGold.cmp.bridge_annotations.credential.find(
+    (a) => a.method === 'POST' && a.path_template === '/login',
+  );
+  assert(login, 'attr login carries credential effects');
+  assert(
+    login.cwl_credential_effects.some((e) => String(e).startsWith('session.mint cookie sid')),
+    `mint with attrs: ${JSON.stringify(login.cwl_credential_effects)}`,
+  );
+  assert(login.cwl_session_cookies?.includes('sid'), 'name still extracted when attrs follow');
+  assert(
+    login.cwl_session_cookie_attrs?.sid?.httponly === true &&
+      login.cwl_session_cookie_attrs.sid.secure === true &&
+      login.cwl_session_cookie_attrs.sid.path === '/' &&
+      login.cwl_session_cookie_attrs.sid.samesite === 'lax',
+    `attrs on annotation: ${JSON.stringify(login.cwl_session_cookie_attrs)}`,
+  );
+
+  const learned = stripBridgeEnvelope(attrGold.seeded);
+  const loginRoute = learned.routes.find((r) => r.method === 'POST' && r.path_template === '/login');
+  loginRoute.set_cookie_names = ['sid'];
+  loginRoute.set_cookie_attrs = {
+    sid: { httponly: true, secure: true, path: '/', samesite: 'lax' },
+  };
+  const honored = compareCwlSurfaceToDna(attrGold.seeded, learned);
+  const okNote = honored.session_mint_notes.find((n) => n.path_template === '/login');
+  assert(okNote?.note === 'session_mint_honored', `named+attrs honored: ${JSON.stringify(okNote)}`);
+  assert(
+    okNote.attr_notes?.some((n) => n.note === 'cookie_attrs_honored' && n.name === 'sid'),
+    `attr honor: ${JSON.stringify(okNote.attr_notes)}`,
+  );
+
+  loginRoute.set_cookie_attrs = { sid: { path: '/' } };
+  const mismatch = compareCwlSurfaceToDna(attrGold.seeded, learned);
+  const bad = mismatch.session_mint_notes.find((n) => n.path_template === '/login');
+  assert(
+    bad?.attr_notes?.some((n) => n.note === 'genome_cookie_attrs_not_in_dna' && n.missing.includes('httponly')),
+    `attr mismatch: ${JSON.stringify(bad?.attr_notes)}`,
+  );
+  assert(mismatch.ok === true, 'attr mismatch is a note, not a cutover failure');
+}
+
+// 1.0.46 — CSRF cookie name vs any cookie the certificate has seen
+const csrfGold = tip46Seen.get('54-csrf-verify-cookie');
+if (csrfGold) {
+  const form = csrfGold.cmp.bridge_annotations.csrf.find(
+    (a) => a.method === 'POST' && a.path_template === '/form',
+  );
+  assert(form?.cwl_csrf_effects?.includes('csrf.verify cookie csrf'), 'named csrf effect');
+  assert(form.cwl_csrf_cookies?.includes('csrf'), `csrf name: ${JSON.stringify(form.cwl_csrf_cookies)}`);
+  const bare = csrfGold.cmp.bridge_annotations.csrf.find((a) => a.path_template === '/form-default');
+  assert(bare?.cwl_csrf_effects?.includes('csrf.verify'), 'bare csrf.verify stays unnamed');
+  assert(!bare.cwl_csrf_cookies?.length, 'bare verify does not invent a cookie name');
+
+  const learned = stripBridgeEnvelope(csrfGold.seeded);
+  // CSRF cookie is usually set on a GET form page, not the POST that verifies it.
+  const getForm = learned.routes.find((r) => r.path_template === '/form') || learned.routes[0];
+  getForm.set_cookie_names = ['csrf'];
+  const honored = compareCwlSurfaceToDna(csrfGold.seeded, learned);
+  const okNote = honored.csrf_notes.find((n) => n.path_template === '/form');
+  assert(okNote?.note === 'csrf_cookie_honored', `csrf honored: ${JSON.stringify(okNote)}`);
+
+  getForm.set_cookie_names = ['other'];
+  const mismatch = compareCwlSurfaceToDna(csrfGold.seeded, learned);
+  const bad = mismatch.csrf_notes.find((n) => n.path_template === '/form');
+  assert(bad?.note === 'csrf_cookie_not_in_dna', `csrf mismatch: ${JSON.stringify(bad)}`);
+  assert(bad.missing.includes('csrf'), 'missing names the genome CSRF cookie');
+  assert(mismatch.ok === true, 'CSRF name mismatch is a note, not a cutover failure');
+}
+
+if (tip46Ok === tip46Golds.length) {
+  console.log('CUTOVER_TIP_1_0_46_OK');
+} else if (tip46Ok > 0) {
+  console.log(`CUTOVER_TIP_1_0_46_PARTIAL (${tip46Ok}/${tip46Golds.length})`);
+}
+
 console.log('CUTOVER_SMOKE_OK');

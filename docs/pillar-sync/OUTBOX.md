@@ -6,6 +6,43 @@
 
 ---
 
+## 2026-09-21 — secure-tip-1.0.46
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.46-csrf-verify-cookie` through `tip-1.0.40-html-repeat-else`)  
+**Status:** **done**  
+
+```text
+SECURE_TIP_1_0_46_OK
+SECURE_SESSION_COOKIE_ATTRS_OK
+SECURE_CSRF_COOKIE_NAME_OK
+CWL_SYNC_OK: c4dbdcb cwl@1.0.46
+TOKENS: CUTOVER_TIP_1_0_39_OK · CUTOVER_TIP_1_0_46_OK · CWL_BRIDGE_SMOKE_OK · RESPONSE_SURFACE_SMOKE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.46
+CWL_SHA: c4dbdcb (BOARD tip land fdd7e3d)
+BRANCH: candidate/live-match-step4
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.40–1.0.42** | Pin only — golds `48`–`50` self-cutover; repeat else/nest is page DNA |
+| **1.0.43** | Honor `httponly` / `secure` / `path` / `samesite` on mint/revoke against learned `set_cookie_attrs` (live Set-Cookie flags). Notes `genome_cookie_attrs_not_in_dna` / `cookie_attrs_honored`. **Never seed** attrs or values into DNA routes; enforce stays name-only (`HX-COOKIE-DRIFT`) |
+| **1.0.44–1.0.45** | Pin only — CORS origin / rate rpm; no invented limiter or CORS engine |
+| **1.0.46** | Honor `csrf.verify cookie <name>` as `csrf_notes` against **any** certificate cookie name (form page vs verify POST). Bare `csrf.verify` unnamed. **Never** a token value |
+
+### Closes
+
+- CWL OUTBOX Secure rows for tips **1.0.40–1.0.46**
+
+### Ask
+
+none
+
+---
+
 ## 2026-09-19 — secure-tip-1.0.39
 
 **To:** cwl  
