@@ -679,4 +679,71 @@ if (tip46Ok === tip46Golds.length) {
   console.log(`CUTOVER_TIP_1_0_46_PARTIAL (${tip46Ok}/${tip46Golds.length})`);
 }
 
+console.log('=== cutover: tip 1.0.47–1.0.51 (auth.require cookie / db / mail / cors methods / cache) ===');
+const tip51Golds = [
+  { dir: '55-auth-require-cookie', minRoutes: 2 },
+  { dir: '56-db-table-name', minRoutes: 3 },
+  { dir: '57-mail-send-template', minRoutes: 2 },
+  { dir: '58-cors-allow-methods', minRoutes: 3 },
+  { dir: '59-cache-max-age', minRoutes: 2 },
+];
+const tip51Seen = new Map();
+let tip51Ok = 0;
+for (const g of tip51Golds) {
+  const cwlPath = path.join(cwlRoot, 'fixtures', 'language-gold', g.dir, 'routes.cwl');
+  if (!fs.existsSync(cwlPath)) {
+    console.log(`CUTOVER_TIP51_SKIP (missing ${g.dir})`);
+    continue;
+  }
+  const seeded = await seedDnaFromCwlFile(cwlPath, {
+    app_id: `cutover-${g.dir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${g.dir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((seeded.routes?.length ?? 0) >= g.minRoutes, `${g.dir} route count`);
+  assert(
+    seeded.routes.every((r) => !Array.isArray(r.set_cookie_names)),
+    `${g.dir} seed does not invent set_cookie_names`,
+  );
+  const certified = stripBridgeEnvelope(seeded);
+  const cmp = compareCwlSurfaceToDna(seeded, certified);
+  assert(cmp.ok === true, `${g.dir} self-cutover: ${JSON.stringify(cmp.missing_in_dna)}`);
+  tip51Seen.set(g.dir, { seeded, cmp });
+  tip51Ok += 1;
+}
+
+// 1.0.47 — genome names the required session cookie; presence vs any DNA cookie
+const requireGold = tip51Seen.get('55-auth-require-cookie');
+if (requireGold) {
+  const me = requireGold.cmp.bridge_annotations.credential.find(
+    (a) => a.method === 'GET' && a.path_template === '/me',
+  );
+  assert(me?.cwl_credential_effects?.includes('auth.require cookie sid'), 'named auth.require');
+  assert(me.cwl_auth_require_cookies?.includes('sid'), `require name: ${JSON.stringify(me.cwl_auth_require_cookies)}`);
+  const admin = requireGold.cmp.bridge_annotations.credential.find((a) => a.path_template === '/admin');
+  assert(admin?.cwl_credential_effects?.includes('auth.require'), 'bare auth.require stays unnamed');
+  assert(!admin.cwl_auth_require_cookies?.length, 'bare require does not invent a cookie name');
+
+  const learned = stripBridgeEnvelope(requireGold.seeded);
+  const loginish = learned.routes.find((r) => r.path_template === '/admin') || learned.routes[0];
+  loginish.set_cookie_names = ['sid'];
+  const honored = compareCwlSurfaceToDna(requireGold.seeded, learned);
+  const okNote = honored.auth_require_notes.find((n) => n.path_template === '/me');
+  assert(okNote?.note === 'auth_require_cookie_honored', `auth.require honored: ${JSON.stringify(okNote)}`);
+
+  loginish.set_cookie_names = ['other'];
+  const mismatch = compareCwlSurfaceToDna(requireGold.seeded, learned);
+  const bad = mismatch.auth_require_notes.find((n) => n.path_template === '/me');
+  assert(bad?.note === 'auth_require_cookie_not_in_dna', `auth.require mismatch: ${JSON.stringify(bad)}`);
+  assert(bad.missing.includes('sid'), 'missing names the genome required cookie');
+  assert(mismatch.ok === true, 'auth.require name mismatch is a note, not a cutover failure');
+}
+
+if (tip51Ok === tip51Golds.length) {
+  console.log('CUTOVER_TIP_1_0_51_OK');
+} else if (tip51Ok > 0) {
+  console.log(`CUTOVER_TIP_1_0_51_PARTIAL (${tip51Ok}/${tip51Golds.length})`);
+}
+
 console.log('CUTOVER_SMOKE_OK');

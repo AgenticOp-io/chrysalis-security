@@ -276,8 +276,13 @@ export async function resolveCwlModuleForPath(cwlPath, opts = {}) {
   return parseCwlModule(fs.readFileSync(cwlPath, 'utf8'), path.basename(cwlPath));
 }
 
-/** Credential / session intent (CWL 1.0.33+, RFC-0032). Tip 1.0.38 may name the cookie. */
-const CREDENTIAL_EFFECT_BASES = Object.freeze(['auth.verify', 'session.mint', 'session.revoke']);
+/** Credential / session intent (CWL 1.0.33+, RFC-0032). Tip 1.0.47 may name auth.require's cookie. */
+const CREDENTIAL_EFFECT_BASES = Object.freeze([
+  'auth.verify',
+  'auth.require',
+  'session.mint',
+  'session.revoke',
+]);
 
 /**
  * True when an effect tag is credential intent — bare `session.mint` or
@@ -404,6 +409,29 @@ export function csrfCookieNamesFromEffects(effects) {
 }
 
 /**
+ * Cookie **name** from `auth.require cookie <name>` (tip 1.0.47). Never a token value.
+ * @param {unknown} effect
+ * @returns {string|null}
+ */
+export function authRequireCookieNameFromEffect(effect) {
+  const m = String(effect || '').match(/^auth\.require\s+cookie\s+([A-Za-z_][A-Za-z0-9_-]*)$/);
+  return m ? m[1] : null;
+}
+
+/**
+ * @param {string[]} effects
+ * @returns {string[]}
+ */
+export function authRequireCookieNamesFromEffects(effects) {
+  const names = new Set();
+  for (const e of effects || []) {
+    const n = authRequireCookieNameFromEffect(e);
+    if (n) names.add(n);
+  }
+  return [...names];
+}
+
+/**
  * Genome cookie policy flags the certificate does not honor (subset check — extra DNA flags are fine).
  * @param {{ httponly?: boolean, secure?: boolean, path?: string, samesite?: string }} genome
  * @param {{ httponly?: boolean, secure?: boolean, path?: string, samesite?: string }|undefined} learned
@@ -480,6 +508,9 @@ export function genomeRouteAnnotations(mod) {
       const attrs = sessionCookieAttrsFromEffects(credential);
       // Tip 1.0.43 — policy flags only; still never a token value.
       if (Object.keys(attrs).length) fragment.cwl_session_cookie_attrs = attrs;
+      const requireCookies = authRequireCookieNamesFromEffects(credential);
+      // Tip 1.0.47 — genome may name the required session cookie; never a value.
+      if (requireCookies.length) fragment.cwl_auth_require_cookies = requireCookies;
       carries = true;
     }
 
@@ -581,7 +612,7 @@ export function buildUpstreamTargetsReport(seed, opts = {}) {
 
 /**
  * Ops severity overlay from the genome: which certified routes are credential surfaces
- * (RFC-0032 `auth.verify` / `session.mint` / `session.revoke`).
+ * (RFC-0032 `auth.verify` / `session.mint` / `session.revoke`, plus `auth.require`).
  *
  * Written beside the certificate, never inside it — `app-dna-v1` stays identity only.
  * Hand-authored overlays are equally valid when there is no CWL (D5).
@@ -1052,6 +1083,46 @@ export function compareCwlSurfaceToDna(cwlDnaOrSeed, liveDna, opts = {}) {
     }
   }
 
+  // Tip 1.0.47 — auth.require cookie **name** vs any cookie the certificate has seen.
+  // The protected route usually does not Set-Cookie; login does. Never a token value.
+  /** @type {object[]} */
+  const auth_require_notes = [];
+  for (const a of credentialAnns) {
+    const genomeCookies = Array.isArray(a.cwl_auth_require_cookies)
+      ? a.cwl_auth_require_cookies
+      : authRequireCookieNamesFromEffects(a.cwl_credential_effects);
+    if (!genomeCookies.length) continue;
+    const method = String(a.method || 'GET').toUpperCase();
+    if (!dnaHasCookieOpinion) {
+      auth_require_notes.push({
+        method,
+        path_template: a.path_template,
+        note: 'dna_predates_response_surface',
+        genome_cookies: genomeCookies,
+        hint: 'learn again — genome names the required session cookie, never the token',
+      });
+      continue;
+    }
+    const missing = genomeCookies.filter((n) => !dnaCookieNames.has(n));
+    if (missing.length) {
+      auth_require_notes.push({
+        method,
+        path_template: a.path_template,
+        note: 'auth_require_cookie_not_in_dna',
+        genome_cookies: genomeCookies,
+        missing,
+        hint: 'certificate never saw this required cookie name — name only, never invent a value',
+      });
+    } else {
+      auth_require_notes.push({
+        method,
+        path_template: a.path_template,
+        note: 'auth_require_cookie_honored',
+        genome_cookies: genomeCookies,
+      });
+    }
+  }
+
   const identityOk = missing_in_dna.length === 0;
   const fpOk = !strictFingerprints || fingerprint_mismatches.length === 0;
   const ok = identityOk && fpOk;
@@ -1067,6 +1138,7 @@ export function compareCwlSurfaceToDna(cwlDnaOrSeed, liveDna, opts = {}) {
     content_class_notes,
     session_mint_notes,
     csrf_notes,
+    auth_require_notes,
     bridge_annotations: {
       cwl_stream: streamAnns,
       multipart: multipartAnns,
