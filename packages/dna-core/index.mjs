@@ -51,6 +51,77 @@ export function setCookieNames(setCookie) {
 }
 
 /**
+ * Cookie **policy** flags from Set-Cookie (CWL tip 1.0.43 shape). Never the token value —
+ * everything before the first `;` is discarded except the name.
+ * @param {string|string[]|undefined|null} setCookie
+ * @returns {Record<string, { httponly?: boolean, secure?: boolean, path?: string, samesite?: string }>}
+ */
+export function setCookiePolicy(setCookie) {
+  if (!setCookie) return {};
+  const list = Array.isArray(setCookie) ? setCookie : [setCookie];
+  /** @type {Record<string, { httponly?: boolean, secure?: boolean, path?: string, samesite?: string }>} */
+  const out = {};
+  for (const raw of list) {
+    const parts = String(raw || '')
+      .split(';')
+      .map((p) => p.trim())
+      .filter(Boolean);
+    if (!parts.length) continue;
+    const eq = parts[0].indexOf('=');
+    const name = (eq >= 0 ? parts[0].slice(0, eq) : parts[0]).trim();
+    if (!name) continue;
+    /** @type {{ httponly?: boolean, secure?: boolean, path?: string, samesite?: string }} */
+    const attrs = { ...(out[name] || {}) };
+    for (let i = 1; i < parts.length; i++) {
+      const seg = parts[i];
+      const low = seg.toLowerCase();
+      if (low === 'httponly') {
+        attrs.httponly = true;
+        continue;
+      }
+      if (low === 'secure') {
+        attrs.secure = true;
+        continue;
+      }
+      const kv = /^([a-z]+)=(.*)$/i.exec(seg);
+      if (!kv) continue;
+      const key = kv[1].toLowerCase();
+      const val = kv[2].trim();
+      if (key === 'path' && /^\/[A-Za-z0-9_./-]*$/.test(val)) attrs.path = val;
+      if (key === 'samesite' && /^(lax|strict|none)$/i.test(val)) attrs.samesite = val.toLowerCase();
+    }
+    out[name] = attrs;
+  }
+  return out;
+}
+
+/**
+ * Observation form of Set-Cookie: **name + policy flags**, never the token.
+ * `sid=secret; HttpOnly; Path=/` → `sid; HttpOnly; Path=/`
+ * @param {string|string[]|undefined|null} setCookie
+ * @returns {string[]}
+ */
+export function setCookieObservation(setCookie) {
+  if (!setCookie) return [];
+  const list = Array.isArray(setCookie) ? setCookie : [setCookie];
+  /** @type {string[]} */
+  const out = [];
+  for (const raw of list) {
+    const parts = String(raw || '')
+      .split(';')
+      .map((p) => p.trim())
+      .filter(Boolean);
+    if (!parts.length) continue;
+    const eq = parts[0].indexOf('=');
+    const name = (eq >= 0 ? parts[0].slice(0, eq) : parts[0]).trim();
+    if (!name) continue;
+    const flags = parts.slice(1);
+    out.push(flags.length ? `${name}; ${flags.join('; ')}` : name);
+  }
+  return out;
+}
+
+/**
  * Where a redirect points, as a certifiable shape rather than a URL.
  *
  * Relative and same-host targets collapse to `self` so ordinary navigation does not churn
@@ -191,6 +262,7 @@ export function learnFromObservations(observations, opts = {}) {
         request_key_fingerprint: null,
         query_names: new Set(),
         cookie_names: new Set(),
+        cookie_policy: {},
         redirect_targets: new Set(),
       };
       byRoute.set(key, route);
@@ -214,6 +286,19 @@ export function learnFromObservations(observations, opts = {}) {
       for (const n of qfp.split(',')) route.query_names.add(n);
     }
     for (const name of setCookieNames(obs.setCookie)) route.cookie_names.add(name);
+    const learnedPolicy = setCookiePolicy(obs.setCookie);
+    for (const [name, attrs] of Object.entries(learnedPolicy)) {
+      const prev = route.cookie_policy[name] || {};
+      route.cookie_policy[name] = {
+        httponly: Boolean(prev.httponly || attrs.httponly) || undefined,
+        secure: Boolean(prev.secure || attrs.secure) || undefined,
+        path: attrs.path || prev.path,
+        samesite: attrs.samesite || prev.samesite,
+      };
+      for (const k of Object.keys(route.cookie_policy[name])) {
+        if (route.cookie_policy[name][k] == null) delete route.cookie_policy[name][k];
+      }
+    }
     const target = redirectTarget(obs.location, obs.host);
     if (target) route.redirect_targets.add(target);
   }
@@ -231,6 +316,7 @@ export function learnFromObservations(observations, opts = {}) {
       // Empty arrays are a claim, not a gap: this route was observed and never minted a
       // cookie / redirected. Absent (legacy DNA) means unknown, and is not enforced.
       set_cookie_names: [...r.cookie_names].sort(),
+      set_cookie_attrs: r.cookie_policy,
       redirect_targets: [...r.redirect_targets].sort(),
     }))
     .sort((a, b) => routeKey(a).localeCompare(routeKey(b)));

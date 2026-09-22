@@ -16,7 +16,7 @@ Two optional route fields close that gap:
 
 ## Names and hostnames, never values
 
-A cookie **value** is the session token — the thing being protected. DNA files get copied into repos, tickets, and SIEM sinks, so a certificate that carried one would be a liability. Helix records only the name before `=`, both in the learned observation log and in the certificate. The same rule applies to hole events: `HX-COOKIE-DRIFT` names the cookie and nothing else.
+A cookie **value** is the session token — the thing being protected. DNA files get copied into repos, tickets, and SIEM sinks, so a certificate that carried one would be a liability. Helix records only the name before `=`, both in the learned observation log and in the certificate. Policy flags after the first `;` (`HttpOnly`, `Secure`, `Path`, `SameSite`) are kept so cutover can honor a genome that names them (tip **1.0.43**). The same rule applies to hole events: `HX-COOKIE-DRIFT` names the cookie and nothing else.
 
 Redirects collapse the same way. A `Location` that is relative, or points at the request's own host, is certified as `self`, so ordinary navigation does not churn the certificate on every path change. Anything else is stored as the bare hostname, because the hostname is the part that turns an open redirect into an exfiltration path. A `Location` that will not parse is recorded as `unparseable` rather than ignored.
 
@@ -33,7 +33,9 @@ If the login only mints `sid` on success and the learn window saw nothing but fa
 
 ## With the CWL genome
 
-A genome can declare that a route mints a session (RFC-0032 `session.mint`), and from tip **1.0.38** it may also name the cookie (`session.mint cookie sid`). It still cannot invent a **value**, so `helix seed-cwl` does **not** write `set_cookie_names` into DNA routes — traffic decides which cookies the app actually sets. The name rides the bridge annotation (`cwl_session_cookies`) for cutover.
+A genome can declare that a route mints a session (RFC-0032 `session.mint`), and from tip **1.0.38** it may also name the cookie (`session.mint cookie sid`). Tip **1.0.43** may add policy flags (`httponly`, `secure`, `path /`, `samesite lax`). It still cannot invent a **value**, so `helix seed-cwl` does **not** write `set_cookie_names` or `set_cookie_attrs` into DNA routes — traffic decides which cookies the app actually sets and which flags they carry. The name and flags ride bridge annotations (`cwl_session_cookies`, `cwl_session_cookie_attrs`) for cutover.
+
+Learn records `set_cookie_attrs` from live `Set-Cookie` the same way: flags and path only. Enforce still keys on **names** (`HX-COOKIE-DRIFT`); attr disagreements are cutover notes, not a new hole.
 
 `helix cutover` cross-checks the two afterwards and reports `session_mint_notes`:
 
@@ -41,8 +43,12 @@ A genome can declare that a route mints a session (RFC-0032 `session.mint`), and
 | --- | --- |
 | `session_mint_honored` | Genome says the route mints a session; the certificate's cookies cover any genome-named cookie (or bare mint with any observed cookie) |
 | `genome_cookie_not_in_dna` | Genome named `sid` but the certificate's `set_cookie_names` does not include it |
+| `genome_cookie_attrs_not_in_dna` | Genome declared httponly/secure/path/samesite the certificate did not learn |
+| `cookie_attrs_honored` | Learned flags cover the genome policy (subset) |
 | `genome_mints_session_dna_sets_no_cookie` | The certificate watched this route and saw no cookie — learn window likely missed a successful login, or the genome is stale |
 | `dna_predates_response_surface` | The certificate has no opinion yet; learn again |
+
+Tip **1.0.46** `csrf.verify cookie csrf` is a different check (`csrf_notes`): the CSRF cookie is often set on a form page, not the POST that verifies it, so cutover looks for the name on **any** certified route.
 
 These are notes, not cutover failures. DNA owns observed behaviour, and a disagreement means a human should look — not that traffic should stop.
 
