@@ -6,6 +6,39 @@
 
 ---
 
+## 2026-09-26 — secure-tip-1.0.53
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.53-cors-allow-credentials`, includes tip **1.0.52**)  
+**Status:** **done**  
+
+```text
+SECURE_TIP_1_0_53_OK
+CWL_SYNC_OK: 078a26c cwl@1.0.53
+TOKENS: CUTOVER_TIP_1_0_51_OK · CUTOVER_TIP_1_0_53_OK · CWL_BRIDGE_SMOKE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.53
+CWL_SHA: 078a26c (BOARD tip land a39edda)
+BRANCH: candidate/live-match-step4
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.52** | Pin only — gold `60` self-cutover. `io host <name>` stays genome intent; DNA `host` stays the deploy profile, not a rewritten HTTP client |
+| **1.0.53** | Pin only — gold `61` self-cutover. `cors.allow … credentials` stays genome intent; no CORS engine |
+
+### Closes
+
+- CWL OUTBOX Secure row for tips **1.0.52–1.0.53**
+
+### Ask
+
+none
+
+---
+
 ## 2026-09-22 — secure-tip-1.0.51
 
 **To:** cwl  

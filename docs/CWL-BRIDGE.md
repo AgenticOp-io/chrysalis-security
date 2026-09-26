@@ -19,7 +19,7 @@ npm run helix -- cutover --cwl path/to/routes.cwl --dna certificates/app.json \
 
 Env: `CHRYSALIS_CWL_ROOT` if the language pillar (fixtures) is not at `../chrysalis-cwl`.
 
-## Pin (CWL tip @ 1.0.51)
+## Pin (CWL tip @ 1.0.53)
 
 ```json
 "@agenticop-io/cwl": "file:../chrysalis-cwl/packages/cwl"
@@ -27,13 +27,13 @@ Env: `CHRYSALIS_CWL_ROOT` if the language pillar (fixtures) is not at `../chrysa
 
 Follows CWL tip DNA seed (nested FP depth ≤2, request/query name FPs, SSE `cwl_stream`, multipart field/file fingerprints, page/layout HTML surfaces + page-island emit reverse, repeated markup as a CWL surface incl. `if`/`else`/nest, `pathTemplateShapeEqual` SoR, session cookie **names** + **policy attrs** on RFC-0032, CSRF + `auth.require` cookie **names**). Secure thin-wraps path-shape from dna-seed; cutover honors stream/multipart annotations when present. Protect stays DNA / D5.
 
-GitHub Packages — [`.npmrc.example`](../.npmrc.example). Optional registry `@agenticop-io/cwl@1.0.51` ≡ same tip.
+GitHub Packages — [`.npmrc.example`](../.npmrc.example). Optional registry `@agenticop-io/cwl@1.0.53` ≡ same tip.
 
 | Import | Role |
 | --- | --- |
 | `@agenticop-io/cwl/dna-seed` | Seed / profile / holes report (SoR) |
 | `@agenticop-io/cwl/parser` | Parse fallback |
-| Sibling fixtures | Gold `24` · `34` (SSE/multipart) · `36`–`38` (layout/cookie/page-island) · `39`–`45` (repeats / credentials / forwards / host bytes) · `46`–`54` (cookie names/attrs / CSRF / repeats) · `55` (`auth.require cookie`) · `56`–`59` (db table / mail template / CORS methods / cache.max-age — pin only) |
+| Sibling fixtures | Gold `24` · `34` (SSE/multipart) · `36`–`38` (layout/cookie/page-island) · `39`–`45` (repeats / credentials / forwards / host bytes) · `46`–`54` (cookie names/attrs / CSRF / repeats) · `55` (`auth.require cookie`) · `56`–`59` (db table / mail template / CORS methods / cache.max-age — pin only) · `60`–`61` (`io host` / CORS credentials — pin only) |
 
 ## Genome facts beside the seed (tip 1.0.33–1.0.36)
 
@@ -63,7 +63,7 @@ npm run helix -- sensitivity --cwl app.cwl --out sensitivity.json # credential s
 
 Declared media type vs learned `content_class` is a **note** (`cwl_declared_media_type_vs_dna_content_class`), never a silent DNA rewrite: traffic decides after learn.
 
-`session.mint` is cross-checked against the certificate's response surface ([RESPONSE-SURFACE.md](./RESPONSE-SURFACE.md)). Tip **1.0.38** may name the cookie (`session.mint cookie sid`); tip **1.0.43** may add policy flags (`httponly secure path / samesite lax`). Cutover reports `session_mint_notes` — `session_mint_honored`, `genome_mints_session_dna_sets_no_cookie`, `genome_cookie_not_in_dna`, `genome_cookie_attrs_not_in_dna`, or `dna_predates_response_surface` — and **never** seeds a cookie name, flag, or value into DNA routes. Tip **1.0.46** names the CSRF cookie (`csrf.verify cookie csrf`) as `csrf_notes` against any `set_cookie_names` in the certificate. Tip **1.0.47** names the required session cookie (`auth.require cookie sid`) as `auth_require_notes` the same way. Tips **1.0.40–1.0.42** / **1.0.44–1.0.45** / **1.0.48–1.0.51** are pin-only (page DNA / CORS / rate / db table / mail template / cache.max-age — no invented limiter, CORS, SQL, SMTP, or CDN engines).
+`session.mint` is cross-checked against the certificate's response surface ([RESPONSE-SURFACE.md](./RESPONSE-SURFACE.md)). Tip **1.0.38** may name the cookie (`session.mint cookie sid`); tip **1.0.43** may add policy flags (`httponly secure path / samesite lax`). Cutover reports `session_mint_notes` — `session_mint_honored`, `genome_mints_session_dna_sets_no_cookie`, `genome_cookie_not_in_dna`, `genome_cookie_attrs_not_in_dna`, or `dna_predates_response_surface` — and **never** seeds a cookie name, flag, or value into DNA routes. Tip **1.0.46** names the CSRF cookie (`csrf.verify cookie csrf`) as `csrf_notes` against any `set_cookie_names` in the certificate. Tip **1.0.47** names the required session cookie (`auth.require cookie sid`) as `auth_require_notes` the same way. Tips **1.0.40–1.0.42** / **1.0.44–1.0.45** / **1.0.48–1.0.53** are pin-only (page DNA / CORS / rate / db table / mail template / cache.max-age / `io host` / CORS credentials — no invented limiter, CORS, SQL, SMTP, CDN, or HTTP client).
 
 ## Rules (honest)
 
@@ -80,7 +80,7 @@ Promote / sign must use `stripBridgeEnvelope` (or `--strip-bridge`).
 
 ```bash
 npm run cwl-bridge-smoke   # → CWL_BRIDGE_SMOKE_OK
-npm run cutover-smoke      # → CUTOVER_MULTIHOST_OK · CUTOVER_TIP_1_0_37_OK · CUTOVER_TIP_1_0_39_OK · CUTOVER_TIP_1_0_46_OK · CUTOVER_TIP_1_0_51_OK · CUTOVER_SMOKE_OK
+npm run cutover-smoke      # → CUTOVER_MULTIHOST_OK · CUTOVER_TIP_1_0_37_OK · CUTOVER_TIP_1_0_39_OK · CUTOVER_TIP_1_0_46_OK · CUTOVER_TIP_1_0_51_OK · CUTOVER_TIP_1_0_53_OK · CUTOVER_SMOKE_OK
                            #   (default + RFC-0023 host=api seed/compare/enforce + dna_gaps)
 npm run live-match-smoke   # → LIVE_MATCH_OK (Rosetta Step 4 composite)
 ```
