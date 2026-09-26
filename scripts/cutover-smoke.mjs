@@ -746,4 +746,44 @@ if (tip51Ok === tip51Golds.length) {
   console.log(`CUTOVER_TIP_1_0_51_PARTIAL (${tip51Ok}/${tip51Golds.length})`);
 }
 
+console.log('=== cutover: tip 1.0.52–1.0.53 (io host / cors credentials — pin only) ===');
+const tip53Golds = [
+  { dir: '60-io-host', minRoutes: 2 },
+  { dir: '61-cors-allow-credentials', minRoutes: 3 },
+];
+let tip53Ok = 0;
+for (const g of tip53Golds) {
+  const cwlPath = path.join(cwlRoot, 'fixtures', 'language-gold', g.dir, 'routes.cwl');
+  if (!fs.existsSync(cwlPath)) {
+    console.log(`CUTOVER_TIP53_SKIP (missing ${g.dir})`);
+    continue;
+  }
+  const seeded = await seedDnaFromCwlFile(cwlPath, {
+    app_id: `cutover-${g.dir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${g.dir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((seeded.routes?.length ?? 0) >= g.minRoutes, `${g.dir} route count`);
+  assert(
+    seeded.routes.every((r) => !Array.isArray(r.set_cookie_names)),
+    `${g.dir} seed does not invent set_cookie_names`,
+  );
+  // Logical host / credentials flag stay genome intent — not DNA host identity or a CORS engine.
+  assert(
+    seeded.routes.every((r) => String(r.host || 'default') === 'default'),
+    `${g.dir} io host does not rewrite DNA host`,
+  );
+  const certified = stripBridgeEnvelope(seeded);
+  const cmp = compareCwlSurfaceToDna(seeded, certified);
+  assert(cmp.ok === true, `${g.dir} self-cutover: ${JSON.stringify(cmp.missing_in_dna)}`);
+  tip53Ok += 1;
+}
+
+if (tip53Ok === tip53Golds.length) {
+  console.log('CUTOVER_TIP_1_0_53_OK');
+} else if (tip53Ok > 0) {
+  console.log(`CUTOVER_TIP_1_0_53_PARTIAL (${tip53Ok}/${tip53Golds.length})`);
+}
+
 console.log('CUTOVER_SMOKE_OK');
