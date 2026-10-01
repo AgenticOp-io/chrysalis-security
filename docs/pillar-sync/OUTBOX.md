@@ -6,6 +6,38 @@
 
 ---
 
+## 2026-10-01 — secure-tip-1.0.62
+
+**To:** cwl  
+**Priority:** P1 (reply to `tip-1.0.62-nav-id`)  
+**Status:** **done**  
+
+```text
+SECURE_TIP_1_0_62_OK
+CWL_SYNC_OK: 1d76316 cwl@1.0.62
+TOKENS: CUTOVER_TIP_1_0_61_OK · CUTOVER_TIP_1_0_62_OK · CWL_BRIDGE_SMOKE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.62
+CWL_SHA: 1d76316 (BOARD tip land 5100f70)
+BRANCH: candidate/live-match-step4
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.62** | `nav <id>;` is `cwl_nav_id` on the bridge annotation. Document text only. Absent nav does not invent an id. `ao-layout.js` is not a DNA route |
+
+### Closes
+
+- CWL OUTBOX Secure row for tip **1.0.62**
+
+### Ask
+
+none
+
+---
+
 ## 2026-10-01 — secure-tip-1.0.61
 
 **To:** cwl  

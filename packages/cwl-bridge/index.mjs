@@ -564,6 +564,10 @@ export function genomeRouteAnnotations(mod) {
       fragment.cwl_open_redirect = true;
       carries = true;
     }
+    if (typeof r.navId === 'string' && /^[A-Za-z_][A-Za-z0-9_]*$/.test(r.navId)) {
+      fragment.cwl_nav_id = r.navId;
+      carries = true;
+    }
 
     const purposes = (r.handlerCookiePurposes || []).filter(
       (p) =>

@@ -990,4 +990,41 @@ if (tip61Ok === tip61Golds.length) {
   console.log(`CUTOVER_TIP_1_0_61_PARTIAL (${tip61Ok}/${tip61Golds.length})`);
 }
 
+console.log('=== cutover: tip 1.0.62 (shared nav id is document text) ===');
+{
+  const dir = '70-site-nav-id';
+  const cwlPath = path.join(cwlRoot, 'fixtures', 'language-gold', dir, 'routes.cwl');
+  assert(fs.existsSync(cwlPath), `missing ${dir}`);
+  const seeded = await seedDnaFromCwlFile(cwlPath, {
+    app_id: `cutover-${dir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${dir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((seeded.routes?.length ?? 0) >= 3, `${dir} route count`);
+  assert(
+    seeded.routes.every((r) => r.content_class === 'html'),
+    `${dir} nav id stays page HTML`,
+  );
+  assert(
+    seeded.routes.every((r) => !/ao-layout\.js/.test(String(r.path_template || ''))),
+    `${dir} menu script is not a DNA route`,
+  );
+  assert(
+    seeded.routes.every((r) => r.navId == null && r.cwl_nav_id == null),
+    `${dir} nav id is not a certified route field`,
+  );
+  const certified = stripBridgeEnvelope(seeded);
+  const cmp = compareCwlSurfaceToDna(seeded, certified);
+  assert(cmp.ok === true, `${dir} self-cutover: ${JSON.stringify(cmp.missing_in_dna)}`);
+  const anns = seeded.bridge?.annotations || [];
+  const paper = anns.find((a) => a.path_template === '/paper-cwl.html');
+  const about = anns.find((a) => a.path_template === '/whitepaper.html');
+  const home = anns.find((a) => a.path_template === '/');
+  assert(paper?.cwl_nav_id === 'docs', `paper nav id: ${JSON.stringify(paper?.cwl_nav_id)}`);
+  assert(about?.cwl_nav_id === 'about', `about nav id: ${JSON.stringify(about?.cwl_nav_id)}`);
+  assert(home?.cwl_nav_id == null, 'absent nav keeps the page name; Helix does not invent an id');
+  console.log('CUTOVER_TIP_1_0_62_OK');
+}
+
 console.log('CUTOVER_SMOKE_OK');
