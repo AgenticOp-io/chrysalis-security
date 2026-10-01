@@ -474,6 +474,13 @@ export function scoreResponse(route, res) {
     }
   }
 
+  // RFC-0034 overlay: only when the route carries declared purposes. Absent ⇒ unchanged (D5).
+  // The hole names the cookie. It never includes the token or the rejected preference bytes.
+  if (Array.isArray(route.cookie_purposes) && route.cookie_purposes.length) {
+    const purpose = scoreCookiePurpose(route.cookie_purposes, res.setCookie);
+    if (purpose) return purpose;
+  }
+
   // Response surface is checked before the JSON short-circuit: the routes that mint sessions
   // and redirect are usually HTML, and they are the ones worth certifying.
   if (Array.isArray(route.set_cookie_names)) {
@@ -1025,10 +1032,98 @@ export const HOLE_SEVERITIES = Object.freeze(['normal', 'high']);
  * @param {string} filePath
  * @returns {{ routes: object[] }|null}
  */
+/**
+ * Refuse a Set-Cookie whose name is not session, csrf, or an enumerated preference,
+ * and a preference value outside the declared class list (RFC-0034).
+ * @param {Array<{ name: string, purpose: string, values?: string[] }>} purposes
+ * @param {string|string[]|undefined|null} setCookie
+ * @returns {{ allow: false, hole: { code: string, reason: string } }|null}
+ */
+export function scoreCookiePurpose(purposes, setCookie) {
+  if (!Array.isArray(purposes) || !purposes.length) return null;
+  /** @type {Map<string, { name: string, purpose: string, values?: string[] }>} */
+  const byName = new Map();
+  for (const p of purposes) {
+    if (!p?.name) continue;
+    if (p.purpose !== 'session' && p.purpose !== 'csrf' && p.purpose !== 'preference') continue;
+    byName.set(String(p.name), p);
+  }
+  if (!byName.size) return null;
+  const list = !setCookie ? [] : Array.isArray(setCookie) ? setCookie : [setCookie];
+  /** @type {string[]} */
+  const unknown = [];
+  /** @type {string[]} */
+  const outside = [];
+  for (const raw of list) {
+    const first = String(raw || '').split(';')[0];
+    const eq = first.indexOf('=');
+    const name = (eq >= 0 ? first.slice(0, eq) : first).trim();
+    if (!name) continue;
+    const spec = byName.get(name);
+    if (!spec) {
+      unknown.push(name);
+      continue;
+    }
+    if (spec.purpose !== 'preference') continue;
+    const value = (eq >= 0 ? first.slice(eq + 1) : '').trim().toLowerCase();
+    const allowed = (spec.values || []).map((v) => String(v).toLowerCase());
+    if (!allowed.includes(value)) outside.push(name);
+  }
+  if (unknown.length) {
+    return {
+      allow: false,
+      hole: {
+        code: 'HX-COOKIE-PURPOSE',
+        reason: `Cookie name is not session, csrf, or an enumerated preference: [${[...new Set(unknown)].join(',')}]`,
+      },
+    };
+  }
+  if (outside.length) {
+    return {
+      allow: false,
+      hole: {
+        code: 'HX-COOKIE-PURPOSE',
+        reason: `Preference cookie outside its declared class: [${[...new Set(outside)].join(',')}]`,
+      },
+    };
+  }
+  return null;
+}
+
 export function loadSensitivityMap(filePath) {
   if (!filePath || !fs.existsSync(filePath)) return null;
   const doc = JSON.parse(fs.readFileSync(filePath, 'utf8'));
   return Array.isArray(doc?.routes) ? doc : null;
+}
+
+/**
+ * Optional RFC-0034 overlay. Absent file ⇒ no purpose check.
+ * @param {string} filePath
+ * @returns {{ routes: object[] }|null}
+ */
+export function loadCookiePurposeMap(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) return null;
+  const doc = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  return Array.isArray(doc?.routes) ? doc : null;
+}
+
+/**
+ * @param {{ routes?: object[] }|null} map
+ * @param {{ method?: string, path_template?: string, host?: string }} route
+ * @returns {object[]|null}
+ */
+export function cookiePurposesForRoute(map, route) {
+  if (!map || !Array.isArray(map.routes) || !route) return null;
+  const method = String(route.method || 'GET').toUpperCase();
+  const path = String(route.path_template || '');
+  const host = String(route.host || 'default');
+  const hit = map.routes.find(
+    (r) =>
+      String(r.method || 'GET').toUpperCase() === method &&
+      String(r.path_template || '') === path &&
+      String(r.host || 'default') === host,
+  );
+  return Array.isArray(hit?.purposes) && hit.purposes.length ? hit.purposes : null;
 }
 
 /**

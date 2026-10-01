@@ -16,6 +16,7 @@
  *   SHADOW_LOG=/data/shadow.ndjson
  *   SIEM_LOG=/data/siem.ndjson
  *   HELIX_SENSITIVITY=/data/sensitivity.json   (optional: credential surfaces → severity=high)
+ *   HELIX_COOKIE_PURPOSES=/data/cookie-purposes.json  (optional: RFC-0034; absent ⇒ no purpose check)
  *   HELIX_DNA_KEY=… / HELIX_DNA_REQUIRE=1
  *   HELIX_TLS_CERT=… / HELIX_TLS_KEY=…
  *   HELIX_MAX_BODY_BYTES=…
@@ -34,6 +35,7 @@ const observePath = process.env.OBSERVE || './data/observations.ndjson';
 const shadowLogPath = process.env.SHADOW_LOG || './data/shadow.ndjson';
 const siemLogPath = process.env.SIEM_LOG || process.env.HELIX_SIEM_LOG || '';
 const sensitivityPath = process.env.HELIX_SENSITIVITY || '';
+const cookiePurposePath = process.env.HELIX_COOKIE_PURPOSES || '';
 const dnaKey = process.env.HELIX_DNA_KEY || '';
 const dnaKeyId = process.env.HELIX_DNA_KEY_ID || '';
 const requireSignedDna = process.env.HELIX_DNA_REQUIRE === '1' || process.env.HELIX_DNA_REQUIRE === 'true';
@@ -68,6 +70,7 @@ try {
     shadowLogPath: mode === 'shadow' ? shadowLogPath : undefined,
     siemLogPath: siemLogPath || undefined,
     sensitivityPath: sensitivityPath || undefined,
+    cookiePurposePath: cookiePurposePath || undefined,
     dnaKey: dnaKey || undefined,
     dnaKeyId: dnaKeyId || undefined,
     requireSignedDna,
