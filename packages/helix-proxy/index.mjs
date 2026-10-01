@@ -19,6 +19,8 @@ import {
   reportDna,
   assessReadiness,
   loadSensitivityMap,
+  loadCookiePurposeMap,
+  cookiePurposesForRoute,
   severityForRoute,
   triageShadowLog,
   setCookieObservation,
@@ -169,6 +171,7 @@ export function createHelixProxy(opts) {
   let dna = loadDna(opts.dnaPath, verifyOpts);
   // Ops overlay (optional): credential surfaces get louder holes. Absent ⇒ all holes normal.
   const sensitivity = opts.sensitivity || loadSensitivityMap(opts.sensitivityPath);
+  const cookiePurposes = opts.cookiePurposes || loadCookiePurposeMap(opts.cookiePurposePath);
   const placement = opts.placement || 'proxy';
   const maxBodyBytes =
     opts.maxBodyBytes != null && Number(opts.maxBodyBytes) > 0 ? Number(opts.maxBodyBytes) : 0;
@@ -495,7 +498,11 @@ export function createHelixProxy(opts) {
           }
 
           if ((opts.mode === 'enforce' || opts.mode === 'shadow') && req._helixRoute) {
-            const rv = scoreResponse(req._helixRoute, {
+            const purposes = cookiePurposesForRoute(cookiePurposes, req._helixRoute);
+            const scoredRoute = purposes
+              ? { ...req._helixRoute, cookie_purposes: purposes }
+              : req._helixRoute;
+            const rv = scoreResponse(scoredRoute, {
               contentType: ct,
               body,
               status: pres.statusCode || 0,

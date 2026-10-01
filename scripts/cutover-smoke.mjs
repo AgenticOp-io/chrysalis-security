@@ -20,7 +20,7 @@ import {
   buildUpstreamTargetsReport,
   loadCwlHoleLookup,
 } from '../packages/cwl-bridge/index.mjs';
-import { scoreRequest, signDna, verifyDna } from '../packages/dna-core/index.mjs';
+import { scoreRequest, scoreResponse, signDna, verifyDna } from '../packages/dna-core/index.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -784,6 +784,210 @@ if (tip53Ok === tip53Golds.length) {
   console.log('CUTOVER_TIP_1_0_53_OK');
 } else if (tip53Ok > 0) {
   console.log(`CUTOVER_TIP_1_0_53_PARTIAL (${tip53Ok}/${tip53Golds.length})`);
+}
+
+console.log('=== cutover: tip 1.0.54–1.0.56 (session access / cache.private / cookie purpose) ===');
+const tip56Golds = [
+  { dir: '62-session-access-cookie', minRoutes: 3 },
+  { dir: '63-cache-private', minRoutes: 2 },
+  { dir: '64-cookie-purpose', minRoutes: 3 },
+];
+const tip56Seen = new Map();
+let tip56Ok = 0;
+for (const g of tip56Golds) {
+  const cwlPath = path.join(cwlRoot, 'fixtures', 'language-gold', g.dir, 'routes.cwl');
+  if (!fs.existsSync(cwlPath)) {
+    console.log(`CUTOVER_TIP56_SKIP (missing ${g.dir})`);
+    continue;
+  }
+  const seeded = await seedDnaFromCwlFile(cwlPath, {
+    app_id: `cutover-${g.dir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${g.dir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((seeded.routes?.length ?? 0) >= g.minRoutes, `${g.dir} route count`);
+  assert(
+    seeded.routes.every((r) => !Array.isArray(r.set_cookie_names) && !r.cookie_purposes),
+    `${g.dir} seed does not invent cookie names or purposes into DNA`,
+  );
+  const certified = stripBridgeEnvelope(seeded);
+  const cmp = compareCwlSurfaceToDna(seeded, certified);
+  assert(cmp.ok === true, `${g.dir} self-cutover: ${JSON.stringify(cmp.missing_in_dna)}`);
+  tip56Seen.set(g.dir, { seeded, cmp });
+  tip56Ok += 1;
+}
+
+const access = tip56Seen.get('62-session-access-cookie');
+if (access) {
+  const me = access.cmp.bridge_annotations;
+  const ann = (access.seeded.bridge?.annotations || []).find((a) => a.path_template === '/me');
+  assert(ann?.cwl_session_access_cookies?.includes('sid'), `session.read name: ${JSON.stringify(ann)}`);
+  const anon = (access.seeded.bridge?.annotations || []).find((a) => a.path_template === '/anon');
+  assert(!anon?.cwl_session_access_cookies?.length, 'bare session.read does not invent a cookie name');
+  assert(me, 'access gold compared');
+}
+
+const priv = tip56Seen.get('63-cache-private');
+if (priv) {
+  const account = (priv.seeded.bridge?.annotations || []).find((a) => a.path_template === '/account');
+  assert(account?.cwl_cache_private === true, 'cache.private is genome intent');
+  const shared = (priv.seeded.bridge?.annotations || []).find((a) => a.path_template === '/public');
+  assert(!shared?.cwl_cache_private, 'bare max-age is not private');
+}
+
+const purpose = tip56Seen.get('64-cookie-purpose');
+if (purpose) {
+  const home = (purpose.seeded.bridge?.annotations || []).find((a) => a.path_template === '/');
+  const pref = home?.cwl_cookie_purposes?.find((p) => p.name === 'theme');
+  assert(pref?.purpose === 'preference' && pref.values?.includes('light') && pref.values?.includes('dark'), `theme class: ${JSON.stringify(home?.cwl_cookie_purposes)}`);
+  const me = (purpose.seeded.bridge?.annotations || []).find((a) => a.path_template === '/me');
+  assert(me?.cwl_cookie_purposes?.some((p) => p.name === 'sid' && p.purpose === 'session'), 'sid is session purpose');
+  const ad = (purpose.seeded.bridge?.annotations || []).find((a) => a.path_template === '/ad');
+  assert(ad?.cwl_tracking_cookie === true, 'bare cookie is a tracking hole');
+  const login = (purpose.seeded.bridge?.annotations || []).find((a) => a.path_template === '/login');
+  assert(login?.cwl_tracking_cookie === true, 'samesite none is a tracking hole');
+  assert(
+    !JSON.stringify(purpose.seeded.routes).includes('s3cr3t'),
+    'seeded DNA has no token',
+  );
+
+  const learned = stripBridgeEnvelope(purpose.seeded);
+  const homeRoute = learned.routes.find((r) => r.path_template === '/');
+  homeRoute.set_cookie_names = ['theme'];
+  const honored = compareCwlSurfaceToDna(purpose.seeded, learned);
+  assert(
+    honored.cookie_purpose_notes.some((n) => n.path_template === '/' && n.note === 'cookie_purpose_honored'),
+    `purpose honor: ${JSON.stringify(honored.cookie_purpose_notes)}`,
+  );
+  homeRoute.set_cookie_names = ['_ga'];
+  const bad = compareCwlSurfaceToDna(purpose.seeded, learned);
+  assert(
+    bad.cookie_purpose_notes.some((n) => n.path_template === '/' && n.note === 'cookie_name_not_a_purpose' && n.extra.includes('_ga')),
+    `purpose mismatch: ${JSON.stringify(bad.cookie_purpose_notes)}`,
+  );
+  assert(bad.ok === true, 'purpose mismatch is a note, not a cutover failure');
+
+  const live = scoreResponse(
+    { method: 'GET', path_template: '/', content_class: 'html', cookie_purposes: home.cwl_cookie_purposes },
+    { contentType: 'text/html', status: 200, setCookie: 'theme=light; Path=/' },
+  );
+  assert(live.allow === true, `preference class allows light: ${JSON.stringify(live)}`);
+  const drift = scoreResponse(
+    { method: 'GET', path_template: '/', content_class: 'html', cookie_purposes: home.cwl_cookie_purposes },
+    { contentType: 'text/html', status: 200, setCookie: 'theme=user-47af; Path=/' },
+  );
+  assert(drift.allow === false && drift.hole?.code === 'HX-COOKIE-PURPOSE', `class miss: ${JSON.stringify(drift)}`);
+  assert(!JSON.stringify(drift).includes('user-47af'), 'rejected preference value is not recorded');
+  const tracker = scoreResponse(
+    { method: 'GET', path_template: '/', content_class: 'html', cookie_purposes: home.cwl_cookie_purposes },
+    { contentType: 'text/html', status: 200, setCookie: '_ga=GA1.2.secret; Path=/' },
+  );
+  assert(tracker.allow === false && tracker.hole?.code === 'HX-COOKIE-PURPOSE', `tracker: ${JSON.stringify(tracker)}`);
+  assert(!JSON.stringify(tracker).includes('GA1.2.secret'), 'tracking token is not recorded');
+}
+
+if (tip56Ok === tip56Golds.length) {
+  console.log('CUTOVER_TIP_1_0_56_OK');
+} else if (tip56Ok > 0) {
+  console.log(`CUTOVER_TIP_1_0_56_PARTIAL (${tip56Ok}/${tip56Golds.length})`);
+}
+
+console.log('=== cutover: tip 1.0.57–1.0.61 (same-site redirect / cache / document shell) ===');
+const tip61Golds = [
+  { dir: '65-redirect-same-origin', minRoutes: 3 },
+  { dir: '66-cache-no-store', minRoutes: 3 },
+  { dir: '67-cache-no-cache', minRoutes: 3 },
+  { dir: '68-site-document', minRoutes: 1, allHtml: true },
+  { dir: '69-site-shell', minRoutes: 2, allHtml: true },
+];
+const tip61Seen = new Map();
+let tip61Ok = 0;
+for (const g of tip61Golds) {
+  const cwlPath = path.join(cwlRoot, 'fixtures', 'language-gold', g.dir, 'routes.cwl');
+  if (!fs.existsSync(cwlPath)) {
+    console.log(`CUTOVER_TIP61_SKIP (missing ${g.dir})`);
+    continue;
+  }
+  const seeded = await seedDnaFromCwlFile(cwlPath, {
+    app_id: `cutover-${g.dir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${g.dir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((seeded.routes?.length ?? 0) >= g.minRoutes, `${g.dir} route count`);
+  if (g.allHtml) {
+    assert(
+      seeded.routes.every((r) => r.content_class === 'html'),
+      `${g.dir} document shell stays page HTML`,
+    );
+  }
+  assert(
+    seeded.routes.every((r) => !Array.isArray(r.redirect_targets)),
+    `${g.dir} seed does not invent redirect targets`,
+  );
+  assert(
+    !JSON.stringify(seeded.routes).includes('evil.example'),
+    `${g.dir} DNA routes do not copy an off-site target`,
+  );
+  const certified = stripBridgeEnvelope(seeded);
+  const cmp = compareCwlSurfaceToDna(seeded, certified);
+  assert(cmp.ok === true, `${g.dir} self-cutover: ${JSON.stringify(cmp.missing_in_dna)}`);
+  tip61Seen.set(g.dir, { seeded, cmp });
+  tip61Ok += 1;
+}
+
+const redir = tip61Seen.get('65-redirect-same-origin');
+if (redir) {
+  const login = (redir.seeded.bridge?.annotations || []).find((a) => a.path_template === '/login');
+  assert(login?.cwl_redirect?.path === '/account' && login.cwl_redirect.status === 302, `same-site redirect: ${JSON.stringify(login?.cwl_redirect)}`);
+  const moved = (redir.seeded.bridge?.annotations || []).find((a) => a.path_template === '/moved');
+  assert(moved?.cwl_redirect?.path === '/home' && moved.cwl_redirect.status === 301, `301 path: ${JSON.stringify(moved?.cwl_redirect)}`);
+  const out = (redir.seeded.bridge?.annotations || []).find((a) => a.path_template === '/out');
+  assert(out?.cwl_open_redirect === true, 'off-site redirect is a genome hole');
+  assert(!out?.cwl_redirect, 'off-site target is not a redirect to follow');
+
+  const learned = stripBridgeEnvelope(redir.seeded);
+  const loginRoute = learned.routes.find((r) => r.path_template === '/login');
+  loginRoute.redirect_targets = ['self'];
+  const honored = compareCwlSurfaceToDna(redir.seeded, learned);
+  assert(
+    honored.redirect_notes.some((n) => n.path_template === '/login' && n.note === 'genome_redirect_honored'),
+    `redirect honor: ${JSON.stringify(honored.redirect_notes)}`,
+  );
+  loginRoute.redirect_targets = ['evil.example'];
+  const bad = compareCwlSurfaceToDna(redir.seeded, learned);
+  assert(
+    bad.redirect_notes.some((n) => n.path_template === '/login' && n.note === 'genome_same_site_dna_off_site'),
+    `off-site dna: ${JSON.stringify(bad.redirect_notes)}`,
+  );
+  assert(bad.ok === true, 'off-site disagreement is a note, not a cutover failure');
+  assert(
+    bad.redirect_notes.some((n) => n.path_template === '/out' && n.note === 'genome_open_redirect'),
+    'open-redirect stays a note',
+  );
+}
+
+const noStore = tip61Seen.get('66-cache-no-store');
+if (noStore) {
+  const account = (noStore.seeded.bridge?.annotations || []).find((a) => a.path_template === '/account');
+  assert(account?.cwl_cache_no_store === true && account?.cwl_cache_private === true, 'no-store composes with private');
+  const asset = (noStore.seeded.bridge?.annotations || []).find((a) => a.path_template === '/asset');
+  assert(!asset?.cwl_cache_no_store, 'max-age is not no-store');
+}
+
+const noCache = tip61Seen.get('67-cache-no-cache');
+if (noCache) {
+  const feed = (noCache.seeded.bridge?.annotations || []).find((a) => a.path_template === '/feed');
+  assert(feed?.cwl_cache_no_cache === true, 'no-cache is genome intent');
+  const dash = (noCache.seeded.bridge?.annotations || []).find((a) => a.path_template === '/dashboard');
+  assert(dash?.cwl_cache_no_cache === true && dash?.cwl_cache_private === true, 'no-cache composes with private');
+}
+
+if (tip61Ok === tip61Golds.length) {
+  console.log('CUTOVER_TIP_1_0_61_OK');
+} else if (tip61Ok > 0) {
+  console.log(`CUTOVER_TIP_1_0_61_PARTIAL (${tip61Ok}/${tip61Golds.length})`);
 }
 
 console.log('CUTOVER_SMOKE_OK');

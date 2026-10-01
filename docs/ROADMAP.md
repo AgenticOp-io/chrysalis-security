@@ -72,6 +72,8 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] CWL tip `1.0.46` consume — session cookie **policy attrs** (`CUTOVER_TIP_1_0_46_OK`); CSRF cookie **names**; golds 48–50/52–53 pin-only
 - [x] CWL tip `1.0.51` consume — `auth.require cookie` names (`CUTOVER_TIP_1_0_51_OK`); golds 56–59 pin-only (db/mail/CORS methods/cache)
 - [x] CWL tip `1.0.53` consume — golds `60`–`61` pin-only (`io host` / CORS credentials; `CUTOVER_TIP_1_0_53_OK`)
+- [x] CWL tip `1.0.56` consume — cookie purpose overlay (`CUTOVER_TIP_1_0_56_OK`); golds `62`–`63` pin-only
+- [x] CWL tip `1.0.61` consume — same-site redirect notes (`CUTOVER_TIP_1_0_61_OK`); golds `66`–`69` pin-only (cache intent and page HTML)
 - [x] Rosetta Step 4 Live match — `docs/LIVE-MATCH.md` · `npm run live-match-smoke`  
 - [x] Mode B L2 **deepen** — nft divert + fail-closed + teardown (`BRIDGE_L2_FAILCLOSED_OK` / `TEARDOWN_OK`)  
 - [x] Mode B L2 **Phase 2** — dual-iface NIC-A/NIC-B in appliance ns (`BRIDGE_L2_P2_IFACE_OK` / `CROSS_OK` / `DNA_OK` / `SMOKE_OK`)  

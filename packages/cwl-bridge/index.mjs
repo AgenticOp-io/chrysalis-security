@@ -432,6 +432,16 @@ export function authRequireCookieNamesFromEffects(effects) {
 }
 
 /**
+ * Cookie **name** from `session.read cookie <name>` / `session.write cookie <name>` (tip 1.0.54).
+ * @param {unknown} effect
+ * @returns {string|null}
+ */
+export function sessionAccessCookieNameFromEffect(effect) {
+  const m = String(effect || '').match(/^session\.(?:read|write)\s+cookie\s+([A-Za-z_][A-Za-z0-9_-]*)$/);
+  return m ? m[1] : null;
+}
+
+/**
  * Genome cookie policy flags the certificate does not honor (subset check — extra DNA flags are fine).
  * @param {{ httponly?: boolean, secure?: boolean, path?: string, samesite?: string }} genome
  * @param {{ httponly?: boolean, secure?: boolean, path?: string, samesite?: string }|undefined} learned
@@ -519,6 +529,58 @@ export function genomeRouteAnnotations(mod) {
       fragment.cwl_csrf_effects = csrf;
       const csrfCookies = csrfCookieNamesFromEffects(csrf);
       if (csrfCookies.length) fragment.cwl_csrf_cookies = csrfCookies;
+      carries = true;
+    }
+
+    const accessCookies = [];
+    for (const e of r.effects || []) {
+      const n = sessionAccessCookieNameFromEffect(e);
+      if (n) accessCookies.push(n);
+    }
+    if (accessCookies.length) {
+      fragment.cwl_session_access_cookies = [...new Set(accessCookies)];
+      carries = true;
+    }
+    if ((r.effects || []).some((e) => String(e) === 'cache.private')) {
+      fragment.cwl_cache_private = true;
+      carries = true;
+    }
+    if ((r.effects || []).some((e) => String(e) === 'cache.no-store')) {
+      fragment.cwl_cache_no_store = true;
+      carries = true;
+    }
+    if ((r.effects || []).some((e) => String(e) === 'cache.no-cache')) {
+      fragment.cwl_cache_no_cache = true;
+      carries = true;
+    }
+    if (r.redirect?.path && String(r.redirect.path).startsWith('/') && !String(r.redirect.path).startsWith('//')) {
+      fragment.cwl_redirect = {
+        path: r.redirect.path,
+        status: r.redirect.status || 302,
+      };
+      carries = true;
+    }
+    if ((r.attachmentHoles || []).includes('unsupported:open-redirect')) {
+      fragment.cwl_open_redirect = true;
+      carries = true;
+    }
+
+    const purposes = (r.handlerCookiePurposes || []).filter(
+      (p) =>
+        p?.name &&
+        (p.purpose === 'session' || p.purpose === 'csrf' || p.purpose === 'preference') &&
+        (p.purpose !== 'preference' || (Array.isArray(p.values) && p.values.length)),
+    );
+    if (purposes.length) {
+      fragment.cwl_cookie_purposes = purposes.map((p) => ({
+        name: p.name,
+        purpose: p.purpose,
+        values: p.purpose === 'preference' ? [...p.values] : undefined,
+      }));
+      carries = true;
+    }
+    if ((r.attachmentHoles || []).includes('unsupported:tracking-cookie')) {
+      fragment.cwl_tracking_cookie = true;
       carries = true;
     }
 
@@ -637,6 +699,30 @@ export function buildSensitivityMap(seed) {
     source: 'cwl-genome',
     routes,
     note: 'Ops overlay for hole severity. Not part of app-dna-v1 — enforce identity is unchanged.',
+  };
+}
+
+/**
+ * Cookie-purpose overlay (RFC-0034). Names and preference class lists only — never a token.
+ * Absent overlay ⇒ Helix does not apply the purpose check (D5).
+ * @param {{ bridge?: { annotations?: object[] } }} seed
+ */
+export function buildCookiePurposeMap(seed) {
+  const annotations = Array.isArray(seed?.bridge?.annotations) ? seed.bridge.annotations : [];
+  const routes = annotations
+    .filter((a) => Array.isArray(a?.cwl_cookie_purposes) && a.cwl_cookie_purposes.length)
+    .map((a) => ({
+      method: String(a.method || 'GET').toUpperCase(),
+      path_template: a.path_template,
+      host: a.host || 'default',
+      purposes: a.cwl_cookie_purposes,
+    }));
+  return {
+    kind: 'chrysalis.helix.cookie-purpose-map',
+    schemaVersion: 1,
+    app_id: seed?.app_id ?? null,
+    routes,
+    note: 'Refuse Set-Cookie names outside session/csrf/preference, and preference values outside the class list. Not part of app-dna-v1.',
   };
 }
 
@@ -1123,6 +1209,116 @@ export function compareCwlSurfaceToDna(cwlDnaOrSeed, liveDna, opts = {}) {
     }
   }
 
+  const purposeAnns = annotations.filter(
+    (a) => a && (Array.isArray(a.cwl_cookie_purposes) || a.cwl_tracking_cookie),
+  );
+  /** @type {object[]} */
+  const cookie_purpose_notes = [];
+  for (const a of purposeAnns) {
+    const method = String(a.method || 'GET').toUpperCase();
+    const purposes = Array.isArray(a.cwl_cookie_purposes) ? a.cwl_cookie_purposes : [];
+    const allowed = new Set(purposes.map((p) => p.name));
+    if (a.cwl_tracking_cookie) {
+      cookie_purpose_notes.push({
+        method,
+        path_template: a.path_template,
+        note: 'genome_tracking_cookie',
+        hint: 'genome already refused this declaration (bare name or samesite none) — no tracking runtime',
+      });
+    }
+    if (!purposes.length) continue;
+    const hit = liveRoutes.find(
+      (l) =>
+        String(l.method || '').toUpperCase() === method &&
+        (pathShape
+          ? pathTemplateShapeEqual(a.path_template, l.path_template)
+          : String(a.path_template) === String(l.path_template)),
+    );
+    if (!hit || !Array.isArray(hit.set_cookie_names)) {
+      cookie_purpose_notes.push({
+        method,
+        path_template: a.path_template,
+        note: 'dna_predates_response_surface',
+        purposes,
+        hint: 'learn again — purpose is name and class list only, never a token',
+      });
+      continue;
+    }
+    const extra = hit.set_cookie_names.filter((n) => !allowed.has(n));
+    if (extra.length) {
+      cookie_purpose_notes.push({
+        method,
+        path_template: a.path_template,
+        note: 'cookie_name_not_a_purpose',
+        extra,
+        purposes,
+        hint: 'certificate set a name that is not session, csrf, or an enumerated preference',
+      });
+    } else {
+      cookie_purpose_notes.push({
+        method,
+        path_template: a.path_template,
+        note: 'cookie_purpose_honored',
+        purposes,
+        set_cookie_names: hit.set_cookie_names,
+      });
+    }
+  }
+
+  const redirectAnns = annotations.filter((a) => a && (a.cwl_redirect || a.cwl_open_redirect));
+  /** @type {object[]} */
+  const redirect_notes = [];
+  for (const a of redirectAnns) {
+    const method = String(a.method || 'GET').toUpperCase();
+    if (a.cwl_open_redirect) {
+      redirect_notes.push({
+        method,
+        path_template: a.path_template,
+        note: 'genome_open_redirect',
+        hint: 'genome refused an off-site target — do not follow it, and do not copy the URL into DNA',
+      });
+    }
+    if (!a.cwl_redirect) continue;
+    const hit = liveRoutes.find(
+      (l) =>
+        String(l.method || '').toUpperCase() === method &&
+        (pathShape
+          ? pathTemplateShapeEqual(a.path_template, l.path_template)
+          : String(a.path_template) === String(l.path_template)),
+    );
+    if (!hit || !Array.isArray(hit.redirect_targets)) {
+      redirect_notes.push({
+        method,
+        path_template: a.path_template,
+        note: 'dna_predates_response_surface',
+        genome_path: a.cwl_redirect.path,
+        status: a.cwl_redirect.status,
+        hint: 'learn again — a genome redirect is a same-site path, certified as self',
+      });
+      continue;
+    }
+    const offSite = hit.redirect_targets.filter((t) => t && t !== 'self');
+    if (offSite.length) {
+      redirect_notes.push({
+        method,
+        path_template: a.path_template,
+        note: 'genome_same_site_dna_off_site',
+        genome_path: a.cwl_redirect.path,
+        redirect_targets: hit.redirect_targets,
+        hint: 'certificate saw an off-site redirect; the genome path stays same-site and is not followed',
+      });
+    } else {
+      redirect_notes.push({
+        method,
+        path_template: a.path_template,
+        note: 'genome_redirect_honored',
+        genome_path: a.cwl_redirect.path,
+        status: a.cwl_redirect.status,
+        redirect_targets: hit.redirect_targets,
+      });
+    }
+  }
+
   const identityOk = missing_in_dna.length === 0;
   const fpOk = !strictFingerprints || fingerprint_mismatches.length === 0;
   const ok = identityOk && fpOk;
@@ -1139,6 +1335,8 @@ export function compareCwlSurfaceToDna(cwlDnaOrSeed, liveDna, opts = {}) {
     session_mint_notes,
     csrf_notes,
     auth_require_notes,
+    cookie_purpose_notes,
+    redirect_notes,
     bridge_annotations: {
       cwl_stream: streamAnns,
       multipart: multipartAnns,

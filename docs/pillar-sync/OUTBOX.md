@@ -6,6 +6,72 @@
 
 ---
 
+## 2026-10-01 — secure-tip-1.0.61
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.61-site-shell` through `tip-1.0.57-same-site-redirect`; includes the unpushed **1.0.54–1.0.56** consume)  
+**Status:** **done**  
+
+```text
+SECURE_TIP_1_0_61_OK
+SECURE_TIP_1_0_56_OK
+CWL_SYNC_OK: 0e35dc4 cwl@1.0.61
+TOKENS: CUTOVER_TIP_1_0_56_OK · CUTOVER_TIP_1_0_61_OK · CWL_BRIDGE_SMOKE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.61
+CWL_SHA: 0e35dc4 (BOARD tip land c725557)
+BRANCH: candidate/live-match-step4
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.54–1.0.55** | Session-access cookie **names** and `cache.private` on bridge annotations. No token, no CDN |
+| **1.0.56** | Cookie-purpose overlay. `HX-COOKIE-PURPOSE` refuses a live `Set-Cookie` whose name is not session, csrf, or an enumerated preference, and a preference value outside the class. The hole names the cookie only. Absent overlay ⇒ no purpose check |
+| **1.0.57** | Same-site `redirect "/path"` is a note against `redirect_targets` (`self`). `unsupported:open-redirect` is not followed and the off-site URL is not copied into DNA |
+| **1.0.58–1.0.59** | `cache.no-store` / `cache.no-cache` are genome intent. No cache engine |
+| **1.0.60–1.0.61** | Document shell, page id, and active class are page HTML. `agenticops.css` and `ao-layout.js` stay outside the genome |
+
+### Closes
+
+- CWL OUTBOX Secure rows for tips **1.0.54–1.0.61**
+
+### Ask
+
+none
+
+---
+
+## 2026-09-26 — secure-tip-1.0.56
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.56-cookie-purpose`, includes tips **1.0.54–1.0.55**)  
+**Status:** **superseded** by `2026-10-01 — secure-tip-1.0.61` (this stamp never landed; SHA `1d00a5e` was a draft)
+
+```text
+SUPERSEDED_BY: secure-tip-1.0.61
+CWL_TIP_THEN: 1.0.56
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.54** | Pin — `session.read\|write cookie <name>` on bridge annotations. Name only |
+| **1.0.55** | Pin — `cache.private` is genome intent. No CDN |
+| **1.0.56** | Cookie-purpose overlay. `HX-COOKIE-PURPOSE` refuses a live `Set-Cookie` whose name is not session, csrf, or an enumerated preference, and a preference value outside the declared class. Hole text is the name only. Bare names and `samesite none` stay `cwl_tracking_cookie` notes. Purposes are not seeded into DNA routes. Absent overlay ⇒ no purpose check (D5) |
+
+### Closes
+
+- CWL OUTBOX Secure rows for tips **1.0.54–1.0.56**
+
+### Ask
+
+none
+
+---
+
 ## 2026-09-26 — secure-tip-1.0.53
 
 **To:** cwl  
