@@ -1027,4 +1027,130 @@ console.log('=== cutover: tip 1.0.62 (shared nav id is document text) ===');
   console.log('CUTOVER_TIP_1_0_62_OK');
 }
 
+console.log('=== cutover: tip 1.0.63–1.0.67 (document facts; assets stay host files) ===');
+const tip67Golds = [
+  { dir: '71-site-year', minRoutes: 2 },
+  { dir: '72-site-nav-links', minRoutes: 4 },
+  { dir: '73-site-shell-behavior', minRoutes: 3 },
+  { dir: '74-site-assets', minRoutes: 2 },
+  { dir: '75-site-page', minRoutes: 2 },
+];
+const tip67Seen = new Map();
+let tip67Ok = 0;
+for (const g of tip67Golds) {
+  const cwlPath = path.join(cwlRoot, 'fixtures', 'language-gold', g.dir, 'routes.cwl');
+  assert(fs.existsSync(cwlPath), `missing ${g.dir}`);
+  const seeded = await seedDnaFromCwlFile(cwlPath, {
+    app_id: `cutover-${g.dir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${g.dir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((seeded.routes?.length ?? 0) >= g.minRoutes, `${g.dir} route count`);
+  assert(
+    seeded.routes.every((r) => r.content_class === 'html'),
+    `${g.dir} stays page HTML`,
+  );
+  assert(
+    seeded.routes.every(
+      (r) =>
+        r.cwl_year_host == null &&
+        r.cwl_styles == null &&
+        r.cwl_scripts == null &&
+        r.cwl_forms == null &&
+        r.cwl_host_firebase == null,
+    ),
+    `${g.dir} document facts are not DNA route fields`,
+  );
+  assert(
+    seeded.routes.every((r) => !/\.(css|svg|js)$/.test(String(r.path_template || ''))),
+    `${g.dir} host files are not DNA routes`,
+  );
+  assert(!JSON.stringify(seeded).includes('evil.example'), `${g.dir} off-site form URL is not copied`);
+  assert(!JSON.stringify(seeded.routes).includes('User-Agent'), `${g.dir} user agent is not genome`);
+  const certified = stripBridgeEnvelope(seeded);
+  const cmp = compareCwlSurfaceToDna(seeded, certified);
+  assert(cmp.ok === true, `${g.dir} self-cutover: ${JSON.stringify(cmp.missing_in_dna)}`);
+  tip67Seen.set(g.dir, seeded);
+  tip67Ok += 1;
+}
+
+const year = tip67Seen.get('71-site-year');
+if (year) {
+  const home = (year.bridge?.annotations || []).find((a) => a.path_template === '/');
+  assert(home?.cwl_year_host === true, 'year token is a document fact');
+  assert(!JSON.stringify(home).match(/\b20\d{2}\b/), 'Helix does not write a calendar year');
+}
+
+const links = tip67Seen.get('72-site-nav-links');
+if (links) {
+  const home = (links.bridge?.annotations || []).find((a) => a.path_template === '/');
+  const ids = (home?.cwl_nav_links || []).map((row) => row.id);
+  assert(ids.includes('home') && ids.includes('docs') && ids.includes('contact'), `nav list: ${ids.join(',')}`);
+}
+
+const shell = tip67Seen.get('73-site-shell-behavior');
+if (shell) {
+  const home = (shell.bridge?.annotations || []).find((a) => a.path_template === '/');
+  assert(
+    JSON.stringify(home?.cwl_device_classes) === JSON.stringify(['mobile', 'desktop']),
+    `device classes: ${JSON.stringify(home?.cwl_device_classes)}`,
+  );
+  assert(home?.cwl_drawer?.nav_id === 'ao-site-nav', 'drawer is the declared toggle');
+  const groups = new Set((home?.cwl_nav_links || []).map((row) => row.group));
+  assert(groups.has('primary') && groups.has('practice'), `link groups: ${[...groups].join(',')}`);
+}
+
+const assets = tip67Seen.get('74-site-assets');
+if (assets) {
+  const home = (assets.bridge?.annotations || []).find((a) => a.path_template === '/');
+  assert(JSON.stringify(home?.cwl_styles) === JSON.stringify(['/agenticops.css']), 'stylesheet URL only');
+  assert(home?.cwl_images?.[0]?.id === 'logo' && home.cwl_images[0].path === '/logo.svg', 'image path only');
+  assert(home?.cwl_host_firebase?.target === 'agenticops', 'firebase root is a document fact');
+  assert(!JSON.stringify(home).includes('ao-layout.js'), 'menu script stays outside the genome');
+}
+
+const page = tip67Seen.get('75-site-page');
+if (page) {
+  const home = (page.bridge?.annotations || []).find((a) => a.path_template === '/');
+  const bare = (page.bridge?.annotations || []).find((a) => a.path_template === '/bare');
+  assert(JSON.stringify(home?.cwl_scripts) === JSON.stringify(['/site.js']), 'script URL only');
+  assert(home?.cwl_forms?.[0]?.action === '/contact' && home.cwl_forms[0].method === 'POST', 'same-site form');
+  assert(bare?.cwl_offsite_form === true, 'off-site form action is a hole');
+  assert(!home?.cwl_offsite_form, 'home form stays same-site');
+}
+
+const sitePath = path.join(cwlRoot, 'fixtures', 'sites', 'agenticop-io', 'site.cwl');
+assert(fs.existsSync(sitePath), 'missing agenticop site genome');
+const siteSeed = await seedDnaFromCwlFile(sitePath, {
+  app_id: 'cutover-agenticop-site',
+  mode: 'draft',
+  fixture: 'fixtures/sites/agenticop-io/site.cwl',
+  cwlRoot,
+});
+const sitePaths = new Set((siteSeed.routes || []).map((r) => r.path_template));
+assert(sitePaths.size >= 26, `site genome pages: ${sitePaths.size}`);
+assert(
+  (siteSeed.routes || []).every((r) => r.content_class === 'html'),
+  'site genome stays page HTML',
+);
+assert(
+  [...sitePaths].every((p) => !/\.(css|svg|js)$/.test(String(p))),
+  'site genome host files are not DNA routes',
+);
+assert(!JSON.stringify(siteSeed.routes).includes('ao-layout.js'), 'site genome does not certify ao-layout.js');
+const siteHome = (siteSeed.bridge?.annotations || []).find((a) => a.path_template === '/');
+assert(siteHome?.cwl_year_host === true, 'site genome year token');
+assert(siteHome?.cwl_styles?.[0] === '/agenticops.css', 'site genome stylesheet URL');
+assert(siteHome?.cwl_images?.some((img) => img.path === '/logo.svg'), 'site genome image path');
+const siteCertified = stripBridgeEnvelope(siteSeed);
+const siteCmp = compareCwlSurfaceToDna(siteSeed, siteCertified);
+assert(siteCmp.ok === true, `site genome self-cutover: ${JSON.stringify(siteCmp.missing_in_dna)}`);
+
+if (tip67Ok === tip67Golds.length) {
+  console.log('CUTOVER_TIP_1_0_67_OK');
+} else if (tip67Ok > 0) {
+  console.log(`CUTOVER_TIP_1_0_67_PARTIAL (${tip67Ok}/${tip67Golds.length})`);
+}
+
 console.log('CUTOVER_SMOKE_OK');

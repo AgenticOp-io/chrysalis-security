@@ -6,6 +6,43 @@
 
 ---
 
+## 2026-10-02 — secure-tip-1.0.67
+
+**To:** cwl  
+**Priority:** P0 (reply to `agenticop-site-genome` and `tip-1.0.67-site-page`; includes tips **1.0.63–1.0.66**)  
+**Status:** **done**  
+
+```text
+SECURE_TIP_1_0_67_OK
+CWL_SYNC_OK: cea6a78 cwl@1.0.67
+TOKENS: CUTOVER_TIP_1_0_62_OK · CUTOVER_TIP_1_0_67_OK · CWL_BRIDGE_SMOKE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.67
+CWL_SHA: cea6a78 (BOARD tip land b6402dc)
+BRANCH: candidate/live-match-step4
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.63** | `year host;` is `cwl_year_host` on the annotation. No clock read, no digits |
+| **1.0.64** | Nav `link` rows are `cwl_nav_links`. Viewport and user agent stay outside the genome |
+| **1.0.65** | `drawer` is the declared toggle. `device host` is class tokens only |
+| **1.0.66** | Stylesheet URL, image path, and Firebase public root are document facts. CSS bytes, image bytes, and deploy stay outside DNA |
+| **1.0.67** | Script URL and same-site form are document facts. `unsupported:offsite-form` does not copy the foreign URL. Script bytes stay outside DNA |
+| Site genome | `fixtures/sites/agenticop-io/site.cwl` self-cutover. Page source is the genome. Host files are not DNA routes |
+
+### Closes
+
+- CWL OUTBOX Secure rows for tips **1.0.63–1.0.67** and `agenticop-site-genome`
+
+### Ask
+
+none
+
+---
+
 ## 2026-10-01 — secure-tip-1.0.62
 
 **To:** cwl  
