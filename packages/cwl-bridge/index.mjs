@@ -493,6 +493,9 @@ function layoutDocumentFacts(layout) {
   if (Array.isArray(layout.deviceHost?.values) && layout.deviceHost.values.length) {
     facts.cwl_device_classes = [...layout.deviceHost.values];
   }
+  if (Number.isInteger(layout.deviceHost?.below)) facts.cwl_device_below = layout.deviceHost.below;
+  if (layout.charset === 'utf-8') facts.cwl_charset = 'utf-8';
+  if (layout.viewportDevice === true) facts.cwl_viewport_device = true;
   if (layout.drawer?.navId) {
     facts.cwl_drawer = {
       nav_id: layout.drawer.navId,
@@ -537,6 +540,44 @@ function layoutDocumentFacts(layout) {
   if (forms.some((f) => f?.refused) || (layout.formHoles || []).includes('unsupported:offsite-form')) {
     facts.cwl_offsite_form = true;
   }
+  return Object.keys(facts).length ? facts : null;
+}
+
+const META_REFUSED = Object.freeze([
+  'cwl:meta-not-url',
+  'cwl:meta-theme',
+  'cwl:meta-og-type',
+  'cwl:meta-twitter-card',
+]);
+
+/**
+ * Per-page document identity and social card (tips 1.0.69–1.0.70).
+ * The parser already drops a non-URL canonical and a non-URL card image.
+ * Helix records the hole name and does not copy the refused value.
+ * @param {object} route
+ * @returns {object | null}
+ */
+function pageDocumentFacts(route) {
+  /** @type {Record<string, unknown>} */
+  const facts = {};
+  if (typeof route.title === 'string' && route.title) facts.cwl_title = route.title;
+  if (typeof route.description === 'string' && route.description) facts.cwl_description = route.description;
+  if (typeof route.canonical === 'string' && route.canonical) facts.cwl_canonical = route.canonical;
+  const card = route.metaCard;
+  if (card) {
+    /** @type {Record<string, unknown>} */
+    const meta = {};
+    if (card.robots) meta.robots = card.robots;
+    if (card.author) meta.author = card.author;
+    if (card.theme) meta.theme = card.theme;
+    if (card.og && Object.keys(card.og).length) meta.og = { ...card.og };
+    if (card.twitter && Object.keys(card.twitter).length) meta.twitter = { ...card.twitter };
+    if (Object.keys(meta).length) facts.cwl_meta = meta;
+  }
+  const holes = route.attachmentHoles || [];
+  if (holes.includes('cwl:canonical-not-url')) facts.cwl_canonical_refused = true;
+  const refused = META_REFUSED.filter((hole) => holes.includes(hole));
+  if (refused.length) facts.cwl_meta_refused = refused;
   return Object.keys(facts).length ? facts : null;
 }
 
@@ -643,6 +684,11 @@ export function genomeRouteAnnotations(mod) {
     const layoutFacts = layoutDocumentFacts(layoutByName(mod, r.layoutName));
     if (layoutFacts) {
       Object.assign(fragment, layoutFacts);
+      carries = true;
+    }
+    const pageFacts = pageDocumentFacts(r);
+    if (pageFacts) {
+      Object.assign(fragment, pageFacts);
       carries = true;
     }
 

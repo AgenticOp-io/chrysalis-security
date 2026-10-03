@@ -1143,6 +1143,14 @@ const siteHome = (siteSeed.bridge?.annotations || []).find((a) => a.path_templat
 assert(siteHome?.cwl_year_host === true, 'site genome year token');
 assert(siteHome?.cwl_styles?.[0] === '/agenticops.css', 'site genome stylesheet URL');
 assert(siteHome?.cwl_images?.some((img) => img.path === '/logo.svg'), 'site genome image path');
+assert(siteHome?.cwl_device_below === 820, 'site genome viewport cut is a document fact');
+assert(siteHome?.cwl_charset === 'utf-8' && siteHome?.cwl_viewport_device === true, 'site genome charset and viewport meta');
+assert(siteHome?.cwl_canonical === 'https://agenticop.io/', 'site genome canonical');
+assert(
+  String(siteHome?.cwl_meta?.og?.image || '').startsWith('https://'),
+  'site genome card image is a URL',
+);
+assert(!JSON.stringify(siteSeed).includes('matchMedia'), 'site genome does not evaluate a media query');
 const siteCertified = stripBridgeEnvelope(siteSeed);
 const siteCmp = compareCwlSurfaceToDna(siteSeed, siteCertified);
 assert(siteCmp.ok === true, `site genome self-cutover: ${JSON.stringify(siteCmp.missing_in_dna)}`);
@@ -1151,6 +1159,86 @@ if (tip67Ok === tip67Golds.length) {
   console.log('CUTOVER_TIP_1_0_67_OK');
 } else if (tip67Ok > 0) {
   console.log(`CUTOVER_TIP_1_0_67_PARTIAL (${tip67Ok}/${tip67Golds.length})`);
+}
+
+console.log('=== cutover: tip 1.0.68–1.0.70 (viewport cut / document identity / social card) ===');
+const tip70Golds = [
+  { dir: '76-site-device-below', minRoutes: 2 },
+  { dir: '77-site-document', minRoutes: 2 },
+  { dir: '78-site-social', minRoutes: 2 },
+];
+const tip70Seen = new Map();
+let tip70Ok = 0;
+for (const g of tip70Golds) {
+  const cwlPath = path.join(cwlRoot, 'fixtures', 'language-gold', g.dir, 'routes.cwl');
+  assert(fs.existsSync(cwlPath), `missing ${g.dir}`);
+  const seeded = await seedDnaFromCwlFile(cwlPath, {
+    app_id: `cutover-${g.dir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${g.dir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((seeded.routes?.length ?? 0) >= g.minRoutes, `${g.dir} route count`);
+  assert(seeded.routes.every((r) => r.content_class === 'html'), `${g.dir} stays page HTML`);
+  assert(
+    seeded.routes.every(
+      (r) => r.cwl_title == null && r.cwl_meta == null && r.cwl_device_below == null && r.cwl_canonical == null,
+    ),
+    `${g.dir} document facts are not DNA route fields`,
+  );
+  assert(!JSON.stringify(seeded).includes('matchMedia'), `${g.dir} does not evaluate a media query`);
+  assert(!JSON.stringify(seeded).includes('javascript:'), `${g.dir} refused URL is not copied`);
+  const certified = stripBridgeEnvelope(seeded);
+  const cmp = compareCwlSurfaceToDna(seeded, certified);
+  assert(cmp.ok === true, `${g.dir} self-cutover: ${JSON.stringify(cmp.missing_in_dna)}`);
+  tip70Seen.set(g.dir, seeded);
+  tip70Ok += 1;
+}
+
+const below = tip70Seen.get('76-site-device-below');
+if (below) {
+  const home = (below.bridge?.annotations || []).find((a) => a.path_template === '/');
+  assert(home?.cwl_device_below === 820, `below: ${home?.cwl_device_below}`);
+  assert(
+    JSON.stringify(home?.cwl_device_classes) === JSON.stringify(['mobile', 'desktop']),
+    'device classes stay the declared tokens',
+  );
+}
+
+const identity = tip70Seen.get('77-site-document');
+if (identity) {
+  const home = (identity.bridge?.annotations || []).find((a) => a.path_template === '/');
+  const bare = (identity.bridge?.annotations || []).find((a) => a.path_template === '/bare');
+  assert(home?.cwl_charset === 'utf-8' && home?.cwl_viewport_device === true, 'charset and viewport meta');
+  assert(home?.cwl_title === 'Proof · AgenticOps', `title: ${home?.cwl_title}`);
+  assert(home?.cwl_description === 'Recorded traffic decides.', 'description');
+  assert(home?.cwl_canonical === 'https://agenticop.io/proof.html', 'canonical URL');
+  assert(bare?.cwl_canonical_refused === true && bare?.cwl_canonical == null, 'non-URL canonical is a hole');
+}
+
+const social = tip70Seen.get('78-site-social');
+if (social) {
+  const home = (social.bridge?.annotations || []).find((a) => a.path_template === '/');
+  const bare = (social.bridge?.annotations || []).find((a) => a.path_template === '/bare');
+  assert(home?.cwl_meta?.robots === 'index, follow', 'robots');
+  assert(home?.cwl_meta?.author === 'AgenticOps', 'author');
+  assert(home?.cwl_meta?.theme === '#020208', 'theme color');
+  assert(home?.cwl_meta?.og?.image === 'https://agenticop.io/logo.svg', 'og image URL');
+  assert(home?.cwl_meta?.twitter?.card === 'summary_large_image', 'twitter card');
+  assert(
+    bare?.cwl_meta_refused?.includes('cwl:meta-theme') &&
+      bare?.cwl_meta_refused?.includes('cwl:meta-not-url') &&
+      bare?.cwl_meta_refused?.includes('cwl:meta-twitter-card'),
+    `refused card: ${JSON.stringify(bare?.cwl_meta_refused)}`,
+  );
+  assert(bare?.cwl_meta?.theme == null && bare?.cwl_meta?.og?.image == null, 'refused card values are not stored');
+  assert(!JSON.stringify(social).includes('tracker'), 'refused twitter card is not copied');
+}
+
+if (tip70Ok === tip70Golds.length) {
+  console.log('CUTOVER_TIP_1_0_70_OK');
+} else if (tip70Ok > 0) {
+  console.log(`CUTOVER_TIP_1_0_70_PARTIAL (${tip70Ok}/${tip70Golds.length})`);
 }
 
 console.log('CUTOVER_SMOKE_OK');
