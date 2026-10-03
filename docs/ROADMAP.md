@@ -75,6 +75,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] CWL tip `1.0.56` consume — cookie purpose overlay (`CUTOVER_TIP_1_0_56_OK`); golds `62`–`63` pin-only
 - [x] CWL tip `1.0.61` consume — same-site redirect notes (`CUTOVER_TIP_1_0_61_OK`); golds `66`–`69` pin-only (cache intent and page HTML)
 - [x] CWL tip `1.0.62` consume — shared nav id is document text (`CUTOVER_TIP_1_0_62_OK`); gold `70` pin-only
+- [x] CWL tip `1.0.67` consume — year, nav list, drawer, asset paths, script URL, same-site form (`CUTOVER_TIP_1_0_67_OK`); golds `71`–`75` and the AgenticOps site genome are document facts
 - [x] Rosetta Step 4 Live match — `docs/LIVE-MATCH.md` · `npm run live-match-smoke`  
 - [x] Mode B L2 **deepen** — nft divert + fail-closed + teardown (`BRIDGE_L2_FAILCLOSED_OK` / `TEARDOWN_OK`)  
 - [x] Mode B L2 **Phase 2** — dual-iface NIC-A/NIC-B in appliance ns (`BRIDGE_L2_P2_IFACE_OK` / `CROSS_OK` / `DNA_OK` / `SMOKE_OK`)  

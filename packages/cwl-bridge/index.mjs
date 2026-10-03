@@ -468,6 +468,78 @@ function proxyParamNames(target) {
     .filter((n) => !/^\d/.test(n));
 }
 
+function layoutByName(mod, name) {
+  if (!name) return null;
+  return (mod?.layouts || []).find((l) => l?.name === name) || null;
+}
+
+function sameSiteDocumentPath(action) {
+  const s = String(action || '');
+  return s.startsWith('/') && !s.startsWith('//');
+}
+
+/**
+ * Layout declarations that are page text (tips 1.0.63–1.0.67).
+ * Paths and class tokens only — no clock, user agent, CSS bytes, image bytes, or script bytes.
+ * An off-site form is a hole flag. The foreign URL is not copied.
+ * @param {object | null | undefined} layout
+ * @returns {object | null}
+ */
+function layoutDocumentFacts(layout) {
+  if (!layout) return null;
+  /** @type {Record<string, unknown>} */
+  const facts = {};
+  if (layout.yearHost === true) facts.cwl_year_host = true;
+  if (Array.isArray(layout.deviceHost?.values) && layout.deviceHost.values.length) {
+    facts.cwl_device_classes = [...layout.deviceHost.values];
+  }
+  if (layout.drawer?.navId) {
+    facts.cwl_drawer = {
+      nav_id: layout.drawer.navId,
+      toggle_class: layout.drawer.toggleClass,
+      open_class: layout.drawer.openClass,
+      ...(layout.drawer.panelId ? { panel_id: layout.drawer.panelId } : {}),
+    };
+  }
+  if (Array.isArray(layout.links) && layout.links.length) {
+    facts.cwl_nav_links = layout.links.map((row) => {
+      const out = { id: row.id, href: row.href, label: row.label };
+      if (row.className) out.class_name = row.className;
+      if (row.group) out.group = row.group;
+      if (row.target) out.target = row.target;
+      if (row.rel) out.rel = row.rel;
+      return out;
+    });
+  }
+  if (Array.isArray(layout.styles) && layout.styles.length) facts.cwl_styles = [...layout.styles];
+  if (Array.isArray(layout.images) && layout.images.length) {
+    facts.cwl_images = layout.images.map((img) => ({ id: img.id, path: img.path }));
+  }
+  if (layout.hostFirebase?.target) {
+    facts.cwl_host_firebase = {
+      target: layout.hostFirebase.target,
+      public_dir: layout.hostFirebase.publicDir,
+      ...(layout.hostFirebase.errorDoc ? { error_doc: layout.hostFirebase.errorDoc } : {}),
+    };
+  }
+  if (Array.isArray(layout.scripts) && layout.scripts.length) facts.cwl_scripts = [...layout.scripts];
+  const forms = Array.isArray(layout.forms) ? layout.forms : [];
+  const sameSite = forms.filter((f) => f && !f.refused && sameSiteDocumentPath(f.action));
+  if (sameSite.length) {
+    facts.cwl_forms = sameSite.map((f) => ({
+      id: f.id,
+      method: String(f.method || 'post').toUpperCase(),
+      action: f.action,
+      fields: (f.fields || []).map((field) => ({ name: field.name, type: field.type })),
+      ...(f.submit ? { submit: f.submit } : {}),
+    }));
+  }
+  if (forms.some((f) => f?.refused) || (layout.formHoles || []).includes('unsupported:offsite-form')) {
+    facts.cwl_offsite_form = true;
+  }
+  return Object.keys(facts).length ? facts : null;
+}
+
 /**
  * Genome facts CWL declares per route that the DNA seed does not carry as route fields:
  * declared upstream forward targets (RFC-0033 / 1.0.34+1.0.36) and host-byte media types
@@ -566,6 +638,11 @@ export function genomeRouteAnnotations(mod) {
     }
     if (typeof r.navId === 'string' && /^[A-Za-z_][A-Za-z0-9_]*$/.test(r.navId)) {
       fragment.cwl_nav_id = r.navId;
+      carries = true;
+    }
+    const layoutFacts = layoutDocumentFacts(layoutByName(mod, r.layoutName));
+    if (layoutFacts) {
+      Object.assign(fragment, layoutFacts);
       carries = true;
     }
 
