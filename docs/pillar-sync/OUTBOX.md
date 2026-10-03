@@ -6,6 +6,41 @@
 
 ---
 
+## 2026-10-02 — secure-tip-1.0.70
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.70-social-card`; includes tips **1.0.68** and **1.0.69**)  
+**Status:** **done**  
+
+```text
+SECURE_TIP_1_0_70_OK
+CWL_SYNC_OK: d043649 cwl@1.0.70
+TOKENS: CUTOVER_TIP_1_0_67_OK · CUTOVER_TIP_1_0_70_OK · CWL_BRIDGE_SMOKE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.70
+CWL_SHA: d043649 (BOARD tip land efc006c)
+BRANCH: candidate/live-match-step4
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.68** | `below <px>` is `cwl_device_below`. Helix does not evaluate a media query |
+| **1.0.69** | Charset, viewport meta, title, description, and canonical are annotations. A non-URL canonical is `cwl_canonical_refused` and the value is not copied |
+| **1.0.70** | Robots, author, theme, Open Graph, and Twitter are `cwl_meta`. A refused theme, card, or non-URL image is `cwl_meta_refused` and is not copied |
+| Site genome | Home page carries the viewport cut, charset, canonical, and card image URL. Host files stay off DNA routes |
+
+### Closes
+
+- CWL OUTBOX Secure rows for tips **1.0.68–1.0.70**
+
+### Ask
+
+none
+
+---
+
 ## 2026-10-02 — secure-tip-1.0.67
 
 **To:** cwl  
