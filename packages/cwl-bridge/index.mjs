@@ -550,14 +550,26 @@ const META_REFUSED = Object.freeze([
   'cwl:meta-twitter-card',
 ]);
 
+const HEAD_REFUSED = Object.freeze([
+  'cwl:alternate-not-url',
+  'cwl:preconnect-not-url',
+  'cwl:jsonld-not-json',
+  'cwl:jsonld-closes-script',
+]);
+
+const DB_ENGINES = Object.freeze(['sqlite', 'postgres', 'mysql', 'mariadb', 'sqlserver', 'oracle']);
+
 /**
- * Per-page document identity and social card (tips 1.0.69–1.0.70).
- * The parser already drops a non-URL canonical and a non-URL card image.
+ * Per-page document identity and social card (tips 1.0.69–1.0.71).
+ * The parser already drops a non-URL canonical, a non-URL card image,
+ * a non-URL alternate or preconnect, and JSON-LD that is not JSON or that closes the script.
+ * An unknown icon is not copied. Apple touch is copied only when declared.
  * Helix records the hole name and does not copy the refused value.
  * @param {object} route
+ * @param {object | null | undefined} layout
  * @returns {object | null}
  */
-function pageDocumentFacts(route) {
+function pageDocumentFacts(route, layout) {
   /** @type {Record<string, unknown>} */
   const facts = {};
   if (typeof route.title === 'string' && route.title) facts.cwl_title = route.title;
@@ -570,14 +582,168 @@ function pageDocumentFacts(route) {
     if (card.robots) meta.robots = card.robots;
     if (card.author) meta.author = card.author;
     if (card.theme) meta.theme = card.theme;
+    if (card.keywords) meta.keywords = card.keywords;
     if (card.og && Object.keys(card.og).length) meta.og = { ...card.og };
     if (card.twitter && Object.keys(card.twitter).length) meta.twitter = { ...card.twitter };
     if (Object.keys(meta).length) facts.cwl_meta = meta;
+  }
+  const imagePaths = new Map((layout?.images || []).map((img) => [img.id, img.path]));
+  /** @type {object[]} */
+  const icons = [];
+  let unknownIcon = false;
+  for (const icon of route.icons || []) {
+    const iconPath = imagePaths.get(icon.id);
+    if (!iconPath) {
+      unknownIcon = true;
+      continue;
+    }
+    /** @type {Record<string, unknown>} */
+    const row = { id: icon.id, path: iconPath };
+    if (icon.apple === true) row.apple = true;
+    icons.push(row);
+  }
+  if (icons.length) facts.cwl_icons = icons;
+  if (Array.isArray(route.alternates) && route.alternates.length) {
+    facts.cwl_alternates = route.alternates.map((link) => ({
+      type: link.type,
+      href: link.href,
+      title: link.title,
+    }));
+  }
+  if (Array.isArray(route.preconnects) && route.preconnects.length) {
+    facts.cwl_preconnects = route.preconnects.map((link) =>
+      link.crossorigin ? { href: link.href, crossorigin: true } : { href: link.href },
+    );
+  }
+  if (Array.isArray(route.pageStyles) && route.pageStyles.length) facts.cwl_page_styles = [...route.pageStyles];
+  if (Array.isArray(route.jsonlds) && route.jsonlds.length) {
+    const jsonld = route.jsonlds.filter((value) => jsonLdDocumentOk(value));
+    if (jsonld.length) facts.cwl_jsonld = jsonld;
   }
   const holes = route.attachmentHoles || [];
   if (holes.includes('cwl:canonical-not-url')) facts.cwl_canonical_refused = true;
   const refused = META_REFUSED.filter((hole) => holes.includes(hole));
   if (refused.length) facts.cwl_meta_refused = refused;
+  const headRefused = [];
+  if (unknownIcon) headRefused.push('cwl:unknown-icon');
+  for (const hole of HEAD_REFUSED) {
+    if (holes.includes(hole)) headRefused.push(hole);
+  }
+  if (headRefused.length) facts.cwl_head_refused = headRefused;
+  return Object.keys(facts).length ? facts : null;
+}
+
+/**
+ * JSON-LD is document text. A value that is not JSON, or that closes the script, is not copied.
+ * @param {unknown} value
+ */
+function jsonLdDocumentOk(value) {
+  if (typeof value !== 'string' || !value || value.includes('</script>')) return false;
+  try {
+    JSON.parse(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Path and query names filled into HTML are that request (tip 1.0.72).
+ * Helix records the names. It does not run the live document server.
+ * @param {object} route
+ * @returns {object | null}
+ */
+function requestDocumentFacts(route) {
+  /** @type {Record<string, unknown>} */
+  const facts = {};
+  if (Array.isArray(route.handlerPathParams) && route.handlerPathParams.length) {
+    facts.cwl_request_path = [...route.handlerPathParams];
+  }
+  if (Array.isArray(route.handlerQueryParams) && route.handlerQueryParams.length) {
+    facts.cwl_request_query = [...route.handlerQueryParams];
+  }
+  return Object.keys(facts).length ? facts : null;
+}
+
+/**
+ * Repeated rows and branches are document facts (tip 1.0.73).
+ * A repeat names host data. A branch is comparison text.
+ * Helix does not evaluate a media query and does not read a cookie value.
+ * @param {object} route
+ * @returns {object | null}
+ */
+function dynamicDocumentFacts(route) {
+  /** @type {Record<string, unknown>} */
+  const facts = {};
+  if (Array.isArray(route.htmlRepeats) && route.htmlRepeats.length) {
+    facts.cwl_repeats = route.htmlRepeats.map((rep) => {
+      /** @type {Record<string, unknown>} */
+      const row = { collection: rep.collection, item: rep.item };
+      if (rep.when) row.when = rep.when;
+      if (typeof rep.empty === 'string') row.empty = rep.empty;
+      return row;
+    });
+  }
+  if (Array.isArray(route.earlyGuards) && route.earlyGuards.length) {
+    facts.cwl_branches = route.earlyGuards.map((guard) => {
+      /** @type {Record<string, unknown>} */
+      const row = { cond: guard.condExpr };
+      if (Number.isInteger(guard.status)) row.status = guard.status;
+      return row;
+    });
+  }
+  return Object.keys(facts).length ? facts : null;
+}
+
+/**
+ * A bound row value stays a parameter (tip 1.0.74). It is not SQL text.
+ * @param {object | null | undefined} value
+ */
+function dbValueFact(value) {
+  if (!value || typeof value !== 'object') return null;
+  if (value.kind === 'literal') return { kind: 'literal', value: value.value };
+  if (value.kind === 'binding') return { kind: 'parameter', source: value.source, name: value.name };
+  if (value.kind === 'row') return { kind: 'row', collection: value.collection, field: value.field };
+  return null;
+}
+
+/**
+ * Named engine and bound row operations (tip 1.0.74).
+ * An unknown engine is a hole and its name is not copied.
+ * Helix does not open a database and does not execute SQL text.
+ * @param {object} route
+ * @param {object | null | undefined} mod
+ * @returns {object | null}
+ */
+function dbDocumentFacts(route, mod) {
+  /** @type {Record<string, unknown>} */
+  const facts = {};
+  const engine = typeof mod?.engine === 'string' ? mod.engine : null;
+  if (engine && DB_ENGINES.includes(engine)) facts.cwl_db_engine = engine;
+  if ((mod?.engineHoles || []).includes('cwl:unknown-db-engine')) facts.cwl_db_engine_refused = true;
+  const refused = (route.attachmentHoles || []).filter(
+    (hole) => hole === 'cwl:unknown-db-column' || hole === 'cwl:db-where-required' || hole.startsWith('cwl:db-'),
+  );
+  if (refused.length) facts.cwl_db_refused = refused;
+  if (Array.isArray(route.dbOps) && route.dbOps.length) {
+    facts.cwl_db_ops = route.dbOps.map((op) => ({
+      op: op.op,
+      table: op.table,
+      ...(op.one ? { one: true } : {}),
+      ...(op.column ? { column: op.column } : {}),
+      ...(op.as ? { as: op.as } : {}),
+      ...(op.into ? { into: { collection: op.into.collection, field: op.into.field } } : {}),
+      where: (op.where || []).map((part) => ({
+        column: part.column,
+        cmp: part.cmp,
+        value: dbValueFact(part.value),
+      })),
+      fields: (op.fields || []).map((field) => ({
+        column: field.column,
+        value: dbValueFact(field.value),
+      })),
+    }));
+  }
   return Object.keys(facts).length ? facts : null;
 }
 
@@ -686,9 +852,24 @@ export function genomeRouteAnnotations(mod) {
       Object.assign(fragment, layoutFacts);
       carries = true;
     }
-    const pageFacts = pageDocumentFacts(r);
+    const pageFacts = pageDocumentFacts(r, layoutByName(mod, r.layoutName));
     if (pageFacts) {
       Object.assign(fragment, pageFacts);
+      carries = true;
+    }
+    const requestFacts = requestDocumentFacts(r);
+    if (requestFacts) {
+      Object.assign(fragment, requestFacts);
+      carries = true;
+    }
+    const dynamicFacts = dynamicDocumentFacts(r);
+    if (dynamicFacts) {
+      Object.assign(fragment, dynamicFacts);
+      carries = true;
+    }
+    const dbFacts = dbDocumentFacts(r, mod);
+    if (dbFacts) {
+      Object.assign(fragment, dbFacts);
       carries = true;
     }
 
