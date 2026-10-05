@@ -6,6 +6,42 @@
 
 ---
 
+## 2026-10-04 — secure-tip-1.0.74
+
+**To:** cwl  
+**Priority:** P0 (reply to `agenticop-demo-order`; includes tips **1.0.71**–**1.0.73**)  
+**Status:** **done**  
+
+```text
+SECURE_TIP_1_0_74_OK
+CWL_SYNC_OK: 9f62655 cwl@1.0.74
+TOKENS: CUTOVER_TIP_1_0_70_OK · CUTOVER_TIP_1_0_74_OK · CWL_BRIDGE_SMOKE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.74
+CWL_SHA: 9f62655
+BRANCH: candidate/secure-tip-1.0.74
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.71** | Keywords, icon, alternate, preconnect, page style, and JSON-LD are document facts. A non-URL alternate or preconnect is not copied. An unknown icon is `cwl:unknown-icon` and is not copied. JSON-LD that is not JSON, or that closes the script, is not copied. Apple touch is copied only when declared |
+| **1.0.72** | A path or query filled into HTML is that request. Helix does not run the live document server |
+| **1.0.73** | A repeated row is host data for that request. A branch is a comparison against the request or that data. It is not a media-query evaluation and not a cookie value |
+| **1.0.74** | `engine` is sqlite, postgres, mysql, mariadb, sqlserver, or oracle. An unknown engine is a hole and its name is not copied. A row value is a parameter. Helix does not open a database and does not execute SQL text |
+| Pins | `@chrysalis/cwl` and `@agenticop-io/cwl` stay `file:../chrysalis-cwl/packages/cwl` at **1.0.74** |
+
+### Closes
+
+- CWL OUTBOX Secure section of `agenticop-demo-order`
+
+### Ask
+
+none
+
+---
+
 ## 2026-10-02 — secure-tip-1.0.70
 
 **To:** cwl  

@@ -7,6 +7,7 @@
  * Requires sibling engines/chrysalis-cwl (or CHRYSALIS_CWL_ROOT) + @agenticop-io/cwl@1.0.21.
  */
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -1239,6 +1240,161 @@ if (tip70Ok === tip70Golds.length) {
   console.log('CUTOVER_TIP_1_0_70_OK');
 } else if (tip70Ok > 0) {
   console.log(`CUTOVER_TIP_1_0_70_PARTIAL (${tip70Ok}/${tip70Golds.length})`);
+}
+
+console.log('=== cutover: tip 1.0.71–1.0.74 (head rest / live document / dynamic HTML / database) ===');
+const tip74Golds = [
+  { dir: '79-site-head-rest', minRoutes: 2 },
+  { dir: '80-live-document', minRoutes: 3 },
+  { dir: '81-dynamic-site', minRoutes: 3 },
+  { dir: '82-database', minRoutes: 8 },
+];
+const tip74Seen = new Map();
+let tip74Ok = 0;
+for (const g of tip74Golds) {
+  const cwlPath = path.join(cwlRoot, 'fixtures', 'language-gold', g.dir, 'routes.cwl');
+  assert(fs.existsSync(cwlPath), `missing ${g.dir}`);
+  const seeded = await seedDnaFromCwlFile(cwlPath, {
+    app_id: `cutover-${g.dir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${g.dir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((seeded.routes?.length ?? 0) >= g.minRoutes, `${g.dir} route count`);
+  assert(seeded.routes.every((r) => r.content_class === 'html'), `${g.dir} stays page HTML`);
+  assert(
+    seeded.routes.every(
+      (r) =>
+        r.cwl_icons == null &&
+        r.cwl_jsonld == null &&
+        r.cwl_request_path == null &&
+        r.cwl_request_query == null &&
+        r.cwl_repeats == null &&
+        r.cwl_branches == null &&
+        r.cwl_db_engine == null &&
+        r.cwl_db_ops == null,
+    ),
+    `${g.dir} document facts are not DNA route fields`,
+  );
+  const dumped = JSON.stringify(seeded);
+  assert(!dumped.includes('matchMedia'), `${g.dir} does not evaluate a media query`);
+  assert(!dumped.includes('javascript:'), `${g.dir} refused URL is not copied`);
+  assert(!dumped.includes('</script>'), `${g.dir} JSON-LD that closes the script is not copied`);
+  assert(!/\bSELECT\b/.test(dumped) && !dumped.includes('DROP TABLE'), `${g.dir} does not execute SQL text`);
+  const certified = stripBridgeEnvelope(seeded);
+  const cmp = compareCwlSurfaceToDna(seeded, certified);
+  assert(cmp.ok === true, `${g.dir} self-cutover: ${JSON.stringify(cmp.missing_in_dna)}`);
+  tip74Seen.set(g.dir, seeded);
+  tip74Ok += 1;
+}
+
+const headRest = tip74Seen.get('79-site-head-rest');
+if (headRest) {
+  const home = (headRest.bridge?.annotations || []).find((a) => a.path_template === '/');
+  const bare = (headRest.bridge?.annotations || []).find((a) => a.path_template === '/bare');
+  assert(home?.cwl_meta?.keywords === 'CWL, WebIR', 'keywords are a document fact');
+  assert(home?.cwl_icons?.[0]?.id === 'logo' && home.cwl_icons[0].path === '/logo.svg', 'known icon is copied');
+  assert(home?.cwl_icons?.[0]?.apple === true, 'apple touch is copied only when declared');
+  assert(home?.cwl_preconnects?.[0]?.href === 'https://fonts.googleapis.com' && home.cwl_preconnects[0].crossorigin === true, 'preconnect URL');
+  assert(home?.cwl_alternates?.[0]?.href === 'https://agenticop.io/llms.txt', 'alternate URL');
+  assert(
+    home?.cwl_page_styles?.[0] === 'https://fonts.googleapis.com/css2?family=Inter&display=swap',
+    'page style URL',
+  );
+  assert(JSON.parse(home?.cwl_jsonld?.[0] || 'null')?.['@context'] === 'https://schema.org', 'JSON-LD text is copied');
+  assert(bare?.cwl_icons == null, 'unknown icon is not copied');
+  assert(
+    bare?.cwl_head_refused?.includes('cwl:unknown-icon') &&
+      bare?.cwl_head_refused?.includes('cwl:preconnect-not-url') &&
+      bare?.cwl_head_refused?.includes('cwl:alternate-not-url') &&
+      bare?.cwl_head_refused?.includes('cwl:jsonld-not-json') &&
+      bare?.cwl_head_refused?.includes('cwl:jsonld-closes-script'),
+    `refused head: ${JSON.stringify(bare?.cwl_head_refused)}`,
+  );
+  assert(bare?.cwl_preconnects?.every((link) => String(link.href).startsWith('https://')), 'non-URL preconnect is not copied');
+  assert(bare?.cwl_alternates?.every((link) => String(link.href).startsWith('https://')), 'non-URL alternate is not copied');
+  assert(
+    (bare?.cwl_jsonld || []).every((value) => {
+      try {
+        JSON.parse(value);
+        return !value.includes('</script>');
+      } catch {
+        return false;
+      }
+    }),
+    'JSON-LD that is not JSON is not copied',
+  );
+  assert(!bare?.cwl_icons?.some((icon) => icon.apple), 'apple touch is absent when it is not declared');
+}
+
+const liveDoc = tip74Seen.get('80-live-document');
+if (liveDoc) {
+  const hello = (liveDoc.bridge?.annotations || []).find((a) => a.path_template === '/hello');
+  const doc = (liveDoc.bridge?.annotations || []).find((a) => a.path_template === '/docs/:slug');
+  assert(JSON.stringify(hello?.cwl_request_query) === JSON.stringify(['name']), 'query filled into HTML is that request');
+  assert(JSON.stringify(doc?.cwl_request_path) === JSON.stringify(['slug']), 'path filled into HTML is that request');
+  assert(hello?.cwl_request_path == null && doc?.cwl_request_query == null, 'only the declared request names are copied');
+}
+
+const dynamicSite = tip74Seen.get('81-dynamic-site');
+if (dynamicSite) {
+  const board = (dynamicSite.bridge?.annotations || []).find((a) => a.path_template === '/board');
+  const note = (dynamicSite.bridge?.annotations || []).find((a) => a.path_template === '/notes/:id');
+  assert(board?.cwl_repeats?.[0]?.collection === 'notes' && board.cwl_repeats[0].when === 'note.open', 'repeated row is host data');
+  assert(board?.cwl_repeats?.[0]?.empty === '<li>No notes</li>', 'empty host data stays document text');
+  assert(board?.cwl_repeats?.[1]?.collection === 'note.tags', 'nested row is host data');
+  assert(board?.cwl_branches?.[0]?.cond === 'view == "closed"' && board.cwl_branches[0].status === 503, 'branch compares the request');
+  assert(note?.cwl_branches?.[0]?.cond === '!note' && note.cwl_branches[0].status === 404, 'branch compares host data');
+  assert(JSON.stringify(note?.cwl_request_path) === JSON.stringify(['id']), 'note path is that request');
+  const branchText = JSON.stringify(dynamicSite.bridge?.annotations || []);
+  assert(!branchText.includes('matchMedia') && !branchText.includes('cookie'), 'a branch is not a media query and not a cookie value');
+}
+
+const database = tip74Seen.get('82-database');
+if (database) {
+  const board = (database.bridge?.annotations || []).find((a) => a.path_template === '/board' && a.method === 'GET');
+  const create = (database.bridge?.annotations || []).find((a) => a.path_template === '/notes' && a.method === 'POST');
+  const bad = (database.bridge?.annotations || []).find((a) => a.path_template === '/bad');
+  const nowhere = (database.bridge?.annotations || []).find((a) => a.path_template === '/nowhere');
+  assert(board?.cwl_db_engine === 'sqlite', `engine: ${board?.cwl_db_engine}`);
+  assert(
+    ['sqlite', 'postgres', 'mysql', 'mariadb', 'sqlserver', 'oracle'].includes(board?.cwl_db_engine),
+    'engine is a named document fact',
+  );
+  const title = (create?.cwl_db_ops || []).find((op) => op.op === 'insert')?.fields?.find((field) => field.column === 'title');
+  assert(title?.value?.kind === 'parameter' && title.value.name === 'title', 'a row value is a parameter');
+  assert(bad?.cwl_db_refused?.includes('cwl:unknown-db-column') && bad?.cwl_db_ops == null, 'unknown column is a hole and does not run');
+  assert(
+    nowhere?.cwl_db_refused?.includes('cwl:db-where-required') && nowhere?.cwl_db_ops == null,
+    'update without where is a hole and does not run',
+  );
+  assert(!JSON.stringify(database).includes('DROP'), 'SQL text is not stored');
+}
+
+const unknownEnginePath = path.join(os.tmpdir(), `helix-unknown-engine-${process.pid}.cwl`);
+fs.writeFileSync(
+  unknownEnginePath,
+  'module m;\nengine mongo;\n@page GET "/"\npage p {\n  effects: none;\n  return html "<p>no</p>";\n}\n',
+);
+try {
+  const unknown = await seedDnaFromCwlFile(unknownEnginePath, {
+    app_id: 'cutover-unknown-engine',
+    mode: 'draft',
+    fixture: 'unknown-engine.cwl',
+    cwlRoot,
+  });
+  const home = (unknown.bridge?.annotations || []).find((a) => a.path_template === '/');
+  assert(home?.cwl_db_engine == null && home?.cwl_db_engine_refused === true, 'an unknown engine is a hole');
+  assert(!JSON.stringify(unknown).includes('mongo'), 'an unknown engine name is not copied');
+  assert(home?.cwl_db_ops == null, 'an unknown engine does not run');
+} finally {
+  fs.rmSync(unknownEnginePath, { force: true });
+}
+
+if (tip74Ok === tip74Golds.length) {
+  console.log('CUTOVER_TIP_1_0_74_OK');
+} else if (tip74Ok > 0) {
+  console.log(`CUTOVER_TIP_1_0_74_PARTIAL (${tip74Ok}/${tip74Golds.length})`);
 }
 
 console.log('CUTOVER_SMOKE_OK');
