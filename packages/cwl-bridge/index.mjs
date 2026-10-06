@@ -479,8 +479,9 @@ function sameSiteDocumentPath(action) {
 }
 
 /**
- * Layout declarations that are page text (tips 1.0.63–1.0.67).
+ * Layout declarations that are page text (tips 1.0.63–1.0.67; tip 1.0.75 host honesty).
  * Paths and class tokens only — no clock, user agent, CSS bytes, image bytes, or script bytes.
+ * Year/device host passes stay host-owned; demo Hosting (`agenticop-cwl-demo`) is not Helix.
  * An off-site form is a hole flag. The foreign URL is not copied.
  * @param {object | null | undefined} layout
  * @returns {object | null}

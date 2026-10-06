@@ -1397,4 +1397,59 @@ if (tip74Ok === tip74Golds.length) {
   console.log(`CUTOVER_TIP_1_0_74_PARTIAL (${tip74Ok}/${tip74Golds.length})`);
 }
 
+console.log('=== cutover: tip 1.0.75 (host site emit — year/device host honesty; demo Hosting is not Helix) ===');
+{
+  const dir = '83-host-site-emit';
+  const cwlPath = path.join(cwlRoot, 'fixtures', 'language-gold', dir, 'routes.cwl');
+  assert(fs.existsSync(cwlPath), `missing ${dir}`);
+  const seeded = await seedDnaFromCwlFile(cwlPath, {
+    app_id: `cutover-${dir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${dir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((seeded.routes?.length ?? 0) >= 3, `${dir} route count`);
+  assert(seeded.routes.every((r) => r.content_class === 'html'), `${dir} stays page HTML`);
+  assert(
+    seeded.routes.every(
+      (r) =>
+        r.cwl_year_host == null &&
+        r.cwl_device_classes == null &&
+        r.cwl_device_below == null &&
+        r.cwl_styles == null &&
+        r.cwl_images == null &&
+        r.cwl_host_firebase == null,
+    ),
+    `${dir} host document facts are not DNA route fields`,
+  );
+  assert(
+    seeded.routes.every((r) => !/\.(css|svg|js)$/.test(String(r.path_template || ''))),
+    `${dir} host files are not DNA routes`,
+  );
+  assert(!JSON.stringify(seeded).includes('matchMedia'), `${dir} does not evaluate a media query`);
+  assert(!JSON.stringify(seeded).includes('User-Agent'), `${dir} user agent is not genome`);
+  const home = (seeded.bridge?.annotations || []).find((a) => a.path_template === '/');
+  assert(home?.cwl_year_host === true, 'year host is a document fact');
+  assert(!JSON.stringify(home).match(/\b20\d{2}\b/), 'Helix does not fill the host calendar year');
+  assert(
+    JSON.stringify(home?.cwl_device_classes) === JSON.stringify(['mobile', 'desktop']),
+    `device classes: ${JSON.stringify(home?.cwl_device_classes)}`,
+  );
+  assert(home?.cwl_device_below === 820, `device below: ${home?.cwl_device_below}`);
+  assert(JSON.stringify(home?.cwl_styles) === JSON.stringify(['/agenticops.css']), 'stylesheet URL only');
+  assert(home?.cwl_images?.[0]?.id === 'logo' && home.cwl_images[0].path === '/logo.svg', 'image path only');
+  assert(home?.cwl_host_firebase?.target === 'agenticop-cwl-demo', 'demo Hosting target is a document fact');
+  assert(
+    home?.cwl_host_firebase?.target !== 'agenticops' &&
+      home?.cwl_host_firebase?.target !== 'agenticop-io',
+    'demo Hosting is not live agenticops',
+  );
+  assert(!JSON.stringify(seeded).includes('firebase deploy'), 'Helix does not deploy Hosting');
+  assert(!JSON.stringify(seeded).includes('Cloud Function'), 'host site emit is not a Cloud Function');
+  const certified = stripBridgeEnvelope(seeded);
+  const cmp = compareCwlSurfaceToDna(seeded, certified);
+  assert(cmp.ok === true, `${dir} self-cutover: ${JSON.stringify(cmp.missing_in_dna)}`);
+  console.log('CUTOVER_TIP_1_0_75_OK');
+}
+
 console.log('CUTOVER_SMOKE_OK');
