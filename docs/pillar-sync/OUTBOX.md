@@ -6,6 +6,39 @@
 
 ---
 
+## 2026-10-05 — secure-tip-1.0.76
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.76-site-100`)  
+**Status:** **done**  
+
+```text
+SECURE_TIP_1_0_76_OK
+CWL_SYNC_OK: 38cbf6e cwl@1.0.76
+TOKENS: CUTOVER_TIP_1_0_75_OK · CUTOVER_TIP_1_0_76_OK · CWL_BRIDGE_SMOKE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.76
+CWL_SHA: 38cbf6e (BOARD tip land bfd1122)
+BRANCH: candidate/secure-tip-1.0.76
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.76** | Year, device, and drawer are certified host effects — Helix records them as document facts and does not fill the year, evaluate a media query, or inject the drawer script. Off-site Google Fonts preconnect and stylesheet URLs are document facts. Font CSS bytes and live Hosting deploy stay outside Helix. Gold `84` + site genome self-cutover → `CUTOVER_TIP_1_0_76_OK` |
+| Pins | `@chrysalis/cwl` and `@agenticop-io/cwl` stay `file:../chrysalis-cwl/packages/cwl` at **1.0.76** |
+
+### Closes
+
+- CWL OUTBOX Secure row of `tip-1.0.76-site-100`
+
+### Ask
+
+none
+
+---
+
 ## 2026-10-05 — secure-tip-1.0.75
 
 **To:** cwl  

@@ -79,6 +79,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] CWL tip `1.0.70` consume — viewport cut, document identity, social card (`CUTOVER_TIP_1_0_70_OK`); golds `76`–`78` are document facts. A media query is not evaluated and a refused URL is not copied
 - [x] CWL tip `1.0.74` consume — head rest, live document, dynamic HTML, named database engine (`CUTOVER_TIP_1_0_74_OK`); golds `79`–`82` are document facts. Helix does not run the live document server, evaluate a media query, open a database, or execute SQL text
 - [x] CWL tip `1.0.75` consume — host site emit (`CUTOVER_TIP_1_0_75_OK`); gold `83` year/device host passes and demo Hosting `agenticop-cwl-demo` are document facts. Helix does not fill the calendar year, evaluate a media query, or deploy Hosting
+- [x] CWL tip `1.0.76` consume — site 100% contract (`CUTOVER_TIP_1_0_76_OK`); gold `84` year/device/drawer host effects and off-site font URLs are document facts. Helix does not fetch font bytes or deploy live Hosting
 - [x] Rosetta Step 4 Live match — `docs/LIVE-MATCH.md` · `npm run live-match-smoke`  
 - [x] Mode B L2 **deepen** — nft divert + fail-closed + teardown (`BRIDGE_L2_FAILCLOSED_OK` / `TEARDOWN_OK`)  
 - [x] Mode B L2 **Phase 2** — dual-iface NIC-A/NIC-B in appliance ns (`BRIDGE_L2_P2_IFACE_OK` / `CROSS_OK` / `DNA_OK` / `SMOKE_OK`)  
