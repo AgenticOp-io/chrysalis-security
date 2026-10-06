@@ -479,9 +479,11 @@ function sameSiteDocumentPath(action) {
 }
 
 /**
- * Layout declarations that are page text (tips 1.0.63–1.0.67; tip 1.0.75 host honesty).
+ * Layout declarations that are page text (tips 1.0.63–1.0.67; tip 1.0.75 host honesty; tip 1.0.78 literal year).
  * Paths and class tokens only — no clock, user agent, CSS bytes, image bytes, or script bytes.
  * Year/device host passes stay host-owned; demo Hosting (`agenticop-cwl-demo`) is not Helix.
+ * Tip 1.0.78 `year N;` is a document digit on the annotation — Helix does not read the clock.
+ * CSS checkbox menu lives in chrome HTML + owned CSS; Helix does not inject drawer/device JS.
  * An off-site form is a hole flag. The foreign URL is not copied.
  * @param {object | null | undefined} layout
  * @returns {object | null}
@@ -491,6 +493,7 @@ function layoutDocumentFacts(layout) {
   /** @type {Record<string, unknown>} */
   const facts = {};
   if (layout.yearHost === true) facts.cwl_year_host = true;
+  if (Number.isInteger(layout.yearLiteral)) facts.cwl_year = layout.yearLiteral;
   if (Array.isArray(layout.deviceHost?.values) && layout.deviceHost.values.length) {
     facts.cwl_device_classes = [...layout.deviceHost.values];
   }
