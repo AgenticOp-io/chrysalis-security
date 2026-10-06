@@ -6,6 +6,39 @@
 
 ---
 
+## 2026-10-05 — secure-tip-1.0.77
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.77-owned-fonts`)  
+**Status:** **done**  
+
+```text
+SECURE_TIP_1_0_77_OK
+CWL_SYNC_OK: bd2ab5b cwl@1.0.77
+TOKENS: CUTOVER_TIP_1_0_76_OK · CUTOVER_TIP_1_0_77_OK · CWL_BRIDGE_SMOKE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.77
+CWL_SHA: bd2ab5b (language land 55238a6 · merge a8945e0 · tag cwl-v1.0.77)
+BRANCH: candidate/secure-tip-1.0.77
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.77** | Owned `/fonts.css` and host `fonts/*.woff2` are document/host asset facts — Helix records the stylesheet URL and does not serve face bytes. Year, device, and drawer stay host effects. Google Fonts CDN is gone from the site genome. Live Hosting deploy stays outside Helix. Gold `85` + site genome self-cutover → `CUTOVER_TIP_1_0_77_OK` |
+| Pins | `@chrysalis/cwl` and `@agenticop-io/cwl` stay `file:../chrysalis-cwl/packages/cwl` at **1.0.77** |
+
+### Closes
+
+- CWL OUTBOX Secure row of `tip-1.0.77-owned-fonts`
+
+### Ask
+
+none
+
+---
+
 ## 2026-10-05 — secure-tip-1.0.76
 
 **To:** cwl  

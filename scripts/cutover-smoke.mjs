@@ -1509,26 +1509,102 @@ console.log('=== cutover: tip 1.0.76 (site 100% — host effects and off-site fo
   assert(siteHome?.cwl_year_host === true, 'site genome year host effect');
   assert(siteHome?.cwl_drawer?.nav_id === 'ao-site-nav', 'site genome drawer host effect');
   assert(siteHome?.cwl_device_below === 820, 'site genome device cut');
-  const fontPreconnects = (siteHome?.cwl_preconnects || []).map((link) => link.href);
-  assert(
-    fontPreconnects.includes('https://fonts.googleapis.com') &&
-      fontPreconnects.includes('https://fonts.gstatic.com'),
-    `off-site font preconnects: ${fontPreconnects.join(',')}`,
-  );
-  const fontStyles = (siteHome?.cwl_page_styles || []).filter((href) =>
-    String(href).startsWith('https://fonts.googleapis.com/'),
-  );
-  assert(fontStyles.length >= 1, 'off-site font stylesheet URL is a document fact');
-  assert(
-    !JSON.stringify(siteSeed.routes).includes('fonts.googleapis.com'),
-    'font CSS bytes are not DNA routes',
-  );
+  // Tip 1.0.77 moved the live site genome off Google Fonts CDN onto owned /fonts.css.
+  // Gold 84 still proves tip 1.0.76 host effects; owned-font URL facts are tip 1.0.77.
   assert(!JSON.stringify(siteSeed).includes('matchMedia'), 'site genome Helix does not evaluate media queries');
   assert(!JSON.stringify(siteSeed).includes('ao-layout.js'), 'dead menu script stays outside the genome');
   const siteCertified = stripBridgeEnvelope(siteSeed);
   const siteCmp = compareCwlSurfaceToDna(siteSeed, siteCertified);
   assert(siteCmp.ok === true, `site 100 self-cutover: ${JSON.stringify(siteCmp.missing_in_dna)}`);
   console.log('CUTOVER_TIP_1_0_76_OK');
+}
+
+console.log('=== cutover: tip 1.0.77 (owned fonts — /fonts.css and face bytes are document facts, not Helix) ===');
+{
+  const dir = '85-site-owned-fonts';
+  const cwlPath = path.join(cwlRoot, 'fixtures', 'language-gold', dir, 'routes.cwl');
+  assert(fs.existsSync(cwlPath), `missing ${dir}`);
+  const seeded = await seedDnaFromCwlFile(cwlPath, {
+    app_id: `cutover-${dir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${dir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((seeded.routes?.length ?? 0) >= 2, `${dir} route count`);
+  assert(seeded.routes.every((r) => r.content_class === 'html'), `${dir} stays page HTML`);
+  assert(
+    seeded.routes.every(
+      (r) =>
+        r.cwl_year_host == null &&
+        r.cwl_device_classes == null &&
+        r.cwl_device_below == null &&
+        r.cwl_drawer == null &&
+        r.cwl_styles == null &&
+        r.cwl_images == null &&
+        r.cwl_host_firebase == null,
+    ),
+    `${dir} host asset facts are not DNA route fields`,
+  );
+  assert(
+    seeded.routes.every((r) => !/\.(css|woff2|svg|js)$/.test(String(r.path_template || ''))),
+    `${dir} font CSS and face bytes are not DNA routes`,
+  );
+  assert(!JSON.stringify(seeded).includes('matchMedia'), `${dir} Helix does not evaluate a media query`);
+  assert(!JSON.stringify(seeded).includes('User-Agent'), `${dir} user agent is not genome`);
+  assert(!JSON.stringify(seeded).includes('firebase deploy'), `${dir} Helix does not deploy Hosting`);
+  assert(!JSON.stringify(seeded).includes('fonts.googleapis.com'), `${dir} no Google Fonts CDN`);
+  assert(!JSON.stringify(seeded).includes('fonts.gstatic.com'), `${dir} no gstatic font CDN`);
+  const home = (seeded.bridge?.annotations || []).find((a) => a.path_template === '/');
+  assert(home?.cwl_year_host === true, 'year host effect is a document fact');
+  assert(!JSON.stringify(home).match(/\b20\d{2}\b/), 'Helix does not fill the host calendar year');
+  assert(
+    JSON.stringify(home?.cwl_device_classes) === JSON.stringify(['mobile', 'desktop']),
+    `device classes: ${JSON.stringify(home?.cwl_device_classes)}`,
+  );
+  assert(home?.cwl_device_below === 820, `device below: ${home?.cwl_device_below}`);
+  assert(home?.cwl_drawer?.nav_id === 'ao-site-nav', 'drawer host effect is a document fact');
+  assert(
+    JSON.stringify(home?.cwl_styles) === JSON.stringify(['/fonts.css', '/agenticops.css']),
+    `owned font stylesheet is a document fact: ${JSON.stringify(home?.cwl_styles)}`,
+  );
+  assert(home?.cwl_images?.[0]?.path === '/logo.svg', 'owned image path only');
+  assert(home?.cwl_host_firebase?.target === 'agenticop-cwl-demo', 'demo Hosting stays a document fact');
+  const certified = stripBridgeEnvelope(seeded);
+  const cmp = compareCwlSurfaceToDna(seeded, certified);
+  assert(cmp.ok === true, `${dir} self-cutover: ${JSON.stringify(cmp.missing_in_dna)}`);
+
+  const sitePath = path.join(cwlRoot, 'fixtures', 'sites', 'agenticop-io', 'site.cwl');
+  assert(fs.existsSync(sitePath), 'missing agenticop site genome');
+  const siteSeed = await seedDnaFromCwlFile(sitePath, {
+    app_id: 'cutover-agenticop-owned-fonts',
+    mode: 'draft',
+    fixture: 'fixtures/sites/agenticop-io/site.cwl',
+    cwlRoot,
+  });
+  const siteHome = (siteSeed.bridge?.annotations || []).find((a) => a.path_template === '/');
+  assert(siteHome?.cwl_year_host === true, 'site genome year host effect');
+  assert(siteHome?.cwl_drawer?.nav_id === 'ao-site-nav', 'site genome drawer host effect');
+  assert(siteHome?.cwl_device_below === 820, 'site genome device cut');
+  const siteStyles = siteHome?.cwl_styles || [];
+  assert(siteStyles.includes('/fonts.css'), `owned /fonts.css document fact: ${siteStyles.join(',')}`);
+  assert(siteStyles.includes('/agenticops.css'), 'owned site stylesheet still a document fact');
+  assert(
+    !JSON.stringify(siteSeed).includes('fonts.googleapis.com') &&
+      !JSON.stringify(siteSeed).includes('fonts.gstatic.com'),
+    'site genome dropped Google Fonts CDN',
+  );
+  assert(
+    siteSeed.routes.every((r) => !/\.woff2$/.test(String(r.path_template || ''))),
+    'font face bytes are not DNA routes',
+  );
+  assert(!JSON.stringify(siteSeed.routes).includes('fonts.css'), 'font CSS bytes are not DNA routes');
+  assert(!JSON.stringify(siteSeed).includes('matchMedia'), 'site genome Helix does not evaluate media queries');
+  assert(!JSON.stringify(siteSeed).includes('firebase deploy'), 'live Hosting deploy stays outside Helix');
+  assert(!JSON.stringify(siteSeed).includes('ao-layout.js'), 'dead menu script stays outside the genome');
+  const siteCertified = stripBridgeEnvelope(siteSeed);
+  const siteCmp = compareCwlSurfaceToDna(siteSeed, siteCertified);
+  assert(siteCmp.ok === true, `owned fonts self-cutover: ${JSON.stringify(siteCmp.missing_in_dna)}`);
+  console.log('CUTOVER_TIP_1_0_77_OK');
 }
 
 console.log('CUTOVER_SMOKE_OK');
