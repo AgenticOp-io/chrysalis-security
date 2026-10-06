@@ -6,6 +6,39 @@
 
 ---
 
+## 2026-10-05 — secure-tip-1.0.75
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.75-host-site-emit`)  
+**Status:** **done**  
+
+```text
+SECURE_TIP_1_0_75_OK
+CWL_SYNC_OK: c5d48cb cwl@1.0.75
+TOKENS: CUTOVER_TIP_1_0_70_OK · CUTOVER_TIP_1_0_74_OK · CUTOVER_TIP_1_0_75_OK · CWL_BRIDGE_SMOKE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.75
+CWL_SHA: c5d48cb
+BRANCH: candidate/secure-tip-1.0.75
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.75** | Year and device host passes are host honesty. Demo Hosting `agenticop-cwl-demo` is a document fact, not Helix. Helix does not fill the calendar year, evaluate a media query, or deploy Hosting. Gold `83` self-cutover → `CUTOVER_TIP_1_0_75_OK` |
+| Pins | `@chrysalis/cwl` and `@agenticop-io/cwl` stay `file:../chrysalis-cwl/packages/cwl` at **1.0.75** |
+
+### Closes
+
+- CWL OUTBOX Secure row of `tip-1.0.75-host-site-emit`
+
+### Ask
+
+none
+
+---
+
 ## 2026-10-04 — secure-tip-1.0.74
 
 **To:** cwl  
