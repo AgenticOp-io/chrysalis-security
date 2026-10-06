@@ -6,6 +6,39 @@
 
 ---
 
+## 2026-10-05 — secure-tip-1.0.78
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.78-site-complete`)  
+**Status:** **done**  
+
+```text
+SECURE_TIP_1_0_78_OK
+CWL_SYNC_OK: 9bf1efd cwl@1.0.78
+TOKENS: CUTOVER_TIP_1_0_77_OK · CUTOVER_TIP_1_0_78_OK · CWL_BRIDGE_SMOKE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.78
+CWL_SHA: 9bf1efd (language land a172cb8 · tag cwl-v1.0.78)
+BRANCH: candidate/secure-tip-1.0.78
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.78** | Literal `year 2026;` is `cwl_year` on the annotation — a document digit, not a clock read. CSS checkbox menu is chrome HTML + owned CSS — not a Helix drawer. Complete genome drops `year host` / `device host` / `drawer`. Gold `86` + site genome self-cutover → `CUTOVER_TIP_1_0_78_OK` |
+| Pins | `@chrysalis/cwl` and `@agenticop-io/cwl` stay `file:../chrysalis-cwl/packages/cwl` at **1.0.78** |
+
+### Closes
+
+- CWL OUTBOX Secure row of `tip-1.0.78-site-complete`
+
+### Ask
+
+none
+
+---
+
 ## 2026-10-05 — secure-tip-1.0.77
 
 **To:** cwl  

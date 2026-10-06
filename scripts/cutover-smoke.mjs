@@ -1141,10 +1141,13 @@ assert(
 );
 assert(!JSON.stringify(siteSeed.routes).includes('ao-layout.js'), 'site genome does not certify ao-layout.js');
 const siteHome = (siteSeed.bridge?.annotations || []).find((a) => a.path_template === '/');
-assert(siteHome?.cwl_year_host === true, 'site genome year token');
-assert(siteHome?.cwl_styles?.[0] === '/agenticops.css', 'site genome stylesheet URL');
+// Tip 1.0.78: live site genome uses literal year + CSS checkbox menu (no year/device/drawer host).
+assert(siteHome?.cwl_year === 2026, 'site genome literal year is a document fact');
+assert(siteHome?.cwl_year_host == null, 'site genome dropped year host');
+assert((siteHome?.cwl_styles || []).includes('/agenticops.css'), 'site genome stylesheet URL');
+assert((siteHome?.cwl_styles || []).includes('/fonts.css'), 'site genome owned fonts stylesheet');
 assert(siteHome?.cwl_images?.some((img) => img.path === '/logo.svg'), 'site genome image path');
-assert(siteHome?.cwl_device_below === 820, 'site genome viewport cut is a document fact');
+assert(siteHome?.cwl_device_below == null && siteHome?.cwl_drawer == null, 'site genome dropped device/drawer host');
 assert(siteHome?.cwl_charset === 'utf-8' && siteHome?.cwl_viewport_device === true, 'site genome charset and viewport meta');
 assert(siteHome?.cwl_canonical === 'https://agenticop.io/', 'site genome canonical');
 assert(
@@ -1506,11 +1509,12 @@ console.log('=== cutover: tip 1.0.76 (site 100% — host effects and off-site fo
     cwlRoot,
   });
   const siteHome = (siteSeed.bridge?.annotations || []).find((a) => a.path_template === '/');
-  assert(siteHome?.cwl_year_host === true, 'site genome year host effect');
-  assert(siteHome?.cwl_drawer?.nav_id === 'ao-site-nav', 'site genome drawer host effect');
-  assert(siteHome?.cwl_device_below === 820, 'site genome device cut');
-  // Tip 1.0.77 moved the live site genome off Google Fonts CDN onto owned /fonts.css.
-  // Gold 84 still proves tip 1.0.76 host effects; owned-font URL facts are tip 1.0.77.
+  // Tip 1.0.78 moved the live site genome off year/device/drawer host effects.
+  // Gold 84 still proves tip 1.0.76 host effects on its own module.
+  assert(siteHome?.cwl_year === 2026, 'site genome literal year (tip 1.0.78)');
+  assert(siteHome?.cwl_year_host == null, 'site genome no longer uses year host');
+  assert(siteHome?.cwl_drawer == null, 'site genome CSS checkbox menu is not Helix drawer');
+  assert(siteHome?.cwl_device_below == null, 'site genome no longer uses device host');
   assert(!JSON.stringify(siteSeed).includes('matchMedia'), 'site genome Helix does not evaluate media queries');
   assert(!JSON.stringify(siteSeed).includes('ao-layout.js'), 'dead menu script stays outside the genome');
   const siteCertified = stripBridgeEnvelope(siteSeed);
@@ -1582,9 +1586,11 @@ console.log('=== cutover: tip 1.0.77 (owned fonts — /fonts.css and face bytes 
     cwlRoot,
   });
   const siteHome = (siteSeed.bridge?.annotations || []).find((a) => a.path_template === '/');
-  assert(siteHome?.cwl_year_host === true, 'site genome year host effect');
-  assert(siteHome?.cwl_drawer?.nav_id === 'ao-site-nav', 'site genome drawer host effect');
-  assert(siteHome?.cwl_device_below === 820, 'site genome device cut');
+  // Tip 1.0.78: site genome still owns /fonts.css; year/device/drawer host effects are gone.
+  assert(siteHome?.cwl_year === 2026, 'site genome literal year (tip 1.0.78)');
+  assert(siteHome?.cwl_year_host == null, 'site genome no longer uses year host');
+  assert(siteHome?.cwl_drawer == null, 'site genome CSS checkbox menu is not Helix drawer');
+  assert(siteHome?.cwl_device_below == null, 'site genome no longer uses device host');
   const siteStyles = siteHome?.cwl_styles || [];
   assert(siteStyles.includes('/fonts.css'), `owned /fonts.css document fact: ${siteStyles.join(',')}`);
   assert(siteStyles.includes('/agenticops.css'), 'owned site stylesheet still a document fact');
@@ -1605,6 +1611,100 @@ console.log('=== cutover: tip 1.0.77 (owned fonts — /fonts.css and face bytes 
   const siteCmp = compareCwlSurfaceToDna(siteSeed, siteCertified);
   assert(siteCmp.ok === true, `owned fonts self-cutover: ${JSON.stringify(siteCmp.missing_in_dna)}`);
   console.log('CUTOVER_TIP_1_0_77_OK');
+}
+
+console.log('=== cutover: tip 1.0.78 (literal year + CSS checkbox menu are document facts, not Helix) ===');
+{
+  const dir = '86-site-complete';
+  const cwlPath = path.join(cwlRoot, 'fixtures', 'language-gold', dir, 'routes.cwl');
+  assert(fs.existsSync(cwlPath), `missing ${dir}`);
+  const goldSrc = fs.readFileSync(cwlPath, 'utf8');
+  assert(/\byear\s+2026\s*;/.test(goldSrc), `${dir} declares literal year 2026`);
+  assert(/type=["']checkbox["']/.test(goldSrc) && /ao-nav-open/.test(goldSrc), `${dir} checkbox menu is document HTML`);
+  assert(!/\byear\s+host\s*;/.test(goldSrc), `${dir} does not use year host`);
+  assert(!/\bdevice\s+host\b/.test(goldSrc), `${dir} does not use device host`);
+  assert(!/(?:^|\n)\s*drawer\b/.test(goldSrc), `${dir} does not declare drawer`);
+  assert(!/(?:src|href)=["'][^"']*ao-layout\.js/.test(goldSrc), `${dir} does not reference ao-layout.js`);
+  const seeded = await seedDnaFromCwlFile(cwlPath, {
+    app_id: `cutover-${dir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${dir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((seeded.routes?.length ?? 0) >= 2, `${dir} route count`);
+  assert(seeded.routes.every((r) => r.content_class === 'html'), `${dir} stays page HTML`);
+  assert(
+    seeded.routes.every(
+      (r) =>
+        r.cwl_year == null &&
+        r.cwl_year_host == null &&
+        r.cwl_device_classes == null &&
+        r.cwl_device_below == null &&
+        r.cwl_drawer == null &&
+        r.cwl_styles == null &&
+        r.cwl_images == null &&
+        r.cwl_host_firebase == null,
+    ),
+    `${dir} document facts are not DNA route fields`,
+  );
+  assert(
+    seeded.routes.every((r) => !/\.(css|woff2|svg|js)$/.test(String(r.path_template || ''))),
+    `${dir} CSS/font/script bytes are not DNA routes`,
+  );
+  assert(!JSON.stringify(seeded).includes('matchMedia'), `${dir} Helix does not evaluate a media query`);
+  assert(!JSON.stringify(seeded).includes('User-Agent'), `${dir} user agent is not genome`);
+  assert(!JSON.stringify(seeded).includes('firebase deploy'), `${dir} Helix does not deploy Hosting`);
+  assert(!JSON.stringify(seeded).includes('ao-layout.js'), `${dir} menu script stays outside DNA`);
+  const home = (seeded.bridge?.annotations || []).find((a) => a.path_template === '/');
+  assert(home?.cwl_year === 2026, `literal year is a document fact: ${home?.cwl_year}`);
+  assert(home?.cwl_year_host == null, 'complete site does not use year host');
+  assert(home?.cwl_drawer == null, 'CSS checkbox menu is document HTML, not Helix drawer');
+  assert(home?.cwl_device_classes == null && home?.cwl_device_below == null, 'device host stays off complete site');
+  assert(
+    JSON.stringify(home?.cwl_styles) === JSON.stringify(['/fonts.css', '/agenticops.css']),
+    `owned stylesheets are document facts: ${JSON.stringify(home?.cwl_styles)}`,
+  );
+  assert(home?.cwl_images?.[0]?.path === '/logo.svg', 'owned image path only');
+  assert(home?.cwl_host_firebase?.target === 'agenticop-cwl-demo', 'demo Hosting stays a document fact');
+  const certified = stripBridgeEnvelope(seeded);
+  const cmp = compareCwlSurfaceToDna(seeded, certified);
+  assert(cmp.ok === true, `${dir} self-cutover: ${JSON.stringify(cmp.missing_in_dna)}`);
+
+  const sitePath = path.join(cwlRoot, 'fixtures', 'sites', 'agenticop-io', 'site.cwl');
+  assert(fs.existsSync(sitePath), 'missing agenticop site genome');
+  const siteSrc = fs.readFileSync(sitePath, 'utf8');
+  assert(/\byear\s+2026\s*;/.test(siteSrc), 'site genome declares literal year 2026');
+  assert(/type=["']checkbox["']/.test(siteSrc) && /ao-nav-open/.test(siteSrc), 'site checkbox menu is document HTML');
+  assert(!/\byear\s+host\s*;/.test(siteSrc), 'site genome dropped year host');
+  assert(!/\bdevice\s+host\b/.test(siteSrc), 'site genome dropped device host');
+  assert(!/(?:^|\n)\s*drawer\b/.test(siteSrc), 'site genome dropped drawer declaration');
+  assert(!/(?:src|href)=["'][^"']*ao-layout\.js/.test(siteSrc), 'site genome does not reference ao-layout.js');
+  const siteSeed = await seedDnaFromCwlFile(sitePath, {
+    app_id: 'cutover-agenticop-site-complete',
+    mode: 'draft',
+    fixture: 'fixtures/sites/agenticop-io/site.cwl',
+    cwlRoot,
+  });
+  const siteHome = (siteSeed.bridge?.annotations || []).find((a) => a.path_template === '/');
+  assert(siteHome?.cwl_year === 2026, `site literal year document fact: ${siteHome?.cwl_year}`);
+  assert(siteHome?.cwl_year_host == null, 'site genome does not use year host');
+  assert(siteHome?.cwl_drawer == null, 'site CSS checkbox menu is not Helix drawer');
+  assert(siteHome?.cwl_device_classes == null && siteHome?.cwl_device_below == null, 'site genome has no device host');
+  const siteStyles = siteHome?.cwl_styles || [];
+  assert(siteStyles.includes('/fonts.css'), `owned /fonts.css document fact: ${siteStyles.join(',')}`);
+  assert(siteStyles.includes('/agenticops.css'), 'owned site stylesheet still a document fact');
+  assert(
+    !JSON.stringify(siteSeed).includes('fonts.googleapis.com') &&
+      !JSON.stringify(siteSeed).includes('fonts.gstatic.com'),
+    'site genome keeps fonts off CDN',
+  );
+  assert(!JSON.stringify(siteSeed).includes('matchMedia'), 'site genome Helix does not evaluate media queries');
+  assert(!JSON.stringify(siteSeed).includes('firebase deploy'), 'live Hosting deploy stays outside Helix');
+  assert(!JSON.stringify(siteSeed).includes('ao-layout.js'), 'dead menu script stays outside the genome');
+  const siteCertified = stripBridgeEnvelope(siteSeed);
+  const siteCmp = compareCwlSurfaceToDna(siteSeed, siteCertified);
+  assert(siteCmp.ok === true, `site complete self-cutover: ${JSON.stringify(siteCmp.missing_in_dna)}`);
+  console.log('CUTOVER_TIP_1_0_78_OK');
 }
 
 console.log('CUTOVER_SMOKE_OK');
