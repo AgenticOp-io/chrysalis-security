@@ -1990,4 +1990,77 @@ console.log('=== cutover: tip 1.0.82 (RFC-0039 DNA identity is document facts, n
   console.log('CUTOVER_TIP_1_0_82_OK');
 }
 
+console.log('=== cutover: tip 1.0.83 (RFC-0040 asset integrity is document facts, not Helix invent) ===');
+{
+  const aiDir = '92-asset-integrity';
+  const aiPath = path.join(cwlRoot, 'fixtures', 'language-gold', aiDir, 'routes.cwl');
+  assert(fs.existsSync(aiPath), `missing ${aiDir}`);
+  const aiSrc = fs.readFileSync(aiPath, 'utf8');
+  assert(/style\s+"\/app\.css"\s+integrity\s+"sha384-/.test(aiSrc), `${aiDir} declares style integrity`);
+  assert(/script\s+"\/site\.js"\s+integrity\s+"sha384-/.test(aiSrc), `${aiDir} declares script integrity`);
+  assert(/script\s+"\/editor\.mjs"\s+module\s+integrity\s+"sha384-/.test(aiSrc), `${aiDir} declares module script`);
+  assert(/style\s+"\/page\.css"\s+integrity\s+"sha256-/.test(aiSrc), `${aiDir} declares page style integrity`);
+  assert(/hole\s+cwl:bad-integrity\s*;/.test(aiSrc), `${aiDir} catalogues bad-integrity`);
+  assert(/hole\s+cwl:bad-asset-url\s*;/.test(aiSrc), `${aiDir} catalogues bad-asset-url`);
+  assert(/hole\s+cwl:bad-asset-tail\s*;/.test(aiSrc), `${aiDir} catalogues bad-asset-tail`);
+  const aiSeeded = await seedDnaFromCwlFile(aiPath, {
+    app_id: `cutover-${aiDir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${aiDir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((aiSeeded.routes?.length ?? 0) === 3, `${aiDir} route count`);
+  const editor = (aiSeeded.bridge?.annotations || []).find((a) => a.path_template === '/editor');
+  assert(
+    Array.isArray(editor?.cwl_styles) &&
+      editor.cwl_styles[0]?.href === '/app.css' &&
+      typeof editor.cwl_styles[0]?.integrity === 'string' &&
+      editor.cwl_styles[0]?.crossorigin === true,
+    `${aiDir} layout style integrity document fact`,
+  );
+  assert(
+    Array.isArray(editor?.cwl_scripts) &&
+      editor.cwl_scripts.some(
+        (s) => s?.src === '/site.js' && typeof s.integrity === 'string' && s.crossorigin === true,
+      ) &&
+      editor.cwl_scripts.some(
+        (s) => s?.src === '/editor.mjs' && s.module === true && typeof s.integrity === 'string',
+      ),
+    `${aiDir} layout script integrity / module document facts`,
+  );
+  assert(
+    Array.isArray(editor?.cwl_page_styles) &&
+      editor.cwl_page_styles[0]?.href === '/page.css' &&
+      typeof editor.cwl_page_styles[0]?.integrity === 'string',
+    `${aiDir} page style integrity document fact`,
+  );
+  const refuse = (aiSeeded.bridge?.annotations || []).find((a) => a.path_template === '/refuse');
+  assert(
+    Array.isArray(refuse?.cwl_layout_holes) &&
+      refuse.cwl_layout_holes.includes('cwl:bad-integrity') &&
+      refuse.cwl_layout_holes.includes('cwl:bad-asset-url') &&
+      refuse.cwl_layout_holes.includes('cwl:bad-asset-tail'),
+    `${aiDir} refuse layout holes are document facts`,
+  );
+  assert(
+    aiSeeded.routes.every(
+      (r) =>
+        r.cwl_styles == null &&
+        r.cwl_scripts == null &&
+        r.cwl_page_styles == null &&
+        r.cwl_layout_holes == null &&
+        r.integrity == null,
+    ),
+    `${aiDir} asset integrity facts stay annotations, not DNA route fields`,
+  );
+  const seededJson = JSON.stringify(aiSeeded);
+  assert(!/Subresource Integrity|sri-check|crypto\.subtle\.digest/.test(seededJson), `${aiDir} Helix does not invent SRI verifier`);
+  assert(!/new Function\(|eval\(|vm\.runIn/.test(seededJson), `${aiDir} Helix does not invent JS runtime`);
+  assert(!/NestFactory|LiveView|Flutter|dart:ui/.test(seededJson), `${aiDir} Helix does not invent Nest/LiveView/Flutter`);
+  const aiCertified = stripBridgeEnvelope(aiSeeded);
+  const aiCmp = compareCwlSurfaceToDna(aiSeeded, aiCertified);
+  assert(aiCmp.ok === true, `${aiDir} self-cutover: ${JSON.stringify(aiCmp.missing_in_dna)}`);
+  console.log('CUTOVER_TIP_1_0_83_OK');
+}
+
 console.log('CUTOVER_SMOKE_OK');

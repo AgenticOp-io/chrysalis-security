@@ -6,6 +6,41 @@
 
 ---
 
+## 2026-10-06 — secure-tip-1.0.83
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.83-asset-integrity`)  
+**Status:** **done**  
+
+```text
+SECURE_TIP_1_0_83_OK
+CUTOVER_TIP_1_0_83_OK
+CWL_SYNC_OK: 394c473 cwl@1.0.83
+TOKENS: CUTOVER_TIP_1_0_82_OK · CUTOVER_TIP_1_0_83_OK · CWL_BRIDGE_SMOKE_OK · LIVE_MATCH_OK · TRAFFIC_DECIDES_SECURE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.83
+CWL_SHA: 394c473 (language land ac8f7bf · merge 5f4b571 · tag cwl-v1.0.83)
+BRANCH: candidate/secure-tip-1.0.83
+NOTE: sibling CWL main may already show tip 1.0.84; this reply closes tip-1.0.83-asset-integrity only
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.83** | RFC-0040 progressive asset integrity (`script` / `style` + `integrity` / `module` / `crossorigin`) are document facts on bridge annotations (gold `92`). URL-only assets stay strings; SRI / module / crossorigin deepen the object. Catalogued layout holes `cwl:bad-integrity` / `bad-asset-url` / `bad-asset-tail` are annotation facts. Helix does not hash, verify SRI in a browser, or invent a JS/CSS runtime. Tip seed self-cutover is DNA route identity only → `CUTOVER_TIP_1_0_83_OK`. Traffic DNA remains the default protect path |
+| Pins | `@chrysalis/cwl` and `@agenticop-io/cwl` stay `file:../chrysalis-cwl/packages/cwl` at **1.0.83** |
+
+### Closes
+
+- CWL OUTBOX Secure row of `tip-1.0.83-asset-integrity`
+
+### Ask
+
+none
+
+---
+
 ## 2026-10-06 — secure-tip-1.0.82
 
 **To:** cwl  
