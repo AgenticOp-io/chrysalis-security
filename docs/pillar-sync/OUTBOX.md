@@ -19,7 +19,8 @@ CWL_SYNC_OK: 67be819 cwl@1.0.84
 TOKENS: CUTOVER_TIP_1_0_83_OK · CUTOVER_TIP_1_0_84_OK · CWL_BRIDGE_SMOKE_OK · LIVE_MATCH_OK · TRAFFIC_DECIDES_SECURE_OK · CWL_SYNC_OK
 CWL_TIP: 1.0.84
 CWL_SHA: 67be819 (language land ed50c0b · merge ca346e2 · tag cwl-v1.0.84)
-BRANCH: candidate/secure-tip-1.0.84
+SECURE_MAIN: fb08f45
+PR: https://github.com/AgenticOp-io/chrysalis-security/pull/38
 HEARTBEAT: waiting
 ```
 
