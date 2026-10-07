@@ -1815,4 +1815,54 @@ console.log('=== cutover: tip 1.0.79 (stream websocket + job.enqueue + UI events
   console.log('CUTOVER_TIP_1_0_79_OK');
 }
 
+console.log('=== cutover: tip 1.0.80 (verify dispose messaging is document text, not Helix) ===');
+{
+  const sitePath = path.join(cwlRoot, 'fixtures', 'sites', 'agenticop-io', 'site.cwl');
+  assert(fs.existsSync(sitePath), 'missing agenticop site genome');
+  const siteSrc = fs.readFileSync(sitePath, 'utf8');
+  assert(/tip\s+1\.0\.80/.test(siteSrc) || /1\.0\.80/.test(siteSrc), 'site genome pins tip 1.0.80');
+  assert(/verify\s+dispose/i.test(siteSrc), 'site genome leads with verify dispose');
+  assert(/No fa[çc]ades/i.test(siteSrc) || /no fa[çc]ades/i.test(siteSrc), 'site genome states no façades');
+  assert(!/honest\s+holes/i.test(siteSrc), 'site genome dropped honest-holes slogans');
+  const siteSeed = await seedDnaFromCwlFile(sitePath, {
+    app_id: 'cutover-agenticop-verify-dispose',
+    mode: 'draft',
+    fixture: 'fixtures/sites/agenticop-io/site.cwl',
+    cwlRoot,
+  });
+  assert((siteSeed.routes?.length ?? 0) >= 2, 'site genome route count');
+  assert(
+    siteSeed.routes.every((r) => r.content_class === 'html' || r.content_class === 'other'),
+    'site genome routes stay page/other DNA classes',
+  );
+  const siteHome = (siteSeed.bridge?.annotations || []).find((a) => a.path_template === '/');
+  assert(siteHome?.cwl_year === 2026, `literal year remains a document fact: ${siteHome?.cwl_year}`);
+  assert(siteHome?.cwl_year_host == null, 'verify-dispose tip does not restore year host');
+  assert(siteHome?.cwl_drawer == null, 'verify-dispose tip does not invent Helix drawer');
+  const siteStyles = siteHome?.cwl_styles || [];
+  assert(siteStyles.includes('/fonts.css'), 'owned /fonts.css still a document fact');
+  assert(siteStyles.includes('/agenticops.css'), 'owned site stylesheet still a document fact');
+  // Messaging copy must not become DNA route fields or invented protect surface.
+  assert(
+    siteSeed.routes.every(
+      (r) =>
+        r.cwl_year == null &&
+        r.cwl_styles == null &&
+        r.cwl_description == null &&
+        r.verify_dispose == null &&
+        r.honest_holes == null,
+    ),
+    'marketing messaging stays annotation/page text, not DNA route fields',
+  );
+  const seededJson = JSON.stringify(siteSeed);
+  assert(!seededJson.includes('honest holes'), 'seed does not reintroduce honest-holes slogans');
+  assert(!seededJson.includes('firebase deploy'), 'live Hosting deploy stays outside Helix');
+  assert(!seededJson.includes('ao-layout.js'), 'menu script stays outside DNA');
+  assert(!seededJson.includes('matchMedia'), 'Helix does not evaluate media queries');
+  const siteCertified = stripBridgeEnvelope(siteSeed);
+  const siteCmp = compareCwlSurfaceToDna(siteSeed, siteCertified);
+  assert(siteCmp.ok === true, `verify-dispose self-cutover: ${JSON.stringify(siteCmp.missing_in_dna)}`);
+  console.log('CUTOVER_TIP_1_0_80_OK');
+}
+
 console.log('CUTOVER_SMOKE_OK');

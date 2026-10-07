@@ -486,6 +486,8 @@ function sameSiteDocumentPath(action) {
  * CSS checkbox menu lives in chrome HTML + owned CSS; Helix does not inject drawer/device JS.
  * Tip 1.0.79 `stream websocket` / `job.enqueue` / island event names are document facts —
  * Helix does not invent WS frames, job queues, or client hydration.
+ * Tip 1.0.80 marketing copy (verify dispose / no façades) is page text only —
+ * Helix does not turn slogans into DNA routes or fill unproven claims.
  * An off-site form is a hole flag. The foreign URL is not copied.
  * @param {object | null | undefined} layout
  * @returns {object | null}
