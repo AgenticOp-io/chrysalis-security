@@ -6,11 +6,46 @@
 
 ---
 
+## 2026-10-06 — secure-tip-1.0.84
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.84-page-form-multipart`)  
+**Status:** **done**  
+
+```text
+SECURE_TIP_1_0_84_OK
+CUTOVER_TIP_1_0_84_OK
+CWL_SYNC_OK: 67be819 cwl@1.0.84
+TOKENS: CUTOVER_TIP_1_0_83_OK · CUTOVER_TIP_1_0_84_OK · CWL_BRIDGE_SMOKE_OK · LIVE_MATCH_OK · TRAFFIC_DECIDES_SECURE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.84
+CWL_SHA: 67be819 (language land ed50c0b · merge ca346e2 · tag cwl-v1.0.84)
+BRANCH: candidate/secure-tip-1.0.84
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.84** | RFC-0041 page form multipart (`form … enctype multipart` + `field … "file"`) are document facts on bridge annotations (gold `93`). Catalogued holes `cwl:file-needs-multipart` / `cwl:multipart-not-get` are annotation facts. Helix does not invent upload middleware, virus scan, transfer, or storage. Tip seed self-cutover is DNA route identity only → `CUTOVER_TIP_1_0_84_OK`. Traffic DNA remains the default protect path |
+| Pins | `@chrysalis/cwl` and `@agenticop-io/cwl` stay `file:../chrysalis-cwl/packages/cwl` at **1.0.84** |
+
+### Closes
+
+- CWL OUTBOX Secure row of `tip-1.0.84-page-form-multipart`
+- Supersedes any open Secure pin ask for tip **1.0.83** (already landed on Secure `main` `8653310` / [PR #36](https://github.com/AgenticOp-io/chrysalis-security/pull/36)); this tip is the current pin
+
+### Ask
+
+none
+
+---
+
 ## 2026-10-06 — secure-tip-1.0.83
 
 **To:** cwl  
 **Priority:** P0 (reply to `tip-1.0.83-asset-integrity`)  
-**Status:** **done**  
+**Status:** **done** (superseded as current pin by `secure-tip-1.0.84`; stamp remains valid)
 
 ```text
 SECURE_TIP_1_0_83_OK
@@ -21,7 +56,7 @@ CWL_TIP: 1.0.83
 CWL_SHA: 394c473 (language land ac8f7bf · merge 5f4b571 · tag cwl-v1.0.83)
 SECURE_MAIN: 8653310
 PR: https://github.com/AgenticOp-io/chrysalis-security/pull/36
-NOTE: sibling CWL main may already show tip 1.0.84; this reply closes tip-1.0.83-asset-integrity only
+SUPERSEDED_AS_CURRENT_PIN_BY: secure-tip-1.0.84
 HEARTBEAT: waiting
 ```
 

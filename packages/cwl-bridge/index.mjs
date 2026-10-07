@@ -496,6 +496,8 @@ function sameSiteDocumentPath(action) {
  * Tip 1.0.83 RFC-0040 progressive asset integrity (`integrity` / `module` /
  * `crossorigin` on named `script` / `style`) are document facts — Helix does
  * not hash, verify SRI in a browser, or invent a JS/CSS runtime.
+ * Tip 1.0.84 RFC-0041 page form `enctype multipart` + `field … "file"` are
+ * document facts — Helix does not invent upload middleware, storage, or transfer.
  * An off-site form is a hole flag. The foreign URL is not copied.
  * @param {object | null | undefined} layout
  * @returns {object | null}
@@ -544,8 +546,9 @@ function layoutDocumentFacts(layout) {
   }
   const scripts = (layout.scripts || []).map(scriptDocumentFact).filter(Boolean);
   if (scripts.length) facts.cwl_scripts = scripts;
-  const assetHoles = (layout.holes || []).filter((h) => ASSET_INTEGRITY_HOLES.includes(h));
-  if (assetHoles.length) facts.cwl_layout_holes = [...assetHoles];
+  const holeSources = [...(layout.holes || []), ...(layout.formHoles || [])];
+  const docHoles = [...new Set(holeSources.filter((h) => DOCUMENT_LAYOUT_HOLES.includes(h)))];
+  if (docHoles.length) facts.cwl_layout_holes = docHoles;
   const forms = Array.isArray(layout.forms) ? layout.forms : [];
   const sameSite = forms.filter((f) => f && !f.refused && sameSiteDocumentPath(f.action));
   if (sameSite.length) {
@@ -553,6 +556,7 @@ function layoutDocumentFacts(layout) {
       id: f.id,
       method: String(f.method || 'post').toUpperCase(),
       action: f.action,
+      ...(f.enctype === 'multipart' ? { enctype: 'multipart' } : {}),
       fields: (f.fields || []).map((field) => ({ name: field.name, type: field.type })),
       ...(f.submit ? { submit: f.submit } : {}),
     }));
@@ -568,6 +572,14 @@ const ASSET_INTEGRITY_HOLES = Object.freeze([
   'cwl:bad-asset-url',
   'cwl:bad-asset-tail',
 ]);
+
+/** RFC-0041 page form multipart holes (tip 1.0.84) — catalogued facts, not Helix invent. */
+const PAGE_FORM_MULTIPART_HOLES = Object.freeze([
+  'cwl:file-needs-multipart',
+  'cwl:multipart-not-get',
+]);
+
+const DOCUMENT_LAYOUT_HOLES = Object.freeze([...ASSET_INTEGRITY_HOLES, ...PAGE_FORM_MULTIPART_HOLES]);
 
 /**
  * RFC-0040 style document fact (tip 1.0.83).
