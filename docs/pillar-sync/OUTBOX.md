@@ -19,7 +19,8 @@ CWL_SYNC_OK: 394c473 cwl@1.0.83
 TOKENS: CUTOVER_TIP_1_0_82_OK · CUTOVER_TIP_1_0_83_OK · CWL_BRIDGE_SMOKE_OK · LIVE_MATCH_OK · TRAFFIC_DECIDES_SECURE_OK · CWL_SYNC_OK
 CWL_TIP: 1.0.83
 CWL_SHA: 394c473 (language land ac8f7bf · merge 5f4b571 · tag cwl-v1.0.83)
-BRANCH: candidate/secure-tip-1.0.83
+SECURE_MAIN: 8653310
+PR: https://github.com/AgenticOp-io/chrysalis-security/pull/36
 NOTE: sibling CWL main may already show tip 1.0.84; this reply closes tip-1.0.83-asset-integrity only
 HEARTBEAT: waiting
 ```
