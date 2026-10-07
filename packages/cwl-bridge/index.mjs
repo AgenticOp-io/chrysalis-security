@@ -490,6 +490,9 @@ function sameSiteDocumentPath(action) {
  * Helix does not turn slogans into DNA routes or fill unproven claims.
  * Tip 1.0.81 RFC-0038 Nest / LiveView / Flutter / onion / raw-SQL residuals are
  * catalogued hole reasons on annotations — Helix does not invent those runtimes.
+ * Tip 1.0.82 RFC-0039 DNA identity (`replaces` / `from peel` / `capability` /
+ * `works without client`) are document facts on annotations — Helix does not
+ * invent a capability browser, peel runtime, or progressive certificate engine.
  * An off-site form is a hole flag. The foreign URL is not copied.
  * @param {object | null | undefined} layout
  * @returns {object | null}
@@ -568,6 +571,42 @@ const HEAD_REFUSED = Object.freeze([
 ]);
 
 const DB_ENGINES = Object.freeze(['sqlite', 'postgres', 'mysql', 'mariadb', 'sqlserver', 'oracle']);
+
+const CWL_CAPABILITIES = Object.freeze([
+  'cookies',
+  'network-same-origin',
+  'network-cross-origin',
+  'storage',
+  'client',
+]);
+
+/**
+ * RFC-0039 DNA identity (tip 1.0.82): replaces / peel / capability / works without client.
+ * Document facts on bridge annotations only — never DNA route fields.
+ * Helix does not invent a capability browser, peel runtime, or client certificate engine.
+ * @param {object} route
+ * @returns {object | null}
+ */
+function dnaIdentityDocumentFacts(route) {
+  /** @type {Record<string, unknown>} */
+  const facts = {};
+  if (typeof route.replaces === 'string' && route.replaces) facts.cwl_replaces = route.replaces;
+  if (
+    route.peel &&
+    typeof route.peel.stack === 'string' &&
+    route.peel.stack &&
+    typeof route.peel.at === 'string' &&
+    route.peel.at
+  ) {
+    facts.cwl_from_peel = { stack: route.peel.stack, at: route.peel.at };
+  }
+  if (Array.isArray(route.capabilities) && route.capabilities.length) {
+    const caps = route.capabilities.filter((c) => typeof c === 'string' && CWL_CAPABILITIES.includes(c));
+    if (caps.length) facts.cwl_capabilities = [...caps];
+  }
+  if (route.worksWithoutClient === true) facts.cwl_works_without_client = true;
+  return Object.keys(facts).length ? facts : null;
+}
 
 /**
  * Per-page document identity and social card (tips 1.0.69–1.0.71).
@@ -880,6 +919,11 @@ export function genomeRouteAnnotations(mod) {
     const dbFacts = dbDocumentFacts(r, mod);
     if (dbFacts) {
       Object.assign(fragment, dbFacts);
+      carries = true;
+    }
+    const identityFacts = dnaIdentityDocumentFacts(r);
+    if (identityFacts) {
+      Object.assign(fragment, identityFacts);
       carries = true;
     }
 
