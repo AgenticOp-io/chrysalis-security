@@ -2063,4 +2063,58 @@ console.log('=== cutover: tip 1.0.83 (RFC-0040 asset integrity is document facts
   console.log('CUTOVER_TIP_1_0_83_OK');
 }
 
+console.log('=== cutover: tip 1.0.84 (RFC-0041 page form multipart is document facts, not Helix invent) ===');
+{
+  const pfDir = '93-page-form-multipart';
+  const pfPath = path.join(cwlRoot, 'fixtures', 'language-gold', pfDir, 'routes.cwl');
+  assert(fs.existsSync(pfPath), `missing ${pfDir}`);
+  const pfSrc = fs.readFileSync(pfPath, 'utf8');
+  assert(/form\s+upload\s+method\s+post\s+action\s+"\/upload"\s+enctype\s+multipart\s*;/.test(pfSrc), `${pfDir} declares enctype multipart`);
+  assert(/field\s+resume\s+"file"\s*;/.test(pfSrc), `${pfDir} declares file field`);
+  assert(/hole\s+cwl:file-needs-multipart\s*;/.test(pfSrc), `${pfDir} catalogues file-needs-multipart`);
+  assert(/hole\s+cwl:multipart-not-get\s*;/.test(pfSrc), `${pfDir} catalogues multipart-not-get`);
+  const pfSeeded = await seedDnaFromCwlFile(pfPath, {
+    app_id: `cutover-${pfDir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${pfDir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((pfSeeded.routes?.length ?? 0) === 3, `${pfDir} route count`);
+  const uploadPage = (pfSeeded.bridge?.annotations || []).find((a) => a.path_template === '/upload' && a.method === 'GET');
+  assert(
+    Array.isArray(uploadPage?.cwl_forms) &&
+      uploadPage.cwl_forms[0]?.action === '/upload' &&
+      uploadPage.cwl_forms[0]?.method === 'POST' &&
+      uploadPage.cwl_forms[0]?.enctype === 'multipart' &&
+      Array.isArray(uploadPage.cwl_forms[0]?.fields) &&
+      uploadPage.cwl_forms[0].fields.some((f) => f?.name === 'resume' && f?.type === 'file') &&
+      uploadPage.cwl_forms[0].fields.some((f) => f?.name === 'note' && f?.type === 'text'),
+    `${pfDir} page form multipart / file field document facts`,
+  );
+  const refuse = (pfSeeded.bridge?.annotations || []).find((a) => a.path_template === '/refuse');
+  assert(
+    Array.isArray(refuse?.cwl_layout_holes) &&
+      refuse.cwl_layout_holes.includes('cwl:file-needs-multipart') &&
+      refuse.cwl_layout_holes.includes('cwl:multipart-not-get'),
+    `${pfDir} refuse form multipart holes are document facts`,
+  );
+  assert(
+    pfSeeded.routes.every(
+      (r) =>
+        r.cwl_forms == null &&
+        r.enctype == null &&
+        r.cwl_layout_holes == null,
+    ),
+    `${pfDir} page form multipart facts stay annotations, not DNA route fields`,
+  );
+  const seededJson = JSON.stringify(pfSeeded);
+  assert(!/multer|busboy|formidable|multipart middleware|upload middleware/.test(seededJson), `${pfDir} Helix does not invent upload middleware`);
+  assert(!/virus.?scan|S3\.putObject|storage\.bucket/.test(seededJson), `${pfDir} Helix does not invent transfer\/storage`);
+  assert(!/NestFactory|LiveView|Flutter|dart:ui/.test(seededJson), `${pfDir} Helix does not invent Nest/LiveView/Flutter`);
+  const pfCertified = stripBridgeEnvelope(pfSeeded);
+  const pfCmp = compareCwlSurfaceToDna(pfSeeded, pfCertified);
+  assert(pfCmp.ok === true, `${pfDir} self-cutover: ${JSON.stringify(pfCmp.missing_in_dna)}`);
+  console.log('CUTOVER_TIP_1_0_84_OK');
+}
+
 console.log('CUTOVER_SMOKE_OK');
