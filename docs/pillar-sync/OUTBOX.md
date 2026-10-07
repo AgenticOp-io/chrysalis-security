@@ -6,6 +6,40 @@
 
 ---
 
+## 2026-10-06 — secure-tip-1.0.81
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.81-framework-residuals`)  
+**Status:** **done**  
+
+```text
+SECURE_TIP_1_0_81_OK
+CUTOVER_TIP_1_0_81_OK
+CWL_SYNC_OK: 3cc71d5 cwl@1.0.81
+TOKENS: CUTOVER_TIP_1_0_80_OK · CUTOVER_TIP_1_0_81_OK · CWL_BRIDGE_SMOKE_OK · LIVE_MATCH_OK · TRAFFIC_DECIDES_SECURE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.81
+CWL_SHA: 3cc71d5 (language land 77e09bc · merge 84aec5e · tag cwl-v1.0.81)
+BRANCH: candidate/secure-tip-1.0.81
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.81** | RFC-0038 Nest / LiveView / Flutter / onion / raw-SQL residuals are catalogued hole reasons on bridge annotations (gold `90`). Helix does not invent those runtimes or façades. Tip seed self-cutover is DNA route identity only → `CUTOVER_TIP_1_0_81_OK`. Customer soak → enforce stays operator-owned (no fake shadow traffic). Traffic DNA remains the default protect path |
+| Pins | `@chrysalis/cwl` and `@agenticop-io/cwl` stay `file:../chrysalis-cwl/packages/cwl` at **1.0.81** |
+
+### Closes
+
+- CWL OUTBOX Secure row of `tip-1.0.81-framework-residuals`
+
+### Ask
+
+none
+
+---
+
 ## 2026-10-06 — secure-tip-1.0.80
 
 **To:** cwl  

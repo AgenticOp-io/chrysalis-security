@@ -1865,4 +1865,55 @@ console.log('=== cutover: tip 1.0.80 (verify dispose messaging is document text,
   console.log('CUTOVER_TIP_1_0_80_OK');
 }
 
+console.log('=== cutover: tip 1.0.81 (RFC-0038 framework residuals are holes, not Helix invent) ===');
+{
+  const frDir = '90-framework-residuals';
+  const frPath = path.join(cwlRoot, 'fixtures', 'language-gold', frDir, 'routes.cwl');
+  assert(fs.existsSync(frPath), `missing ${frDir}`);
+  const frSrc = fs.readFileSync(frPath, 'utf8');
+  assert(/hole\s+unsupported:nest-di\s*;/.test(frSrc), `${frDir} catalogues nest-di`);
+  assert(/hole\s+unsupported:liveview\s*;/.test(frSrc), `${frDir} catalogues liveview`);
+  assert(/hole\s+unsupported:flutter\s*;/.test(frSrc), `${frDir} catalogues flutter`);
+  assert(/hole\s+unsupported:middleware-onion\s*;/.test(frSrc), `${frDir} catalogues middleware-onion`);
+  assert(/hole\s+unsupported:raw-sql\s*;/.test(frSrc), `${frDir} catalogues raw-sql`);
+  assert(/hole\s+unsupported:opaque-script\s*;/.test(frSrc), `${frDir} keeps opaque-script proof`);
+  const frSeeded = await seedDnaFromCwlFile(frPath, {
+    app_id: `cutover-${frDir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${frDir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((frSeeded.routes?.length ?? 0) === 6, `${frDir} route count`);
+  assert(
+    frSeeded.routes.every((r) => r.content_class === 'other'),
+    `${frDir} tip seed stays DNA route identity (other), not invented page façades`,
+  );
+  const expectedHoles = {
+    '/nest': 'unsupported:nest-di',
+    '/live': 'unsupported:liveview',
+    '/flutter': 'unsupported:flutter',
+    '/onion': 'unsupported:middleware-onion',
+    '/sql': 'unsupported:raw-sql',
+    '/script': 'unsupported:opaque-script',
+  };
+  for (const [pathTemplate, reason] of Object.entries(expectedHoles)) {
+    const ann = (frSeeded.bridge?.annotations || []).find((a) => a.path_template === pathTemplate);
+    assert(ann?.cwl_hole_reason === reason, `${pathTemplate} hole document fact: ${ann?.cwl_hole_reason}`);
+  }
+  assert(
+    frSeeded.routes.every((r) => r.cwl_hole_reason == null),
+    `${frDir} hole reasons stay annotation facts, not DNA route fields`,
+  );
+  const seededJson = JSON.stringify(frSeeded);
+  assert(!/NestFactory|@Injectable|Module\(/.test(seededJson), `${frDir} Helix does not invent Nest DI`);
+  assert(!/LiveView|Phoenix\.LiveView/.test(seededJson), `${frDir} Helix does not invent LiveView`);
+  assert(!/Flutter|dart:ui|Widget\(/.test(seededJson), `${frDir} Helix does not invent Flutter`);
+  assert(!/express\.Router|koa-compose|middleware\.use/.test(seededJson), `${frDir} Helix does not invent onion middleware`);
+  assert(!/SELECT\s+\*|CREATE TABLE|sqlite3\.Database/.test(seededJson), `${frDir} Helix does not invent raw SQL engines`);
+  const frCertified = stripBridgeEnvelope(frSeeded);
+  const frCmp = compareCwlSurfaceToDna(frSeeded, frCertified);
+  assert(frCmp.ok === true, `${frDir} self-cutover: ${JSON.stringify(frCmp.missing_in_dna)}`);
+  console.log('CUTOVER_TIP_1_0_81_OK');
+}
+
 console.log('CUTOVER_SMOKE_OK');
