@@ -488,6 +488,8 @@ function sameSiteDocumentPath(action) {
  * Helix does not invent WS frames, job queues, or client hydration.
  * Tip 1.0.80 marketing copy (verify dispose / no façades) is page text only —
  * Helix does not turn slogans into DNA routes or fill unproven claims.
+ * Tip 1.0.81 RFC-0038 Nest / LiveView / Flutter / onion / raw-SQL residuals are
+ * catalogued hole reasons on annotations — Helix does not invent those runtimes.
  * An off-site form is a hole flag. The foreign URL is not copied.
  * @param {object | null | undefined} layout
  * @returns {object | null}
