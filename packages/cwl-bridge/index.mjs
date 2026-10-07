@@ -493,6 +493,9 @@ function sameSiteDocumentPath(action) {
  * Tip 1.0.82 RFC-0039 DNA identity (`replaces` / `from peel` / `capability` /
  * `works without client`) are document facts on annotations — Helix does not
  * invent a capability browser, peel runtime, or progressive certificate engine.
+ * Tip 1.0.83 RFC-0040 progressive asset integrity (`integrity` / `module` /
+ * `crossorigin` on named `script` / `style`) are document facts — Helix does
+ * not hash, verify SRI in a browser, or invent a JS/CSS runtime.
  * An off-site form is a hole flag. The foreign URL is not copied.
  * @param {object | null | undefined} layout
  * @returns {object | null}
@@ -527,7 +530,8 @@ function layoutDocumentFacts(layout) {
       return out;
     });
   }
-  if (Array.isArray(layout.styles) && layout.styles.length) facts.cwl_styles = [...layout.styles];
+  const styles = (layout.styles || []).map(styleDocumentFact).filter(Boolean);
+  if (styles.length) facts.cwl_styles = styles;
   if (Array.isArray(layout.images) && layout.images.length) {
     facts.cwl_images = layout.images.map((img) => ({ id: img.id, path: img.path }));
   }
@@ -538,7 +542,10 @@ function layoutDocumentFacts(layout) {
       ...(layout.hostFirebase.errorDoc ? { error_doc: layout.hostFirebase.errorDoc } : {}),
     };
   }
-  if (Array.isArray(layout.scripts) && layout.scripts.length) facts.cwl_scripts = [...layout.scripts];
+  const scripts = (layout.scripts || []).map(scriptDocumentFact).filter(Boolean);
+  if (scripts.length) facts.cwl_scripts = scripts;
+  const assetHoles = (layout.holes || []).filter((h) => ASSET_INTEGRITY_HOLES.includes(h));
+  if (assetHoles.length) facts.cwl_layout_holes = [...assetHoles];
   const forms = Array.isArray(layout.forms) ? layout.forms : [];
   const sameSite = forms.filter((f) => f && !f.refused && sameSiteDocumentPath(f.action));
   if (sameSite.length) {
@@ -554,6 +561,54 @@ function layoutDocumentFacts(layout) {
     facts.cwl_offsite_form = true;
   }
   return Object.keys(facts).length ? facts : null;
+}
+
+const ASSET_INTEGRITY_HOLES = Object.freeze([
+  'cwl:bad-integrity',
+  'cwl:bad-asset-url',
+  'cwl:bad-asset-tail',
+]);
+
+/**
+ * RFC-0040 style document fact (tip 1.0.83).
+ * URL-only stays a string for prior tip pins; integrity / crossorigin deepen the object.
+ * Helix never hashes or verifies SRI — host/CI supply the token.
+ * @param {string | { href?: string, integrity?: string, crossorigin?: boolean } | null | undefined} entry
+ * @returns {string | { href: string, integrity?: string, crossorigin?: boolean } | null}
+ */
+function styleDocumentFact(entry) {
+  if (typeof entry === 'string' && entry) return entry;
+  if (!entry || typeof entry !== 'object' || typeof entry.href !== 'string' || !entry.href) return null;
+  const integrity = typeof entry.integrity === 'string' && entry.integrity ? entry.integrity : null;
+  const crossorigin = entry.crossorigin === true;
+  if (!integrity && !crossorigin) return entry.href;
+  /** @type {{ href: string, integrity?: string, crossorigin?: boolean }} */
+  const out = { href: entry.href };
+  if (integrity) out.integrity = integrity;
+  if (crossorigin) out.crossorigin = true;
+  return out;
+}
+
+/**
+ * RFC-0040 script document fact (tip 1.0.83).
+ * URL-only stays a string; module / integrity / crossorigin deepen the object.
+ * Helix does not invent a JS runtime or browser SRI check.
+ * @param {string | { src?: string, module?: boolean, integrity?: string, crossorigin?: boolean } | null | undefined} entry
+ * @returns {string | { src: string, module?: boolean, integrity?: string, crossorigin?: boolean } | null}
+ */
+function scriptDocumentFact(entry) {
+  if (typeof entry === 'string' && entry) return entry;
+  if (!entry || typeof entry !== 'object' || typeof entry.src !== 'string' || !entry.src) return null;
+  const module = entry.module === true;
+  const integrity = typeof entry.integrity === 'string' && entry.integrity ? entry.integrity : null;
+  const crossorigin = entry.crossorigin === true;
+  if (!module && !integrity && !crossorigin) return entry.src;
+  /** @type {{ src: string, module?: boolean, integrity?: string, crossorigin?: boolean }} */
+  const out = { src: entry.src };
+  if (module) out.module = true;
+  if (integrity) out.integrity = integrity;
+  if (crossorigin) out.crossorigin = true;
+  return out;
 }
 
 const META_REFUSED = Object.freeze([
@@ -664,7 +719,8 @@ function pageDocumentFacts(route, layout) {
       link.crossorigin ? { href: link.href, crossorigin: true } : { href: link.href },
     );
   }
-  if (Array.isArray(route.pageStyles) && route.pageStyles.length) facts.cwl_page_styles = [...route.pageStyles];
+  const pageStyles = (route.pageStyles || []).map(styleDocumentFact).filter(Boolean);
+  if (pageStyles.length) facts.cwl_page_styles = pageStyles;
   if (Array.isArray(route.jsonlds) && route.jsonlds.length) {
     const jsonld = route.jsonlds.filter((value) => jsonLdDocumentOk(value));
     if (jsonld.length) facts.cwl_jsonld = jsonld;
