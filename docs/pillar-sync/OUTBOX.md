@@ -6,6 +6,40 @@
 
 ---
 
+## 2026-10-06 — secure-tip-1.0.82
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.82-dna-identity`)  
+**Status:** **done**  
+
+```text
+SECURE_TIP_1_0_82_OK
+CUTOVER_TIP_1_0_82_OK
+CWL_SYNC_OK: a5f126e cwl@1.0.82
+TOKENS: CUTOVER_TIP_1_0_81_OK · CUTOVER_TIP_1_0_82_OK · CWL_BRIDGE_SMOKE_OK · LIVE_MATCH_OK · TRAFFIC_DECIDES_SECURE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.82
+CWL_SHA: a5f126e (language land 6ff748b · merge 125f965 · tag cwl-v1.0.82)
+BRANCH: candidate/secure-tip-1.0.82
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.82** | RFC-0039 DNA identity (`replaces` / `from peel` / `capability` / `works without client`) are document facts on bridge annotations (gold `91`). Helix does not invent a capability browser, peel runtime, or progressive certificate engine. Tip seed self-cutover is DNA route identity only → `CUTOVER_TIP_1_0_82_OK`. Traffic DNA remains the default protect path |
+| Pins | `@chrysalis/cwl` and `@agenticop-io/cwl` stay `file:../chrysalis-cwl/packages/cwl` at **1.0.82** |
+
+### Closes
+
+- CWL OUTBOX Secure row of `tip-1.0.82-dna-identity`
+
+### Ask
+
+none
+
+---
+
 ## 2026-10-06 — secure-tip-1.0.81
 
 **To:** cwl  

@@ -1916,4 +1916,78 @@ console.log('=== cutover: tip 1.0.81 (RFC-0038 framework residuals are holes, no
   console.log('CUTOVER_TIP_1_0_81_OK');
 }
 
+console.log('=== cutover: tip 1.0.82 (RFC-0039 DNA identity is document facts, not Helix invent) ===');
+{
+  const idDir = '91-dna-identity';
+  const idPath = path.join(cwlRoot, 'fixtures', 'language-gold', idDir, 'routes.cwl');
+  assert(fs.existsSync(idPath), `missing ${idDir}`);
+  const idSrc = fs.readFileSync(idPath, 'utf8');
+  assert(/replaces\s+"https:\/\/legacy\.example\/invoice\.php"\s*;/.test(idSrc), `${idDir} declares replaces`);
+  assert(/from\s+peel\s+"php"\s+at\s+"legacy\/invoice\.php"\s*;/.test(idSrc), `${idDir} declares from peel`);
+  assert(/capability\s+cookies\s*;/.test(idSrc), `${idDir} declares capability cookies`);
+  assert(/works\s+without\s+client\s*;/.test(idSrc), `${idDir} declares works without client`);
+  assert(/hole\s+cwl:replaces-not-url\s*;/.test(idSrc), `${idDir} catalogues replaces-not-url`);
+  assert(/hole\s+cwl:peel-not-identity\s*;/.test(idSrc), `${idDir} catalogues peel-not-identity`);
+  assert(/hole\s+cwl:unknown-capability\s*;/.test(idSrc), `${idDir} catalogues unknown-capability`);
+  const idSeeded = await seedDnaFromCwlFile(idPath, {
+    app_id: `cutover-${idDir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${idDir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((idSeeded.routes?.length ?? 0) === 5, `${idDir} route count`);
+  const invoice = (idSeeded.bridge?.annotations || []).find((a) => a.path_template === '/invoice');
+  assert(invoice?.cwl_replaces === 'https://legacy.example/invoice.php', `${idDir} replaces document fact`);
+  assert(
+    invoice?.cwl_from_peel?.stack === 'php' && invoice?.cwl_from_peel?.at === 'legacy/invoice.php',
+    `${idDir} from peel document fact`,
+  );
+  assert(
+    Array.isArray(invoice?.cwl_capabilities) &&
+      invoice.cwl_capabilities.includes('cookies') &&
+      invoice.cwl_capabilities.includes('network-same-origin'),
+    `${idDir} capability document facts`,
+  );
+  assert(invoice?.cwl_works_without_client === true, `${idDir} works without client document fact`);
+  const api = (idSeeded.bridge?.annotations || []).find((a) => a.path_template === '/api/invoice');
+  assert(api?.cwl_replaces === '/legacy/api/invoice', `${idDir} api replaces document fact`);
+  assert(
+    api?.cwl_from_peel?.stack === 'express' && api?.cwl_from_peel?.at === 'routes/invoice.js',
+    `${idDir} api from peel document fact`,
+  );
+  assert(
+    Array.isArray(api?.cwl_capabilities) && api.cwl_capabilities.includes('network-same-origin'),
+    `${idDir} api capability document fact`,
+  );
+  assert(api?.cwl_works_without_client == null, `${idDir} api has no progressive certificate`);
+  const expectedHoles = {
+    '/refuse-replace': 'cwl:replaces-not-url',
+    '/refuse-peel': 'cwl:peel-not-identity',
+    '/refuse-cap': 'cwl:unknown-capability',
+  };
+  for (const [pathTemplate, reason] of Object.entries(expectedHoles)) {
+    const ann = (idSeeded.bridge?.annotations || []).find((a) => a.path_template === pathTemplate);
+    assert(ann?.cwl_hole_reason === reason, `${pathTemplate} hole document fact: ${ann?.cwl_hole_reason}`);
+  }
+  assert(
+    idSeeded.routes.every(
+      (r) =>
+        r.cwl_replaces == null &&
+        r.cwl_from_peel == null &&
+        r.cwl_capabilities == null &&
+        r.cwl_works_without_client == null &&
+        r.cwl_hole_reason == null,
+    ),
+    `${idDir} identity facts stay annotations, not DNA route fields`,
+  );
+  const seededJson = JSON.stringify(idSeeded);
+  assert(!/Permissions-Policy|Feature-Policy|navigator\.permissions/.test(seededJson), `${idDir} Helix does not invent capability browser`);
+  assert(!/php-fpm|express\(\)|createServer|migration engine/.test(seededJson), `${idDir} Helix does not invent peel runtimes`);
+  assert(!/serviceWorker|hydrat|island runtime/.test(seededJson), `${idDir} Helix does not invent client certificate engine`);
+  const idCertified = stripBridgeEnvelope(idSeeded);
+  const idCmp = compareCwlSurfaceToDna(idSeeded, idCertified);
+  assert(idCmp.ok === true, `${idDir} self-cutover: ${JSON.stringify(idCmp.missing_in_dna)}`);
+  console.log('CUTOVER_TIP_1_0_82_OK');
+}
+
 console.log('CUTOVER_SMOKE_OK');
