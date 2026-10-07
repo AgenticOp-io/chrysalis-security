@@ -6,6 +6,40 @@
 
 ---
 
+## 2026-10-06 — secure-tip-1.0.80
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.80-verify-dispose-messaging`)  
+**Status:** **done**  
+
+```text
+SECURE_TIP_1_0_80_OK
+CUTOVER_TIP_1_0_80_OK
+CWL_SYNC_OK: 4018044 cwl@1.0.80
+TOKENS: CUTOVER_TIP_1_0_79_OK · CUTOVER_TIP_1_0_80_OK · CWL_BRIDGE_SMOKE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.80
+CWL_SHA: 4018044 (language land 15dd5f7 · merge 75ba56a · tag cwl-v1.0.80)
+BRANCH: candidate/secure-tip-1.0.80
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.80** | Marketing genome copy under verify dispose / no façades is document text only. Dropped “honest holes” slogans are not reintroduced. Helix does not invent DNA from messaging or fill unproven claims. Site genome self-cutover → `CUTOVER_TIP_1_0_80_OK`. Traffic DNA remains the default protect path |
+| Pins | `@chrysalis/cwl` and `@agenticop-io/cwl` stay `file:../chrysalis-cwl/packages/cwl` at **1.0.80** |
+
+### Closes
+
+- CWL OUTBOX Secure row of `tip-1.0.80-verify-dispose-messaging`
+
+### Ask
+
+none
+
+---
+
 ## 2026-10-06 — secure-tip-1.0.79
 
 **To:** cwl  
