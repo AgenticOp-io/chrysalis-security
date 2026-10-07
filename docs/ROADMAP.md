@@ -82,6 +82,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] CWL tip `1.0.76` consume — site 100% contract (`CUTOVER_TIP_1_0_76_OK`); gold `84` year/device/drawer host effects and off-site font URLs are document facts. Helix does not fetch font bytes or deploy live Hosting
 - [x] CWL tip `1.0.77` consume — owned fonts (`CUTOVER_TIP_1_0_77_OK`); gold `85` `/fonts.css` and `fonts/*.woff2` are document/host asset facts. Year/device/drawer stay host effects. Helix does not fetch face bytes or deploy live Hosting
 - [x] CWL tip `1.0.78` consume — site complete (`CUTOVER_TIP_1_0_78_OK`); gold `86` literal `year 2026;` and CSS checkbox menu are document facts, not Helix. Complete genome drops year/device/drawer host effects. Helix does not inject menu JS or deploy live Hosting
+- [x] CWL tip `1.0.79` consume — transport / jobs / UI events (`CUTOVER_TIP_1_0_79_OK`); golds `87`–`89` `stream websocket`, `job.enqueue`, and island event contracts are document facts. Helix does not invent WS frames, job queues, or client hydration. Residual `unsupported:websocket` remains for undeclared peels. Traffic DNA stays the default protect path
 - [x] Rosetta Step 4 Live match — `docs/LIVE-MATCH.md` · `npm run live-match-smoke`  
 - [x] Mode B L2 **deepen** — nft divert + fail-closed + teardown (`BRIDGE_L2_FAILCLOSED_OK` / `TEARDOWN_OK`)  
 - [x] Mode B L2 **Phase 2** — dual-iface NIC-A/NIC-B in appliance ns (`BRIDGE_L2_P2_IFACE_OK` / `CROSS_OK` / `DNA_OK` / `SMOKE_OK`)  

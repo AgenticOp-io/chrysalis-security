@@ -6,6 +6,40 @@
 
 ---
 
+## 2026-10-06 — secure-tip-1.0.79
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.79-transport-jobs-ui`)  
+**Status:** **done**  
+
+```text
+SECURE_TIP_1_0_79_OK
+CUTOVER_TIP_1_0_79_OK
+CWL_SYNC_OK: 4fe6b15 cwl@1.0.79
+TOKENS: CUTOVER_TIP_1_0_78_OK · CUTOVER_TIP_1_0_79_OK · CWL_BRIDGE_SMOKE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.79
+CWL_SHA: 4fe6b15 (language land f67abb5 · merge b75082f · tag cwl-v1.0.79)
+BRANCH: candidate/secure-tip-1.0.79
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.79** | `stream websocket;` is `cwl_stream: websocket` on the annotation — duplex declaration only; host owns frames. Residual `unsupported:websocket` stays a hole. `job.enqueue` / `job.enqueue name <id>` are effect intent on the annotation — Helix does not own a queue. Island `on input|focus|blur|keydown` contracts are page DNA — no hydration invent. Golds `87`–`89` self-cutover → `CUTOVER_TIP_1_0_79_OK`. Traffic DNA remains the default protect path |
+| Pins | `@chrysalis/cwl` and `@agenticop-io/cwl` stay `file:../chrysalis-cwl/packages/cwl` at **1.0.79** |
+
+### Closes
+
+- CWL OUTBOX Secure row of `tip-1.0.79-transport-jobs-ui`
+
+### Ask
+
+none
+
+---
+
 ## 2026-10-05 — secure-tip-1.0.78
 
 **To:** cwl  
