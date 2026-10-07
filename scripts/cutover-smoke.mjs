@@ -1707,4 +1707,112 @@ console.log('=== cutover: tip 1.0.78 (literal year + CSS checkbox menu are docum
   console.log('CUTOVER_TIP_1_0_78_OK');
 }
 
+console.log('=== cutover: tip 1.0.79 (stream websocket + job.enqueue + UI events are document facts, not Helix) ===');
+{
+  // Gold 87 — declared duplex stream; residual hole stays; no WS frame invent.
+  const wsDir = '87-stream-websocket';
+  const wsPath = path.join(cwlRoot, 'fixtures', 'language-gold', wsDir, 'routes.cwl');
+  assert(fs.existsSync(wsPath), `missing ${wsDir}`);
+  const wsSrc = fs.readFileSync(wsPath, 'utf8');
+  assert(/stream\s+websocket\s*;/.test(wsSrc), `${wsDir} declares stream websocket`);
+  assert(/hole\s+unsupported:websocket\s*;/.test(wsSrc), `${wsDir} keeps residual unsupported:websocket`);
+  const wsSeeded = await seedDnaFromCwlFile(wsPath, {
+    app_id: `cutover-${wsDir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${wsDir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((wsSeeded.routes?.length ?? 0) >= 2, `${wsDir} route count`);
+  const wsAnn = (wsSeeded.bridge?.annotations || []).find((a) => a.path_template === '/ws');
+  assert(wsAnn?.cwl_stream === 'websocket', `cwl_stream websocket document fact: ${wsAnn?.cwl_stream}`);
+  const residualAnn = (wsSeeded.bridge?.annotations || []).find((a) => a.path_template === '/residual');
+  assert(
+    residualAnn?.cwl_hole_reason === 'unsupported:websocket',
+    `residual hole stays: ${residualAnn?.cwl_hole_reason}`,
+  );
+  assert(!residualAnn?.cwl_stream, 'residual hole is not a declared websocket stream');
+  const wsRoute = wsSeeded.routes.find((r) => r.path_template === '/ws');
+  assert(wsRoute?.content_class === 'other', 'websocket route content_class other (like SSE)');
+  assert(
+    wsSeeded.routes.every((r) => r.cwl_stream == null),
+    `${wsDir} cwl_stream is annotation-only, not a DNA route field`,
+  );
+  assert(!JSON.stringify(wsSeeded).includes('WebSocket('), `${wsDir} Helix does not invent a browser WS client`);
+  assert(!JSON.stringify(wsSeeded).includes('LiveView'), `${wsDir} Helix does not invent LiveView`);
+  const wsCertified = stripBridgeEnvelope(wsSeeded);
+  const wsCmp = compareCwlSurfaceToDna(wsSeeded, wsCertified);
+  assert(wsCmp.ok === true, `${wsDir} self-cutover: ${JSON.stringify(wsCmp.missing_in_dna)}`);
+  assert(
+    wsCmp.bridge_annotations?.cwl_stream?.some((a) => a.cwl_stream === 'websocket'),
+    'cutover reports websocket stream annotation',
+  );
+
+  // Gold 88 — job.enqueue is effect intent; Helix does not own a queue.
+  const jobDir = '88-job-enqueue';
+  const jobPath = path.join(cwlRoot, 'fixtures', 'language-gold', jobDir, 'routes.cwl');
+  assert(fs.existsSync(jobPath), `missing ${jobDir}`);
+  const jobSrc = fs.readFileSync(jobPath, 'utf8');
+  assert(/job\.enqueue\s+name\s+nightly_digest\s*;/.test(jobSrc), `${jobDir} declares named job.enqueue`);
+  assert(/effects:\s*job\.enqueue\s*,/.test(jobSrc), `${jobDir} declares bare job.enqueue`);
+  const jobSeeded = await seedDnaFromCwlFile(jobPath, {
+    app_id: `cutover-${jobDir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${jobDir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((jobSeeded.routes?.length ?? 0) >= 2, `${jobDir} route count`);
+  const digest = (jobSeeded.bridge?.annotations || []).find((a) => a.path_template === '/digest');
+  assert(
+    digest?.cwl_effects?.includes('job.enqueue name nightly_digest'),
+    `named job.enqueue document fact: ${JSON.stringify(digest?.cwl_effects)}`,
+  );
+  const fanout = (jobSeeded.bridge?.annotations || []).find((a) => a.path_template === '/fanout');
+  assert(
+    fanout?.cwl_effects?.includes('job.enqueue') && fanout?.cwl_effects?.includes('rate.limit'),
+    `bare job.enqueue + rate.limit: ${JSON.stringify(fanout?.cwl_effects)}`,
+  );
+  assert(
+    jobSeeded.routes.every((r) => !Array.isArray(r.cwl_effects)),
+    `${jobDir} job.enqueue is annotation intent, not a DNA route field`,
+  );
+  assert(!JSON.stringify(jobSeeded).includes('redis'), `${jobDir} Helix does not invent a queue engine`);
+  assert(!JSON.stringify(jobSeeded).includes('BullMQ'), `${jobDir} Helix does not invent a worker runtime`);
+  const jobCertified = stripBridgeEnvelope(jobSeeded);
+  const jobCmp = compareCwlSurfaceToDna(jobSeeded, jobCertified);
+  assert(jobCmp.ok === true, `${jobDir} self-cutover: ${JSON.stringify(jobCmp.missing_in_dna)}`);
+
+  // Gold 89 — broader island events are page DNA; no hydration invent.
+  const uiDir = '89-ui-event-contracts';
+  const uiPath = path.join(cwlRoot, 'fixtures', 'language-gold', uiDir, 'routes.cwl');
+  assert(fs.existsSync(uiPath), `missing ${uiDir}`);
+  const uiSrc = fs.readFileSync(uiPath, 'utf8');
+  assert(/\bon\s+input\s*\{/.test(uiSrc), `${uiDir} declares on input`);
+  assert(/\bon\s+focus\s*\{/.test(uiSrc), `${uiDir} declares on focus`);
+  assert(/\bon\s+blur\s*\{/.test(uiSrc), `${uiDir} declares on blur`);
+  assert(/\bon\s+keydown\s*\{/.test(uiSrc), `${uiDir} declares on keydown`);
+  assert(/\bon\s+click\s*\{/.test(uiSrc), `${uiDir} keeps on click`);
+  const uiSeeded = await seedDnaFromCwlFile(uiPath, {
+    app_id: `cutover-${uiDir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${uiDir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((uiSeeded.routes?.length ?? 0) >= 1, `${uiDir} route count`);
+  assert(uiSeeded.routes.every((r) => r.content_class === 'html'), `${uiDir} stays page HTML`);
+  const editor = (uiSeeded.bridge?.annotations || []).find((a) => a.path_template === '/editor');
+  assert(editor?.cwl_surface === 'page', 'island events live on a page surface');
+  assert(
+    uiSeeded.routes.every((r) => r.cwl_surface == null),
+    `${uiDir} page/island facts are not DNA route fields`,
+  );
+  assert(!JSON.stringify(uiSeeded).includes('addEventListener'), `${uiDir} Helix does not invent client listeners`);
+  assert(!JSON.stringify(uiSeeded).includes('hydrat'), `${uiDir} Helix does not invent hydration`);
+  assert(!JSON.stringify(uiSeeded).includes('react'), `${uiDir} Helix does not invent a client framework`);
+  const uiCertified = stripBridgeEnvelope(uiSeeded);
+  const uiCmp = compareCwlSurfaceToDna(uiSeeded, uiCertified);
+  assert(uiCmp.ok === true, `${uiDir} self-cutover: ${JSON.stringify(uiCmp.missing_in_dna)}`);
+
+  console.log('CUTOVER_TIP_1_0_79_OK');
+}
+
 console.log('CUTOVER_SMOKE_OK');
