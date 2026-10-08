@@ -9,6 +9,8 @@ Helix answers **“is this still the certified app?”**
 
 That is a category shift only if operators can run it **Monday morning** without becoming DNA philosophers — and only if enforce is a boring consequence of learn → promote → shadow, not a science project.
 
+**Inventory of what Secure has today** (engine, Linux Mode A, Helix for Windows, Mode B/K8s, DNA, prove tokens, non-goals): [`HELIX-SECURITY-SURFACE.md`](./HELIX-SECURITY-SURFACE.md).
+
 ---
 
 ## Already enough to prove the idea (lab / early adopters)

@@ -1,6 +1,7 @@
 # Helix Mode A — systemd install (soft host intercept)
 
-Goal: NGFW keeps the same host VIP. Helix owns the public port; the app binds localhost only (D4).
+Goal: NGFW keeps the same host VIP. Helix owns the public port; the app binds localhost only (D4).  
+Windows Mode A app: [INSTALL-MODE-A-WINDOWS.md](./INSTALL-MODE-A-WINDOWS.md) · Full map: [HELIX-SECURITY-SURFACE.md](./HELIX-SECURITY-SURFACE.md).
 
 ## Layout
 

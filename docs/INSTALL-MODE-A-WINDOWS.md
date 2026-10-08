@@ -2,7 +2,8 @@
 
 **Product:** Helix for Windows — host DNA firewall with a system tray and the existing `/__helix/` control panel.  
 **Engine:** same `helix-agent` as Linux Mode A ([INSTALL-MODE-A.md](./INSTALL-MODE-A.md)). No second security invent.  
-**CWL:** optional bridge only (**D5**). Traffic DNA protects out of the box.
+**CWL:** optional bridge only (**D5**). Traffic DNA protects out of the box.  
+**Full Secure map:** [HELIX-SECURITY-SURFACE.md](./HELIX-SECURITY-SURFACE.md).
 
 ```text
 Internet / LAN → this host :LISTEN_PORT (Helix)

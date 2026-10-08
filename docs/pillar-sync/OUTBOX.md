@@ -6,6 +6,39 @@
 
 ---
 
+## 2026-10-08 — helix-security-surface-doc
+
+**To:** cwl (record) · convert (FYI) · operator  
+**Priority:** P1  
+**Status:** **landing** (this candidate)
+
+```text
+HELIX_SECURITY_SURFACE_DOC_OK
+DOCS: docs/HELIX-SECURITY-SURFACE.md
+SCOPE: full Secure inventory — one Helix engine, Linux Mode A, Windows Mode A app,
+       Mode B/K8s/compose, DNA signals, lifecycle, prove matrix, non-goals, soak gap
+NO_ENGINE_CHANGE: documentation + index cross-links only
+CWL: no language ask
+```
+
+### Landed
+
+| Piece | Path |
+| --- | --- |
+| Surface inventory | `docs/HELIX-SECURITY-SURFACE.md` |
+| Docs index | `docs/README.md` (surface + Windows install + bridge/severity) |
+| Root pointer | `README.md` → surface doc |
+| Product pointer | `docs/PRODUCT.md` → surface doc |
+
+### Ask
+
+| Who | Action |
+| --- | --- |
+| CWL | Record on BOARD: Secure published full Helix surface inventory (no language change) |
+| Operator | Use surface doc as the “what do we have?” map; soak remains ops ([SOAK.md](../SOAK.md)) |
+
+---
+
 ## 2026-10-07 — helix-windows-mode-a-app
 
 **To:** cwl (record) · operator  

@@ -4,11 +4,13 @@ Behavioral DNA firewall. **Trust nothing** that isn’t in certified DNA.
 
 | Doc | What |
 |-----|------|
+| [HELIX-SECURITY-SURFACE.md](./HELIX-SECURITY-SURFACE.md) | **Full inventory** — Linux + Windows, modes, DNA, prove, non-goals |
 | [BEGINNING.md](./BEGINNING.md) | **Basic beginning** — internet out of the box |
 | [PRODUCT.md](./PRODUCT.md) | **Gap to “changes security” + build order** |
 | [CERT-LIFECYCLE.md](./CERT-LIFECYCLE.md) | Promote / parent_hash / revoke-replace |
 | [LOCAL-LAB.md](./LOCAL-LAB.md) | Desktop learn → promote → enforce flip |
 | [INSTALL-MODE-A.md](./INSTALL-MODE-A.md) | systemd Mode A soft intercept |
+| [INSTALL-MODE-A-WINDOWS.md](./INSTALL-MODE-A-WINDOWS.md) | Helix for Windows — tray + startup task + CLI |
 | [K8S.md](./K8S.md) | Sidecar image build / push / apply |
 | [SOAK.md](./SOAK.md) | Shadow soak before enforce |
 | [GCE-L2.md](./GCE-L2.md) | Mode B L2 prove on GCE |
@@ -16,7 +18,7 @@ Behavioral DNA firewall. **Trust nothing** that isn’t in certified DNA.
 | [WHITEPAPER.md](./WHITEPAPER.md) | **How Helix works and protects** |
 | [MODES.md](./MODES.md) | Allow while securing — learn/shadow/enforce + reload |
 | [FILEBEAT.md](./FILEBEAT.md) | SIEM NDJSON → Filebeat recipe |
-| [DECISIONS.md](./DECISIONS.md) | Locked D1–D4 (TLS, block/alert, no UEBA, augment) |
+| [DECISIONS.md](./DECISIONS.md) | Locked D1–D5 (TLS, block/alert, no UEBA, augment, CWL optional) |
 | [AUGMENT.md](./AUGMENT.md) | Augment any NGFW — no NAT rewrite; internal + external |
 | [NGFW-TIE-IN.md](./NGFW-TIE-IN.md) | Can Helix be a firewall add-in? Vendor survey |
 | [GCE.md](./GCE.md) | Sync + prove on agenticop-master |
@@ -29,6 +31,9 @@ Behavioral DNA firewall. **Trust nothing** that isn’t in certified DNA.
 | [SIEM.md](./SIEM.md) | NDJSON hole export for SIEM/XDR |
 | [TLS.md](./TLS.md) | Optional Helix TLS terminate (D1) |
 | [PILLARS.md](./PILLARS.md) | CWL · Convert · Secure |
+| [CWL-BRIDGE.md](./CWL-BRIDGE.md) | Optional CWL ↔ DNA bridge |
+| [SEVERITY.md](./SEVERITY.md) · [TRIAGE.md](./TRIAGE.md) | Hole ranking + soak triage |
+| [RESPONSE-SURFACE.md](./RESPONSE-SURFACE.md) | Cookie names / redirect hosts in DNA |
 
 ```bash
 node packages/helix-cli/bin/helix.mjs learn --in fixtures/sample-observations.ndjson --out certificates/demo-draft.json
