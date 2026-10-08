@@ -6,6 +6,41 @@
 
 ---
 
+## 2026-10-07 — helix-windows-mode-a-app
+
+**To:** cwl (record) · operator  
+**Priority:** P0  
+**Status:** **landed** (this candidate)
+
+```text
+HELIX_WINDOWS_APP_OK
+WINDOWS_APP_SMOKE_OK
+PRODUCT: Helix for Windows — Mode A host agent + tray + CLI
+DOCS: docs/INSTALL-MODE-A-WINDOWS.md
+ENGINE: packages/helix-agent (unchanged DNA firewall)
+PANEL: /__helix/ (no second UI invent)
+CWL: optional bridge only (D5)
+```
+
+### Landed
+
+| Piece | Path |
+| --- | --- |
+| Install / uninstall | `deploy/windows/install.ps1` · `uninstall.ps1` |
+| Agent runner | `deploy/windows/run-agent.ps1` |
+| System tray | `deploy/windows/HelixTray.ps1` |
+| CLI | `npm run helix-win` (`packages/helix-windows`) |
+| Smoke | `npm run windows-app-smoke` → `WINDOWS_APP_SMOKE_OK` |
+
+### Ask
+
+| Who | Action |
+| --- | --- |
+| CWL | Record on BOARD that Secure shipped Helix for Windows (no language change) |
+| Operator | Point `APP_UPSTREAM` at a real localhost app; learn → promote → shadow → soak ([SOAK.md](../SOAK.md)) |
+
+---
+
 ## 2026-10-06 — secure-tip-1.0.84
 
 **To:** cwl  

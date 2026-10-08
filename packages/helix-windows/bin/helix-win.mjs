@@ -1,0 +1,186 @@
+#!/usr/bin/env node
+/**
+ * Helix for Windows — CLI surface for Mode A install / tray / panel.
+ * Does not invent a second firewall; wraps deploy/windows + helix-agent.
+ */
+import { spawn, spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import http from 'node:http';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(here, '../../..');
+const winDir = path.join(root, 'deploy', 'windows');
+const dataDir = process.env.PROGRAMDATA
+  ? path.join(process.env.PROGRAMDATA, 'Helix')
+  : path.join(root, 'data', 'helix-windows');
+const envFile = path.join(dataDir, 'helix-agent.env');
+const panelUrl = process.env.HELIX_PANEL_URL || 'http://127.0.0.1:4080/';
+
+function usage() {
+  console.log(`Helix for Windows (Mode A)
+
+  npm run helix-win -- install [--start] [--tray] [--mode learn|shadow|enforce]
+  npm run helix-win -- uninstall [--remove-data]
+  npm run helix-win -- start | stop | status | tray | open-panel
+
+Docs: docs/INSTALL-MODE-A-WINDOWS.md
+Panel: ${panelUrl}
+`);
+}
+
+function isWindows() {
+  return process.platform === 'win32';
+}
+
+function ps(scriptName, extraArgs = []) {
+  const script = path.join(winDir, scriptName);
+  const args = ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, ...extraArgs];
+  const r = spawnSync('powershell.exe', args, { cwd: root, stdio: 'inherit' });
+  return r.status ?? 1;
+}
+
+function flag(argv, name) {
+  return argv.includes(name);
+}
+
+function opt(argv, name) {
+  const i = argv.indexOf(name);
+  return i >= 0 ? argv[i + 1] : undefined;
+}
+
+function readMode() {
+  if (!fs.existsSync(envFile)) return null;
+  const m = fs.readFileSync(envFile, 'utf8').match(/^\s*MODE\s*=\s*(\S+)/m);
+  return m ? m[1] : null;
+}
+
+function healthz() {
+  return new Promise((resolve) => {
+    const url = new URL('__helix/healthz', panelUrl.endsWith('/') ? panelUrl : `${panelUrl}/`);
+    const req = http.get(url, { timeout: 2000 }, (res) => {
+      res.resume();
+      resolve(res.statusCode === 200);
+    });
+    req.on('error', () => resolve(false));
+    req.on('timeout', () => {
+      req.destroy();
+      resolve(false);
+    });
+  });
+}
+
+async function status() {
+  const installed = fs.existsSync(envFile);
+  const mode = readMode();
+  const up = await healthz();
+  const marker = path.join(dataDir, 'install.json');
+  let install = null;
+  if (fs.existsSync(marker)) {
+    try {
+      install = JSON.parse(fs.readFileSync(marker, 'utf8'));
+    } catch {
+      install = null;
+    }
+  }
+  const out = {
+    kind: 'chrysalis.helix.windows.status',
+    platform: process.platform,
+    installed,
+    mode,
+    agentUp: up,
+    panel: panelUrl,
+    dataDir,
+    envFile,
+    helixRoot: install?.helixRoot || root,
+  };
+  console.log(JSON.stringify(out, null, 2));
+  if (up) console.log('HELIX_WINDOWS_UP');
+  else if (installed) console.log('HELIX_WINDOWS_INSTALLED');
+  else console.log('HELIX_WINDOWS_NOT_INSTALLED');
+  return 0;
+}
+
+function openPanel() {
+  if (isWindows()) {
+    spawnSync('cmd', ['/c', 'start', '', panelUrl], { stdio: 'ignore' });
+  } else {
+    console.log(panelUrl);
+  }
+  return 0;
+}
+
+function tray() {
+  if (!isWindows()) {
+    console.error('Tray requires Windows');
+    return 2;
+  }
+  const script = path.join(winDir, 'HelixTray.ps1');
+  spawn(
+    'powershell.exe',
+    ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-HelixRoot', root],
+    { cwd: root, detached: true, stdio: 'ignore' },
+  ).unref();
+  console.log('HelixTray started');
+  return 0;
+}
+
+function startStop(cmd) {
+  if (!isWindows()) {
+    console.error(`${cmd} requires Windows`);
+    return 2;
+  }
+  const r = spawnSync(
+    'powershell.exe',
+    [
+      '-NoProfile',
+      '-Command',
+      cmd === 'start'
+        ? "Start-ScheduledTask -TaskName 'HelixAgent' -ErrorAction Stop"
+        : "Stop-ScheduledTask -TaskName 'HelixAgent' -ErrorAction SilentlyContinue; Get-CimInstance Win32_Process -Filter \"Name = 'node.exe'\" | Where-Object { $_.CommandLine -match 'helix-agent' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }",
+    ],
+    { stdio: 'inherit' },
+  );
+  return r.status ?? 1;
+}
+
+async function main(argv) {
+  const cmd = argv[0] || 'help';
+  if (cmd === 'help' || cmd === '-h' || cmd === '--help') {
+    usage();
+    return 0;
+  }
+  if (cmd === 'status') return status();
+  if (cmd === 'open-panel') return openPanel();
+  if (cmd === 'tray') return tray();
+  if (cmd === 'start' || cmd === 'stop') return startStop(cmd);
+
+  if (!isWindows() && (cmd === 'install' || cmd === 'uninstall')) {
+    console.error(`${cmd} requires Windows (platform=${process.platform})`);
+    return 2;
+  }
+
+  if (cmd === 'install') {
+    const args = [`-HelixRoot`, root];
+    if (flag(argv, '--start')) args.push('-Start');
+    if (flag(argv, '--tray')) args.push('-Tray');
+    if (flag(argv, '--register-tray')) args.push('-RegisterTrayAtLogon');
+    const mode = opt(argv, '--mode');
+    if (mode) args.push('-Mode', mode);
+    return ps('install.ps1', args);
+  }
+
+  if (cmd === 'uninstall') {
+    const args = [];
+    if (flag(argv, '--remove-data')) args.push('-RemoveData');
+    return ps('uninstall.ps1', args);
+  }
+
+  usage();
+  return 2;
+}
+
+const code = await main(process.argv.slice(2));
+process.exit(code);
