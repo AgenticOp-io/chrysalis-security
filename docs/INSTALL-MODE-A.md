@@ -41,6 +41,8 @@ When using nft divert (`PUBLIC_PORT` → `HELIX_PORT`):
 
 Prove: `npm run nft-smoke` → `NFT_SMOKE_OK` (Linux/GCE). Win32 → honest `NFT_SMOKE_SKIP`.
 
+**Windows host product:** tray + startup task + same agent — see [INSTALL-MODE-A-WINDOWS.md](./INSTALL-MODE-A-WINDOWS.md) (`npm run windows-app-smoke`).
+
 ## Product example — Cinderpath control plane
 
 Privacy VPN **HTTP** (account / shop / connect mint), not WireGuard: [CINDERPATH.md](./CINDERPATH.md).  

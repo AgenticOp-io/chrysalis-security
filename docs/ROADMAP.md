@@ -105,6 +105,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] Shadow-log triage ([TRIAGE.md](./TRIAGE.md) · `triage-smoke` → `TRIAGE_SMOKE_OK`) — holes group into surfaces + classes; credential drift exits 2; panel shows the same digest live  
 - [x] Response surface DNA ([RESPONSE-SURFACE.md](./RESPONSE-SURFACE.md) · `response-surface-smoke`) — `set_cookie_names` / `redirect_targets`; `HX-COOKIE-DRIFT` / `HX-REDIRECT-DRIFT`; names and hostnames only, absent ≠ empty  
 - [ ] Customer traffic soak (operational — follow [SOAK.md](./SOAK.md) after preflight green)  
+- [x] Helix for Windows — Mode A install + system tray + CLI ([INSTALL-MODE-A-WINDOWS.md](./INSTALL-MODE-A-WINDOWS.md) · `windows-app-smoke` → `WINDOWS_APP_SMOKE_OK`)  
 
 
 **Non-goals (locked):** no NGFW TLS dependency (D1); DNA block/alert only (D2); no UEBA/signature-WAF replacement (D3); host augment / no NAT homework (D4); CWL never required to enforce (D5).

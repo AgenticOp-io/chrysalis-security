@@ -33,3 +33,15 @@ LISTEN_PORT=4080 APP_UPSTREAM=http://127.0.0.1:4090 MODE=learn \
 ```
 
 Linux hard redirect (optional): `bash scripts/host-redirect-nft.sh install`
+
+### Windows security app (Mode A)
+
+Tray + startup task + same `helix-agent` / control panel:
+
+```powershell
+npm run helix-win -- install --start --tray
+# Panel: http://127.0.0.1:4080/
+npm run windows-app-smoke   # → WINDOWS_APP_SMOKE_OK
+```
+
+Docs: [`docs/INSTALL-MODE-A-WINDOWS.md`](./docs/INSTALL-MODE-A-WINDOWS.md)

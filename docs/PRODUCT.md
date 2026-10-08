@@ -19,6 +19,7 @@ That is a category shift only if operators can run it **Monday morning** without
 | Route + JSON/query/status DNA | Stops unauthorized new surface |
 | Signed DNA + reload | Certificate lifecycle without downtime |
 | Mode A agent / compose / SIEM NDJSON | Fits NGFW world (D1–D4) |
+| Helix for Windows (tray + startup task) | Monday-morning Mode A on Win32 — same agent + `/__helix/` panel |
 | Optional CWL cutover | Platform path without requiring CWL (D5) |
 | Cinderpath control-plane Mode A | Privacy VPN HTTP DNA; not tunnel DPI ([CINDERPATH.md](./CINDERPATH.md)) |
 | Credential-surface severity | Login drift outranks brochure noise, and blocks enforce ([SEVERITY.md](./SEVERITY.md)) |
