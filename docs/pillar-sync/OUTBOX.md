@@ -20,6 +20,7 @@ TOKENS: CUTOVER_TIP_1_0_84_OK · CUTOVER_TIP_1_0_85_OK · CWL_BRIDGE_SMOKE_OK ·
 CWL_TIP: 1.0.85
 CWL_SHA: efc2c08 (language land 5215e9c · ask tip-1.0.85-dna-fingerprint)
 BRANCH: candidate/secure-tip-1.0.85
+PR: https://github.com/AgenticOp-io/chrysalis-security/pull/46
 HEARTBEAT: waiting
 ```
 
