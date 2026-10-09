@@ -44,7 +44,9 @@ if ($env:HELIX_START_DEMO -eq '1' -or $env:HELIX_START_DEMO -eq 'true') {
   if (-not $listening) {
     $demo = Join-Path $HelixRoot 'fixtures\demo-api\server.mjs'
     $launch = "`$env:HOST='127.0.0.1'; `$env:PORT='$demoPort'; Set-Location -LiteralPath '$HelixRoot'; & '$node' '$demo'"
-    Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile', '-Command', $launch) -WindowStyle Hidden
+    Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
+      '-NoProfile', '-WindowStyle', 'Hidden', '-Command', $launch
+    )
     Start-Sleep -Milliseconds 500
   }
 }

@@ -41,10 +41,10 @@ function Start-HelixAgentTask {
     return
   }
   $run = Join-Path $HelixRoot 'deploy\windows\run-agent.ps1'
-  Start-Process -FilePath 'powershell.exe' -ArgumentList @(
-    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $run,
+  Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
+    '-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass', '-File', $run,
     '-HelixRoot', $HelixRoot, '-EnvFile', $EnvFile
-  ) -WindowStyle Hidden
+  )
 }
 
 function Stop-HelixAgentTask {
@@ -89,8 +89,9 @@ function Refresh-StatusItem {
 [void]$menu.Items.Add((New-TrayItem 'Open control panel' { Start-Process $PanelUrl }))
 [void]$menu.Items.Add((New-TrayItem 'Protect an app…' {
   $wiz = Join-Path $HelixRoot 'deploy\windows\Protect-Wizard.ps1'
-  Start-Process -FilePath 'powershell.exe' -ArgumentList @(
-    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $wiz, '-HelixRoot', $HelixRoot
+  Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
+    '-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass',
+    '-File', $wiz, '-HelixRoot', $HelixRoot
   )
 }))
 [void]$menu.Items.Add((New-TrayItem 'Lock DNA (then watch)' {

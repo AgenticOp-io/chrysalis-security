@@ -6,7 +6,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Management;
 using System.Net;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -42,7 +45,6 @@ namespace HelixDesktop
         readonly string envFile;
         readonly string panelBase = "http://127.0.0.1:4080";
         bool automating;
-        bool sealedOk;
         string lastMode = "";
 
         public MainForm()
@@ -266,6 +268,7 @@ namespace HelixDesktop
         void RunAutoProtect(bool force)
         {
             Directory.CreateDirectory(dataDir);
+            EnsureDataDirWritable(dataDir);
             SetUi("Preparing", "Writing automatic Mode A settings...", 10);
             WriteConsumerEnv(force);
             Log("Env ready (demo + auto-seal)");
@@ -300,12 +303,10 @@ namespace HelixDesktop
                         throw new Exception("Could not lock DNA yet - " + Trunc(seal, 160));
                     PostJson(panelBase + "/__helix/api/mode", "{\"mode\":\"shadow\"}");
                 }
-                sealedOk = true;
                 Log("DNA locked; watching (shadow)");
             }
             else
             {
-                sealedOk = true;
                 Log("DNA already present");
             }
 
@@ -331,6 +332,30 @@ namespace HelixDesktop
                 tray.ShowBalloonTip(5000, "Helix", "Protected automatically. Unknown surface is blocked.", ToolTipIcon.Info);
             }));
             RefreshStatus(true);
+        }
+
+        static void EnsureDataDirWritable(string dir)
+        {
+            try
+            {
+                var id = WindowsIdentity.GetCurrent();
+                if (id == null || string.IsNullOrEmpty(id.Name)) return;
+                var sec = Directory.GetAccessControl(dir);
+                sec.AddAccessRule(new FileSystemAccessRule(
+                    id.Name,
+                    FileSystemRights.Modify | FileSystemRights.Synchronize,
+                    InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                    PropagationFlags.None,
+                    AccessControlType.Allow));
+                Directory.SetAccessControl(dir, sec);
+            }
+            catch { }
+            // Drop stale log files that may have been created elevated (EPERM for normal users).
+            foreach (var name in new[] { "siem.ndjson", "shadow.ndjson", "observations.ndjson", "agent-stderr.log" })
+            {
+                var p = Path.Combine(dir, name);
+                try { if (File.Exists(p)) File.Delete(p); } catch { }
+            }
         }
 
         void WriteConsumerEnv(bool resetLearn)
@@ -368,41 +393,14 @@ namespace HelixDesktop
         void RestartAgent()
         {
             StopHelixAgentProcesses();
-            Thread.Sleep(600);
+            Thread.Sleep(500);
             EnsureDemoApi();
-            var run = Path.Combine(helixRoot, "deploy", "windows", "run-agent.ps1");
-            if (!File.Exists(run))
-                throw new Exception("run-agent.ps1 missing - reinstall from chrysalis-security");
-
-            // Prefer the installed startup task when present.
-            var taskPsi = new ProcessStartInfo
-            {
-                FileName = "powershell.exe",
-                Arguments = "-NoProfile -Command \"try { Start-ScheduledTask -TaskName 'HelixAgent' -ErrorAction Stop; exit 0 } catch { exit 1 }\"",
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            using (var tp = Process.Start(taskPsi))
-            {
-                if (tp != null)
-                {
-                    tp.WaitForExit(8000);
-                    if (tp.ExitCode == 0)
-                    {
-                        Thread.Sleep(800);
-                        if (HttpGetStatus(panelBase + "/__helix/healthz") == 200) return;
-                    }
-                }
-            }
-
-            var psi = new ProcessStartInfo
-            {
-                FileName = "powershell.exe",
-                Arguments = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File \"" + run + "\" -HelixRoot \"" + helixRoot + "\" -EnvFile \"" + envFile + "\"",
-                WorkingDirectory = helixRoot,
-                UseShellExecute = true
-            };
-            Process.Start(psi);
+            // Always start node.exe directly (hidden). Do not invoke PowerShell or schtasks
+            // here — those race the port and can flash a console.
+            StartNodeHidden(
+                Path.Combine(helixRoot, "packages", "helix-agent", "bin", "helix-agent.mjs"),
+                ReadEnvFile(envFile),
+                helixRoot);
         }
 
         void EnsureDemoApi()
@@ -410,16 +408,106 @@ namespace HelixDesktop
             if (HttpGetStatus("http://127.0.0.1:4090/api/health") == 200) return;
             var demo = Path.Combine(helixRoot, "fixtures", "demo-api", "server.mjs");
             if (!File.Exists(demo)) return;
+            var env = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "HOST", "127.0.0.1" },
+                { "PORT", "4090" }
+            };
+            StartNodeHidden(demo, env, helixRoot);
+            Thread.Sleep(600);
+        }
+
+        void StartNodeHidden(string script, Dictionary<string, string> extraEnv, string workDir)
+        {
             var node = FindNode();
-            if (node == null) return;
+            if (node == null) throw new Exception("node.exe not found on PATH");
+            if (!File.Exists(script)) throw new Exception("missing " + script);
+            var logPath = Path.Combine(dataDir, "desktop-start.log");
+            var errPath = Path.Combine(dataDir, "agent-stderr.log");
             var psi = new ProcessStartInfo
             {
-                FileName = "powershell.exe",
-                Arguments = "-NoProfile -WindowStyle Hidden -Command \"$env:HOST='127.0.0.1'; $env:PORT='4090'; Set-Location -LiteralPath '" + helixRoot.Replace("'", "''") + "'; & '" + node.Replace("'", "''") + "' '" + demo.Replace("'", "''") + "'\"",
-                UseShellExecute = true
+                FileName = node,
+                Arguments = "\"" + script + "\"",
+                WorkingDirectory = workDir,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Hidden,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true
             };
-            Process.Start(psi);
-            Thread.Sleep(500);
+            if (extraEnv != null)
+            {
+                foreach (var kv in extraEnv)
+                {
+                    if (string.IsNullOrEmpty(kv.Key)) continue;
+                    try { psi.EnvironmentVariables[kv.Key] = kv.Value ?? ""; }
+                    catch { /* reserved env keys */ }
+                }
+            }
+            psi.EnvironmentVariables["HELIX_ENV_FILE"] = envFile;
+            psi.EnvironmentVariables["HELIX_ROOT"] = helixRoot;
+            var proc = Process.Start(psi);
+            if (proc == null) throw new Exception("Failed to start " + script);
+            try
+            {
+                File.AppendAllText(logPath,
+                    DateTime.Now.ToString("o") + " started pid=" + proc.Id + " script=" + script + " node=" + node + "\r\n");
+            }
+            catch { }
+            // Drain stdio so the process cannot block; keep a short stderr sample on disk.
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try
+                {
+                    var err = proc.StandardError.ReadToEnd();
+                    if (!string.IsNullOrEmpty(err))
+                        File.AppendAllText(errPath, DateTime.Now.ToString("o") + "\r\n" + err + "\r\n");
+                }
+                catch { }
+            });
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try { proc.StandardOutput.ReadToEnd(); } catch { }
+            });
+        }
+
+        static Dictionary<string, string> ReadEnvFile(string path)
+        {
+            var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (!File.Exists(path)) return map;
+            foreach (var raw in File.ReadAllLines(path))
+            {
+                var line = (raw ?? "").Trim();
+                if (line.Length == 0 || line.StartsWith("#")) continue;
+                var i = line.IndexOf('=');
+                if (i < 1) continue;
+                map[line.Substring(0, i).Trim()] = line.Substring(i + 1).Trim();
+            }
+            return map;
+        }
+
+        static bool TryStartScheduledTask(string name)
+        {
+            try
+            {
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "schtasks.exe",
+                    Arguments = "/Run /TN \"" + name + "\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+                using (var p = Process.Start(psi))
+                {
+                    if (p == null) return false;
+                    p.WaitForExit(8000);
+                    return p.ExitCode == 0;
+                }
+            }
+            catch { return false; }
         }
 
         static string FindNode()
@@ -432,7 +520,8 @@ namespace HelixDesktop
                     Arguments = "node",
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    WindowStyle = ProcessWindowStyle.Hidden
                 };
                 using (var p = Process.Start(psi))
                 {
@@ -448,30 +537,45 @@ namespace HelixDesktop
 
         static void StopHelixAgentProcesses()
         {
+            try { TryStartScheduledTaskStop("HelixAgent"); } catch { }
             try
             {
-                foreach (var p in Process.GetProcessesByName("node"))
+                using (var searcher = new ManagementObjectSearcher(
+                    "SELECT ProcessId, CommandLine FROM Win32_Process WHERE Name = 'node.exe'"))
                 {
-                    try
+                    foreach (ManagementObject mo in searcher.Get())
                     {
-                        // CommandLine not always available without WMI; kill only if we started recently via task
+                        var cmd = (mo["CommandLine"] ?? "").ToString();
+                        if (cmd.IndexOf("helix-agent", StringComparison.OrdinalIgnoreCase) < 0 &&
+                            cmd.IndexOf("demo-api", StringComparison.OrdinalIgnoreCase) < 0)
+                            continue;
+                        try
+                        {
+                            var pid = Convert.ToInt32(mo["ProcessId"]);
+                            Process.GetProcessById(pid).Kill();
+                        }
+                        catch { }
                     }
-                    catch { }
                 }
             }
             catch { }
+        }
+
+        static void TryStartScheduledTaskStop(string name)
+        {
             try
             {
                 var psi = new ProcessStartInfo
                 {
-                    FileName = "powershell.exe",
-                    Arguments = "-NoProfile -Command \"Get-CimInstance Win32_Process -Filter \\\"Name = 'node.exe'\\\" | Where-Object { $_.CommandLine -match 'helix-agent' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }; Stop-ScheduledTask -TaskName 'HelixAgent' -ErrorAction SilentlyContinue\"",
+                    FileName = "schtasks.exe",
+                    Arguments = "/End /TN \"" + name + "\"",
                     UseShellExecute = false,
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    WindowStyle = ProcessWindowStyle.Hidden
                 };
                 using (var p = Process.Start(psi))
                 {
-                    if (p != null) p.WaitForExit(8000);
+                    if (p != null) p.WaitForExit(5000);
                 }
             }
             catch { }

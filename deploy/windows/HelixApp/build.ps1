@@ -20,7 +20,8 @@ $refs = @(
   '/reference:System.Core.dll',
   '/reference:System.Drawing.dll',
   '/reference:System.Windows.Forms.dll',
-  '/reference:System.Net.dll'
+  '/reference:System.Net.dll',
+  '/reference:System.Management.dll'
 )
 
 & $csc /nologo /target:winexe /platform:anycpu /optimize+ /out:$out @refs $src
