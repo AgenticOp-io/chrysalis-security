@@ -9,6 +9,8 @@ Helix answers **“is this still the certified app?”**
 
 That is a category shift only if operators can run it **Monday morning** without becoming DNA philosophers — and only if enforce is a boring consequence of learn → promote → shadow, not a science project.
 
+**Inventory of what Secure has today** (engine, Linux Mode A, Helix for Windows, Mode B/K8s, DNA, prove tokens, non-goals): [`HELIX-SECURITY-SURFACE.md`](./HELIX-SECURITY-SURFACE.md).
+
 ---
 
 ## Already enough to prove the idea (lab / early adopters)
@@ -27,22 +29,25 @@ That is a category shift only if operators can run it **Monday morning** without
 | Response surface | A certified page cannot start minting sessions or redirecting off-host ([RESPONSE-SURFACE.md](./RESPONSE-SURFACE.md)) |
 | Whitepaper + threat model | Story is honest |
 
-**Verdict today:** shippable engine + operator path + Mode A/K8s recipes + **L2 GCE green** + soak **preflight** smoke. Remaining for full “changed security” credibility is **living with real customer traffic** (shadow soak → enforce) — not more core fingerprints.
+**Verdict today:** **shippable bar closed** ([SHIPPABLE.md](./SHIPPABLE.md)). Engine + Linux/Windows Mode A + K8s/L2/compose recipes + soak **preflight** + triage/severity/response-surface are in-tree. Remaining for buyer *credibility* (not ship) is **living with real customer traffic** (shadow soak → enforce) — not more core fingerprints.
 
 ---
 
 ## Gap map — how much more (honest)
 
-Rough product maturity: **~85%** of the *shippable* bar. Remaining: real customer shadow soak (ops).
+| Bar | Status |
+|-----|--------|
+| **Shippable** (install + learn→enforce tooling + prove) | **closed** — [SHIPPABLE.md](./SHIPPABLE.md) |
+| **Credibility** (customer soak → enforce) | **ops** — [SOAK.md](./SOAK.md); preflight ≠ soak |
 
-### Tier 1 — must ship to change buyer behavior
+### Tier 1 — must ship to change buyer behavior — **done**
 
 1. **Operator readiness gate** — `helix report` / `helix ready` (+ `--shadow-log`) — **done**  
-2. **One install story** — systemd Mode A — **done**  
+2. **Install stories** — Linux systemd Mode A + Helix for Windows — **done**  
 3. **Shadow→enforce checklist** — shadow hole count gate — **done**  
 4. **Real-app prove pack** — `real-site-smoke` — **done**
 
-### Tier 2 — makes it stick in production
+### Tier 2 — makes it stick in production — **done**
 
 5. **K8s sidecar image + prove** — **done** (`k8s-image-smoke` + `k8s-push` + [K8S.md](./K8S.md))  
 6. **Certificate lifecycle UX** — **done** (`promoteDna` / parent_hash / [CERT-LIFECYCLE.md](./CERT-LIFECYCLE.md) + `promote-chain-smoke`)  
@@ -94,6 +99,7 @@ That sentence is only credible with Tier 1 install + readiness + real-app prove.
 | Ops | SIEM_LOG fixture smoke | **done** (`npm run siem-fixture-smoke` → `SIEM_FIXTURE_OK`) — file sink only |
 | Ops | Reload fixture smoke | **done** (`npm run reload-fixture-smoke` → `RELOAD_FIXTURE_OK`) — promote → hot reload, no restart |
 | Ops | Shadow-log triage | **done** (`npm run triage-smoke` → `TRIAGE_SMOKE_OK`) — holes → surfaces; proposes no DNA |
-| Ops | Customer shadow soak | **runbook** ([SOAK.md](./SOAK.md)) — live traffic only; preflight ≠ soak |
+| Ops | Customer shadow soak | **post-ship** ([SOAK.md](./SOAK.md)) — live traffic only; does not block `SHIPPABLE_OK` |
+| Done | Shippable stamp | **closed** ([SHIPPABLE.md](./SHIPPABLE.md)) |
 
-Related: [WHITEPAPER.md](./WHITEPAPER.md) · [MODES.md](./MODES.md) · [BEGINNING.md](./BEGINNING.md) · [ROADMAP.md](./ROADMAP.md)
+Related: [SHIPPABLE.md](./SHIPPABLE.md) · [WHITEPAPER.md](./WHITEPAPER.md) · [MODES.md](./MODES.md) · [BEGINNING.md](./BEGINNING.md) · [ROADMAP.md](./ROADMAP.md)

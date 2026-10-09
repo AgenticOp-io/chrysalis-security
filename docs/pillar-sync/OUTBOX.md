@@ -6,6 +6,39 @@
 
 ---
 
+## 2026-10-08 — helix-shippable-bar
+
+**To:** cwl (record) · convert (FYI) · operator  
+**Priority:** P0  
+**Status:** **landing** (this candidate)
+
+```text
+SHIPPABLE_OK
+HELIX_SECURITY_SURFACE_DOC_OK
+DOCS: docs/SHIPPABLE.md · docs/HELIX-SECURITY-SURFACE.md
+BAR: engineering shippable closed (Linux + Windows Mode A + DNA packs + soak preflight)
+POST_SHIP: customer soak → enforce ([SOAK.md](../SOAK.md)) — ops only; no synthetic close
+CWL: no language ask
+```
+
+### Landed
+
+| Piece | Path |
+| --- | --- |
+| Shippable stamp | `docs/SHIPPABLE.md` |
+| Surface inventory | `docs/HELIX-SECURITY-SURFACE.md` |
+| PRODUCT / ROADMAP | shippable closed; soak = post-ship |
+| Docs index + README | pointers |
+
+### Ask
+
+| Who | Action |
+| --- | --- |
+| CWL | Record on BOARD: Secure `SHIPPABLE_OK` (no language change) |
+| Operator | Run live shadow soak → enforce when a real app is ready ([SOAK.md](../SOAK.md)) |
+
+---
+
 ## 2026-10-07 — helix-windows-mode-a-app
 
 **To:** cwl (record) · operator  
