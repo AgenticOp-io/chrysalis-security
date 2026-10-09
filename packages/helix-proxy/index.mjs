@@ -62,8 +62,13 @@ function readRecentNdjson(filePath, limit = 12) {
 }
 function appendNdjson(filePath, obj) {
   if (!filePath) return;
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.appendFileSync(filePath, JSON.stringify(obj) + '\n');
+  try {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.appendFileSync(filePath, JSON.stringify(obj) + '\n');
+  } catch (err) {
+    // Never take down the proxy for a log sink (e.g. ProgramData ACL on Windows).
+    console.error('helix appendNdjson failed', filePath, String(err.message || err));
+  }
 }
 
 function loadDna(dnaPath, verifyOpts) {

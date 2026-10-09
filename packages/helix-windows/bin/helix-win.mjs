@@ -37,10 +37,28 @@ function isWindows() {
   return process.platform === 'win32';
 }
 
-function ps(scriptName, extraArgs = []) {
+function ps(scriptName, extraArgs = [], opts = {}) {
   const script = path.join(winDir, scriptName);
-  const args = ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, ...extraArgs];
-  const r = spawnSync('powershell.exe', args, { cwd: root, stdio: 'inherit' });
+  const args = [
+    '-NoProfile',
+    '-WindowStyle',
+    'Hidden',
+    '-ExecutionPolicy',
+    'Bypass',
+    '-File',
+    script,
+    ...extraArgs,
+  ];
+  const r = spawnSync('powershell.exe', args, {
+    cwd: root,
+    stdio: opts.inherit ? 'inherit' : 'pipe',
+    windowsHide: true,
+    encoding: 'utf8',
+  });
+  if (!opts.inherit) {
+    if (r.stdout) process.stdout.write(r.stdout);
+    if (r.stderr) process.stderr.write(r.stderr);
+  }
   return r.status ?? 1;
 }
 
@@ -119,11 +137,23 @@ function tray() {
     console.error('Tray requires Windows');
     return 2;
   }
+  // Prefer the native desktop app (no PowerShell window).
+  const exe = path.join(winDir, 'HelixApp', 'Helix.exe');
+  if (fs.existsSync(exe)) {
+    spawn(exe, [], {
+      cwd: root,
+      detached: true,
+      stdio: 'ignore',
+      env: { ...process.env, HELIX_ROOT: root },
+    }).unref();
+    console.log('HelixTray started (desktop app)');
+    return 0;
+  }
   const script = path.join(winDir, 'HelixTray.ps1');
   spawn(
     'powershell.exe',
-    ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-HelixRoot', root],
-    { cwd: root, detached: true, stdio: 'ignore' },
+    ['-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass', '-File', script, '-HelixRoot', root],
+    { cwd: root, detached: true, stdio: 'ignore', windowsHide: true },
   ).unref();
   console.log('HelixTray started');
   return 0;
@@ -164,7 +194,18 @@ async function main(argv) {
       console.error('app requires Windows');
       return 2;
     }
-    return ps(path.join('HelixApp', 'launch.ps1'), [`-HelixRoot`, root]);
+    const buildCode = ps(path.join('HelixApp', 'build.ps1'), []);
+    if (buildCode !== 0) return buildCode;
+    const exe = path.join(winDir, 'HelixApp', 'Helix.exe');
+    spawn(exe, [], {
+      cwd: root,
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: false,
+      env: { ...process.env, HELIX_ROOT: root },
+    }).unref();
+    console.log('HELIX_DESKTOP_LAUNCH_OK');
+    return 0;
   }
 
   if (cmd === 'build-app') {

@@ -6,11 +6,26 @@
 
 ---
 
-## 2026-10-08 — helix-windows-desktop-app
+## 2026-10-08 — helix-windows-no-powershell-flash
 
 **To:** cwl (record) · operator  
 **Priority:** P0  
 **Status:** **landing**
+
+```text
+WINDOWS_SILENT_OK
+FIX: Helix.exe starts node.exe directly (CreateNoWindow) — no PowerShell UI
+TASK: HelixAgent via wscript run-agent-hidden.vbs; HelixDesktop = Helix.exe
+ACL: ProgramData\Helix writable by user; SIEM append never crashes agent
+```
+
+---
+
+## 2026-10-08 — helix-windows-desktop-app
+
+**To:** cwl (record) · operator  
+**Priority:** P0  
+**Status:** **landed**
 
 ```text
 WINDOWS_DESKTOP_SMOKE_OK

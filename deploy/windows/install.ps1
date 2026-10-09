@@ -30,6 +30,11 @@ if (-not (Test-Path $agent)) {
 }
 
 New-Item -ItemType Directory -Force -Path $DataDir | Out-Null
+# Ensure the installing user can write DNA/logs without elevation (avoids agent EPERM crashes).
+try {
+  $user = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+  icacls $DataDir /grant "${user}:(OI)(CI)M" /T | Out-Null
+} catch { }
 $envFile = Join-Path $DataDir 'helix-agent.env'
 $example = Join-Path $PSScriptRoot 'helix-agent.env.example'
 if (-not (Test-Path $envFile)) {
@@ -42,16 +47,23 @@ if (-not (Test-Path $envFile)) {
   Write-Host "Keeping existing $envFile"
 }
 
-$runAgent = Join-Path $PSScriptRoot 'run-agent.ps1'
 $taskName = 'HelixAgent'
-$arg = "-NoProfile -ExecutionPolicy Bypass -File `"$runAgent`" -HelixRoot `"$HelixRoot`" -EnvFile `"$envFile`""
-$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $arg -WorkingDirectory $HelixRoot
+# Prefer wscript+VBS (no console). Fall back to hidden PowerShell run-agent.
+$vbs = Join-Path $PSScriptRoot 'run-agent-hidden.vbs'
+$wscript = Join-Path $env:WINDIR 'System32\wscript.exe'
+if ((Test-Path $vbs) -and (Test-Path $wscript)) {
+  $action = New-ScheduledTaskAction -Execute $wscript -Argument "//B //Nologo `"$vbs`"" -WorkingDirectory $HelixRoot
+} else {
+  $runAgent = Join-Path $PSScriptRoot 'run-agent.ps1'
+  $arg = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$runAgent`" -HelixRoot `"$HelixRoot`" -EnvFile `"$envFile`""
+  $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $arg -WorkingDirectory $HelixRoot
+}
 $trigger = New-ScheduledTaskTrigger -AtStartup
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
 $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Highest
 
 Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Force | Out-Null
-Write-Host "Scheduled task registered: $taskName (at startup)"
+Write-Host "Scheduled task registered: $taskName (at startup, silent)"
 
 [Environment]::SetEnvironmentVariable('HELIX_ROOT', $HelixRoot, 'User')
 $env:HELIX_ROOT = $HelixRoot
@@ -99,8 +111,8 @@ if (Test-Path $build) {
   Write-Host "Start Menu shortcut: $startMenu"
 
   if ($RegisterTrayAtLogon -or $Desktop -or $Start) {
-    $deskArg = "-NoProfile -ExecutionPolicy Bypass -File `"$(Join-Path $appDir 'launch.ps1')`" -HelixRoot `"$HelixRoot`""
-    $deskAction = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $deskArg
+    # Launch Helix.exe directly — never wrap in a visible PowerShell.
+    $deskAction = New-ScheduledTaskAction -Execute $exe -WorkingDirectory $HelixRoot
     $deskTrigger = New-ScheduledTaskTrigger -AtLogOn
     Register-ScheduledTask -TaskName 'HelixDesktop' -Action $deskAction -Trigger $deskTrigger -Force | Out-Null
     Write-Host 'Scheduled task registered: HelixDesktop (at logon)'
@@ -108,22 +120,24 @@ if (Test-Path $build) {
 }
 
 if ($Tray) {
-  Start-Process -FilePath 'powershell.exe' -ArgumentList @(
-    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $PSScriptRoot 'HelixTray.ps1'),
+  Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
+    '-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass',
+    '-File', (Join-Path $PSScriptRoot 'HelixTray.ps1'),
     '-HelixRoot', $HelixRoot
   )
 }
 
 if ($Desktop -or $Start) {
-  Start-Process -FilePath 'powershell.exe' -ArgumentList @(
-    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $appDir 'launch.ps1'),
-    '-HelixRoot', $HelixRoot
-  )
+  if (-not $exe) { $exe = Join-Path $appDir 'Helix.exe' }
+  if (-not (Test-Path $exe)) { throw "Helix.exe missing at $exe — build failed" }
+  $env:HELIX_ROOT = $HelixRoot
+  Start-Process -FilePath $exe -WorkingDirectory $HelixRoot
   Write-Host 'Launched Helix desktop app (auto-protect)'
 } elseif ($Setup) {
   $wiz = Join-Path $PSScriptRoot 'Protect-Wizard.ps1'
-  Start-Process -FilePath 'powershell.exe' -ArgumentList @(
-    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $wiz, '-HelixRoot', $HelixRoot
+  Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
+    '-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass',
+    '-File', $wiz, '-HelixRoot', $HelixRoot
   )
 }
 
