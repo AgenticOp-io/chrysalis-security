@@ -12,7 +12,8 @@
 | Mode A Windows (tray + task) | [INSTALL-MODE-A-WINDOWS.md](./INSTALL-MODE-A-WINDOWS.md) · `WINDOWS_APP_SMOKE_OK` |
 | Readiness / soak tooling | `SOAK_PREFLIGHT_OK` · `helix ready --shadow-log` |
 | Cert lifecycle + reload | `promote-chain-smoke` · `RELOAD_FIXTURE_OK` |
-| SIEM / triage / severity | `SIEM_FIXTURE_OK` · `TRIAGE_SMOKE_OK` · `SEVERITY_SMOKE_OK` |
+| SIEM / triage / severity | `SIEM_FIXTURE_OK` (`helix.siem.v1` + threat_correlation) · `TRIAGE_SMOKE_OK` · `SEVERITY_SMOKE_OK` |
+| Logging / CVE join docs | [LOGGING.md](./LOGGING.md) · [THREAT-CORRELATION.md](./THREAT-CORRELATION.md) |
 | Response surface DNA | `response-surface-smoke` |
 | Mode B L2 / K8s / compose | GCE + `k8s-*` / `compose-smoke` (where host allows) |
 | CWL optional (D5) | Protect path never requires CWL |

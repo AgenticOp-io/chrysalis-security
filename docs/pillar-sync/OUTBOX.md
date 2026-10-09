@@ -6,6 +6,22 @@
 
 ---
 
+## 2026-10-08 — helix-siem-logging-cve-correlation
+
+**To:** cwl (record) · operator  
+**Priority:** P1  
+**Status:** **landing**
+
+```text
+HELIX_SIEM_V1_OK
+DOCS: docs/LOGGING.md · docs/THREAT-CORRELATION.md
+ENGINE: enrichSiemHoleEvent — taxonomy + MITRE hints + CVE join guidance
+HONEST: assigns_cve=false · queries_nvd=false (D3 — SIEM joins NVD/OSV/TIP)
+PROVE: siem-fixture-smoke checks schema_version + threat_correlation
+```
+
+---
+
 ## 2026-10-08 — helix-windows-no-powershell-flash
 
 **To:** cwl (record) · operator  

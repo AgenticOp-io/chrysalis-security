@@ -6,6 +6,8 @@ Behavioral DNA firewall. **Trust nothing** that isn’t in certified DNA.
 |-----|------|
 | [HELIX-SECURITY-SURFACE.md](./HELIX-SECURITY-SURFACE.md) | **Full inventory** — Linux + Windows, modes, DNA, prove, non-goals |
 | [SHIPPABLE.md](./SHIPPABLE.md) | **Shippable bar closed** — prove tokens; soak is post-ship ops |
+| [LOGGING.md](./LOGGING.md) | **Logging SoR** — streams, `helix.siem.v1`, hole catalog |
+| [THREAT-CORRELATION.md](./THREAT-CORRELATION.md) | **CVE / NVD / TIP join** — SIEM recipes; Helix never assigns CVEs |
 | [BEGINNING.md](./BEGINNING.md) | **Basic beginning** — internet out of the box |
 | [PRODUCT.md](./PRODUCT.md) | **Gap to “changes security” + build order** |
 | [CERT-LIFECYCLE.md](./CERT-LIFECYCLE.md) | Promote / parent_hash / revoke-replace |

@@ -1393,6 +1393,13 @@ export function triageShadowLogFile(filePath, opts = {}) {
   return { ...triageShadowLog(fs.readFileSync(filePath, 'utf8'), opts), missing: false, path: filePath };
 }
 
+export {
+  enrichSiemHoleEvent,
+  taxonomyForHoleCode,
+  SIEM_SCHEMA_VERSION,
+  HOLE_TAXONOMY,
+} from './siem-enrich.mjs';
+
 function stableStringify(obj) {
   return JSON.stringify(sortKeysDeep(obj));
 }
