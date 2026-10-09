@@ -20,6 +20,9 @@
  *   HELIX_DNA_KEY=… / HELIX_DNA_REQUIRE=1
  *   HELIX_TLS_CERT=… / HELIX_TLS_KEY=…
  *   HELIX_MAX_BODY_BYTES=…
+ *   HELIX_AUTO_SEAL_AFTER=12   (0 = off; after N learn hits, seal + shadow)
+ *   HELIX_ENV_FILE=…           (persist MODE when panel/tray changes it)
+ *   HELIX_START_DEMO=1         (Windows run-agent may start fixtures/demo-api)
  *
  * Same engine as helix-proxy; this entrypoint is the host-install story.
  */
@@ -42,6 +45,9 @@ const requireSignedDna = process.env.HELIX_DNA_REQUIRE === '1' || process.env.HE
 const tlsCertPath = process.env.HELIX_TLS_CERT || '';
 const tlsKeyPath = process.env.HELIX_TLS_KEY || '';
 const maxBodyBytes = Number(process.env.HELIX_MAX_BODY_BYTES || 0) || 0;
+const autoSealAfter = Number(process.env.HELIX_AUTO_SEAL_AFTER || 0) || 0;
+const modePersistPath = process.env.HELIX_ENV_FILE || '';
+const appId = process.env.HELIX_APP_ID || 'helix-app';
 
 if (!['learn', 'shadow', 'enforce'].includes(mode)) {
   console.error(`Invalid MODE=${mode}`);
@@ -66,8 +72,9 @@ try {
     upstream,
     mode,
     dnaPath: dnaPath || undefined,
-    observePath: mode === 'learn' ? observePath : undefined,
-    shadowLogPath: mode === 'shadow' ? shadowLogPath : undefined,
+    // Always wire paths so panel seal / runtime mode switch works without restart.
+    observePath,
+    shadowLogPath,
     siemLogPath: siemLogPath || undefined,
     sensitivityPath: sensitivityPath || undefined,
     cookiePurposePath: cookiePurposePath || undefined,
@@ -77,6 +84,9 @@ try {
     placement: 'agent',
     tls,
     maxBodyBytes: maxBodyBytes || undefined,
+    autoSealAfter: autoSealAfter || undefined,
+    modePersistPath: modePersistPath || undefined,
+    appId,
   });
 } catch (err) {
   console.error(err.hole ? JSON.stringify(err.hole) : String(err.message || err));

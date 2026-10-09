@@ -32,6 +32,9 @@ const placement = process.env.PLACEMENT || 'proxy';
 const tlsCertPath = process.env.HELIX_TLS_CERT || '';
 const tlsKeyPath = process.env.HELIX_TLS_KEY || '';
 const maxBodyBytes = Number(process.env.HELIX_MAX_BODY_BYTES || 0) || 0;
+const autoSealAfter = Number(process.env.HELIX_AUTO_SEAL_AFTER || 0) || 0;
+const modePersistPath = process.env.HELIX_ENV_FILE || '';
+const appId = process.env.HELIX_APP_ID || 'helix-app';
 
 if (!['learn', 'shadow', 'enforce'].includes(mode)) {
   console.error(`Invalid MODE=${mode}`);
@@ -59,8 +62,8 @@ try {
     upstream,
     mode,
     dnaPath: dnaPath || undefined,
-    observePath: mode === 'learn' ? observePath : undefined,
-    shadowLogPath: mode === 'shadow' ? shadowLogPath : undefined,
+    observePath,
+    shadowLogPath,
     siemLogPath: siemLogPath || undefined,
     dnaKey: dnaKey || undefined,
     dnaKeyId: dnaKeyId || undefined,
@@ -68,6 +71,9 @@ try {
     placement,
     tls,
     maxBodyBytes: maxBodyBytes || undefined,
+    autoSealAfter: autoSealAfter || undefined,
+    modePersistPath: modePersistPath || undefined,
+    appId,
   });
 } catch (err) {
   console.error(err.hole ? JSON.stringify(err.hole) : String(err.message || err));

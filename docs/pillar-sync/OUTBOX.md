@@ -6,6 +6,30 @@
 
 ---
 
+## 2026-10-08 — helix-windows-consumer-ux
+
+**To:** cwl (record) · operator  
+**Priority:** P0  
+**Status:** **landing** (this candidate)
+
+```text
+HELIX_WINDOWS_CONSUMER_OK
+SEAL_SMOKE_OK
+PRODUCT: Protect wizard + panel Lock DNA / watch / block (no CLI daily path)
+AUTO: HELIX_START_DEMO + HELIX_AUTO_SEAL_AFTER
+ENGINE: POST /__helix/api/seal + /__helix/api/mode (runtime)
+CWL: no language ask
+```
+
+### Ask
+
+| Who | Action |
+| --- | --- |
+| CWL | Record Secure consumer UX (no language change) |
+| Operator | Tray → Protect / panel Lock DNA; soak still ops for real apps |
+
+---
+
 ## 2026-10-08 — helix-shippable-bar
 
 **To:** cwl (record) · convert (FYI) · operator  

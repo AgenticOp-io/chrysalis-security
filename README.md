@@ -39,12 +39,14 @@ Linux hard redirect (optional): `bash scripts/host-redirect-nft.sh install`
 
 ### Windows security app (Mode A)
 
-Tray + startup task + same `helix-agent` / control panel:
+Tray + Protect wizard + panel **Lock DNA** (no CLI for daily use):
 
 ```powershell
 npm run helix-win -- install --start --tray
-# Panel: http://127.0.0.1:4080/
-npm run windows-app-smoke   # → WINDOWS_APP_SMOKE_OK
+# Panel: http://127.0.0.1:4080/  → use app → Lock DNA → watch → block
+npm run helix-win -- setup          # Protect wizard (sample app or pick a port)
+npm run windows-app-smoke           # → WINDOWS_APP_SMOKE_OK
+npm run seal-smoke                  # → SEAL_SMOKE_OK
 ```
 
 Docs: [`docs/INSTALL-MODE-A-WINDOWS.md`](./docs/INSTALL-MODE-A-WINDOWS.md)

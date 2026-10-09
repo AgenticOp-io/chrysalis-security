@@ -20,12 +20,15 @@ const envFile = path.join(dataDir, 'helix-agent.env');
 const panelUrl = process.env.HELIX_PANEL_URL || 'http://127.0.0.1:4080/';
 
 function usage() {
-  console.log(`Helix for Windows (Mode A)
+  console.log(`Helix for Windows (Mode A) — tray + panel, no CLI required for daily use
 
-  npm run helix-win -- install [--start] [--tray] [--mode learn|shadow|enforce]
-  npm run helix-win -- uninstall [--remove-data]
+  npm run helix-win -- install --start --tray [--setup]
+  npm run helix-win -- setup          # Protect wizard (demo or pick a local port)
+  npm run helix-win -- seal           # Lock DNA from learned traffic → watch
   npm run helix-win -- start | stop | status | tray | open-panel
+  npm run helix-win -- uninstall [--remove-data]
 
+Everyday path: open panel → use app through Helix → Lock DNA → watch → block
 Docs: docs/INSTALL-MODE-A-WINDOWS.md
 Panel: ${panelUrl}
 `);
@@ -157,6 +160,41 @@ async function main(argv) {
   if (cmd === 'tray') return tray();
   if (cmd === 'start' || cmd === 'stop') return startStop(cmd);
 
+  if (cmd === 'setup' || cmd === 'protect') {
+    if (!isWindows()) {
+      console.error('setup requires Windows');
+      return 2;
+    }
+    const args = ['-HelixRoot', root];
+    if (flag(argv, '--demo')) args.push('-SilentDemo');
+    return ps('Protect-Wizard.ps1', args);
+  }
+
+  if (cmd === 'seal') {
+    return new Promise((resolve) => {
+      const url = new URL('__helix/api/seal', panelUrl.endsWith('/') ? panelUrl : `${panelUrl}/`);
+      const req = http.request(
+        url,
+        { method: 'POST', headers: { 'content-type': 'application/json' } },
+        (res) => {
+          const chunks = [];
+          res.on('data', (c) => chunks.push(c));
+          res.on('end', () => {
+            const body = Buffer.concat(chunks).toString('utf8');
+            console.log(body);
+            if (res.statusCode === 200) console.log('HELIX_SEAL_OK');
+            resolve(res.statusCode === 200 ? 0 : 1);
+          });
+        },
+      );
+      req.on('error', (err) => {
+        console.error(String(err.message || err));
+        resolve(1);
+      });
+      req.end(JSON.stringify({ mode: 'shadow' }));
+    });
+  }
+
   if (!isWindows() && (cmd === 'install' || cmd === 'uninstall')) {
     console.error(`${cmd} requires Windows (platform=${process.platform})`);
     return 2;
@@ -167,6 +205,7 @@ async function main(argv) {
     if (flag(argv, '--start')) args.push('-Start');
     if (flag(argv, '--tray')) args.push('-Tray');
     if (flag(argv, '--register-tray')) args.push('-RegisterTrayAtLogon');
+    if (flag(argv, '--setup')) args.push('-Setup');
     const mode = opt(argv, '--mode');
     if (mode) args.push('-Mode', mode);
     return ps('install.ps1', args);

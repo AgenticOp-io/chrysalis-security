@@ -24,6 +24,8 @@ import {
   severityForRoute,
   triageShadowLog,
   setCookieObservation,
+  learnFromObservations,
+  promoteDna,
 } from '../dna-core/index.mjs';
 
 const HEALTHZ = '/__helix/healthz';
@@ -32,6 +34,8 @@ const STATUS = '/__helix/status';
 const PANEL = '/__helix';
 const PANEL_SLASH = '/__helix/';
 const SNAPSHOT = '/__helix/api/snapshot';
+const SEAL = '/__helix/api/seal';
+const SET_MODE = '/__helix/api/mode';
 const PANEL_HTML_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), 'panel.html');
 const ATTACK_HTML_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), 'attack.html');
 const ATTACK_PAGE = '/__helix/attack';
@@ -140,6 +144,17 @@ function parseJsonBody(raw, contentType) {
   }
 }
 
+async function readJsonRequest(req) {
+  const chunks = [];
+  for await (const c of req) chunks.push(c);
+  if (!chunks.length) return {};
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+  } catch {
+    return {};
+  }
+}
+
 /**
  * @param {{
  *   upstream: string,
@@ -156,6 +171,9 @@ function parseJsonBody(raw, contentType) {
  *   placement?: 'proxy'|'agent'|'bridge',
  *   tls?: { cert: string|Buffer, key: string|Buffer },
  *   maxBodyBytes?: number,
+ *   modePersistPath?: string,
+ *   autoSealAfter?: number,
+ *   appId?: string,
  * }} opts
  */
 export function createHelixProxy(opts) {
@@ -169,12 +187,18 @@ export function createHelixProxy(opts) {
       : null;
 
   let dna = loadDna(opts.dnaPath, verifyOpts);
+  let runtimeMode = opts.mode;
   // Ops overlay (optional): credential surfaces get louder holes. Absent ⇒ all holes normal.
   const sensitivity = opts.sensitivity || loadSensitivityMap(opts.sensitivityPath);
   const cookiePurposes = opts.cookiePurposes || loadCookiePurposeMap(opts.cookiePurposePath);
   const placement = opts.placement || 'proxy';
   const maxBodyBytes =
     opts.maxBodyBytes != null && Number(opts.maxBodyBytes) > 0 ? Number(opts.maxBodyBytes) : 0;
+  const autoSealAfter =
+    opts.autoSealAfter != null
+      ? Number(opts.autoSealAfter)
+      : Number(process.env.HELIX_AUTO_SEAL_AFTER || 0) || 0;
+  const modePersistPath = opts.modePersistPath || process.env.HELIX_ENV_FILE || '';
   const rootPanel =
     opts.rootPanel === true ||
     process.env.HELIX_ROOT_PANEL === '1' ||
@@ -185,16 +209,127 @@ export function createHelixProxy(opts) {
     return dna;
   }
 
+  function countNdjson(filePath) {
+    if (!filePath || !fs.existsSync(filePath)) return 0;
+    return fs
+      .readFileSync(filePath, 'utf8')
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean).length;
+  }
+
+  function readAllObservations(filePath) {
+    if (!filePath || !fs.existsSync(filePath)) return [];
+    const out = [];
+    for (const line of fs.readFileSync(filePath, 'utf8').split(/\r?\n/)) {
+      const t = line.trim();
+      if (!t) continue;
+      try {
+        out.push(JSON.parse(t));
+      } catch {
+        /* skip */
+      }
+    }
+    return out;
+  }
+
+  function persistMode(mode) {
+    if (!modePersistPath || !fs.existsSync(modePersistPath)) return;
+    let text = fs.readFileSync(modePersistPath, 'utf8');
+    if (/^\s*MODE\s*=/m.test(text)) {
+      text = text.replace(/^\s*MODE\s*=\s*\S+/m, `MODE=${mode}`);
+    } else {
+      text = `${text.trimEnd()}\nMODE=${mode}\n`;
+    }
+    fs.writeFileSync(modePersistPath, text, 'utf8');
+  }
+
+  function setRuntimeMode(mode) {
+    if (!['learn', 'shadow', 'enforce'].includes(mode)) {
+      const err = new Error(`Invalid mode ${mode}`);
+      err.hole = { code: 'HX-BAD-MODE', reason: err.message };
+      throw err;
+    }
+    if ((mode === 'shadow' || mode === 'enforce') && !dna && !(opts.dnaPath && fs.existsSync(opts.dnaPath))) {
+      const err = new Error('Seal DNA before leaving learn mode');
+      err.hole = { code: 'HX-NO-DNA', reason: err.message };
+      throw err;
+    }
+    if ((mode === 'shadow' || mode === 'enforce') && !dna) reloadDna();
+    if ((mode === 'shadow' || mode === 'enforce') && !dna) {
+      const err = new Error('No certified DNA on disk');
+      err.hole = { code: 'HX-NO-DNA', reason: err.message };
+      throw err;
+    }
+    runtimeMode = mode;
+    persistMode(mode);
+    return runtimeMode;
+  }
+
+  function sealFromObservations(switchTo) {
+    if (!opts.observePath) {
+      const err = new Error('No observation file configured');
+      err.hole = { code: 'HX-NO-OBSERVE', reason: err.message };
+      throw err;
+    }
+    if (!opts.dnaPath) {
+      const err = new Error('No DNA path configured');
+      err.hole = { code: 'HX-NO-DNA-PATH', reason: err.message };
+      throw err;
+    }
+    const observations = readAllObservations(opts.observePath);
+    if (observations.length < 1) {
+      const err = new Error('No traffic learned yet — use the app through Helix first');
+      err.hole = { code: 'HX-EMPTY-LEARN', reason: err.message };
+      throw err;
+    }
+    const draft = learnFromObservations(observations, {
+      app_id: opts.appId || process.env.HELIX_APP_ID || 'helix-app',
+      mode: 'draft',
+    });
+    const from = opts.dnaPath && fs.existsSync(opts.dnaPath) ? loadDna(opts.dnaPath, null) : null;
+    const sign = opts.dnaKey
+      ? { secret: opts.dnaKey, key_id: opts.dnaKeyId || undefined, alg: 'hmac-sha256' }
+      : null;
+    const { dna: certified, diff } = promoteDna(draft, { from, sign });
+    fs.mkdirSync(path.dirname(opts.dnaPath), { recursive: true });
+    fs.writeFileSync(opts.dnaPath, JSON.stringify(certified, null, 2) + '\n', 'utf8');
+    dna = certified;
+    const mode = switchTo || 'shadow';
+    if (mode !== 'learn') setRuntimeMode(mode);
+    return {
+      sealed: true,
+      routes: Array.isArray(certified.routes) ? certified.routes.length : 0,
+      observations: observations.length,
+      mode: runtimeMode,
+      dnaPath: opts.dnaPath,
+      diff,
+    };
+  }
+
+  function maybeAutoSeal() {
+    if (autoSealAfter <= 0 || runtimeMode !== 'learn' || dna) return null;
+    const n = countNdjson(opts.observePath);
+    if (n < autoSealAfter) return null;
+    try {
+      return sealFromObservations('shadow');
+    } catch {
+      return null;
+    }
+  }
+
   function dnaStatus() {
     return {
       ok: true,
-      mode: opts.mode,
+      mode: runtimeMode,
       placement,
       dna: Boolean(dna),
       dnaPath: opts.dnaPath || null,
       routes: Array.isArray(dna?.routes) ? dna.routes.length : 0,
       maxBodyBytes: maxBodyBytes || null,
       credentialSurfaces: Array.isArray(sensitivity?.routes) ? sensitivity.routes.length : 0,
+      autoSealAfter: autoSealAfter || null,
+      frontDoor: opts.upstream ? true : false,
     };
   }
 
@@ -229,7 +364,7 @@ export function createHelixProxy(opts) {
     const event = {
       at: new Date().toISOString(),
       kind: 'helix.hole',
-      mode: opts.mode,
+      mode: runtimeMode,
       placement,
       phase,
       hole,
@@ -237,7 +372,7 @@ export function createHelixProxy(opts) {
       ...(sev.sensitivity ? { sensitivity: sev.sensitivity, sensitivity_effects: sev.effects } : {}),
       ...meta,
     };
-    if (opts.mode === 'shadow') {
+    if (runtimeMode === 'shadow') {
       appendNdjson(opts.shadowLogPath, event);
     }
     appendNdjson(opts.siemLogPath, event);
@@ -309,27 +444,27 @@ export function createHelixProxy(opts) {
         next =
           obs.count >= 2
             ? {
-                code: 'promote',
-                hint: 'npm run local-lab -- promote',
+                code: 'seal',
+                hint: 'Click “Lock DNA” — Helix will start watching for unknown surface.',
               }
             : {
                 code: 'keep_learning',
-                hint: 'Probe /api/health and /api/items, then promote',
+                hint: 'Use your app through this Helix address so it can learn normal traffic.',
               };
       } else if (st.mode === 'learn' && st.dna) {
         next = {
-          code: 'restart_shadow',
-          hint: 'npm run local-lab -- start --mode shadow --kill',
+          code: 'watch',
+          hint: 'DNA is ready — click “Start watching” (shadow) to alert without blocking.',
         };
       } else if (st.mode === 'shadow') {
         next = {
           code: 'soak_then_enforce',
-          hint: 'When holes are explained: npm run local-lab -- start --mode enforce --kill',
+          hint: 'When the hole list is boring, click “Start blocking” (enforce).',
         };
       } else if (st.mode === 'enforce') {
         next = {
           code: 'gated',
-          hint: 'npm run local-lab -- prove  (expect backdoor 403)',
+          hint: 'Blocking unknown surface. Try “Simulate attack” to prove it.',
         };
       }
       res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
@@ -359,6 +494,34 @@ export function createHelixProxy(opts) {
       }
       return;
     }
+    if (req.method === 'POST' && pathOnly === SEAL) {
+      try {
+        const body = await readJsonRequest(req);
+        const switchTo = body?.mode || 'shadow';
+        const result = sealFromObservations(switchTo);
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ ...result, ...dnaStatus() }));
+      } catch (err) {
+        const hole = err.hole || { code: 'HX-SEAL', reason: String(err.message || err) };
+        res.writeHead(400, { 'content-type': 'application/json', 'x-helix-hole': hole.code });
+        res.end(JSON.stringify({ sealed: false, hole }));
+      }
+      return;
+    }
+    if (req.method === 'POST' && pathOnly === SET_MODE) {
+      try {
+        const body = await readJsonRequest(req);
+        const mode = body?.mode;
+        setRuntimeMode(mode);
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ set: true, ...dnaStatus() }));
+      } catch (err) {
+        const hole = err.hole || { code: 'HX-SET-MODE', reason: String(err.message || err) };
+        res.writeHead(400, { 'content-type': 'application/json', 'x-helix-hole': hole.code });
+        res.end(JSON.stringify({ set: false, hole }));
+      }
+      return;
+    }
 
     const cl = Number(req.headers['content-length'] || 0);
     if (maxBodyBytes && cl > maxBodyBytes) {
@@ -367,9 +530,9 @@ export function createHelixProxy(opts) {
         reason: `Request Content-Length ${cl} exceeds HELIX_MAX_BODY_BYTES ${maxBodyBytes}`,
       };
       emitHole('request', hole, { method: req.method, path: pathOnly });
-      if (opts.mode === 'shadow') {
+      if (runtimeMode === 'shadow') {
         res.setHeader('x-helix-shadow-hole', hole.code);
-      } else if (opts.mode === 'enforce') {
+      } else if (runtimeMode === 'enforce') {
         res.writeHead(413, { 'content-type': 'application/json', 'x-helix-hole': hole.code });
         res.end(JSON.stringify({ hole }));
         return;
@@ -399,7 +562,7 @@ export function createHelixProxy(opts) {
       };
       emitHole('request', hole, { method: req.method || 'GET', path: pathOnly });
       req.resume?.();
-      if (opts.mode === 'shadow') {
+      if (runtimeMode === 'shadow') {
         // drain already stopped; still pass empty? Better 413 in shadow too for body limit — D2 is DNA; body limit is ops protect
         res.writeHead(413, { 'content-type': 'application/json', 'x-helix-shadow-hole': hole.code });
         res.end(JSON.stringify({ hole }));
@@ -417,7 +580,7 @@ export function createHelixProxy(opts) {
     const requestBody = parseJsonBody(raw, reqCt);
     const queryFp = queryKeyFingerprint(pathWithQuery);
 
-    if (opts.mode === 'enforce' || opts.mode === 'shadow') {
+    if (runtimeMode === 'enforce' || runtimeMode === 'shadow') {
       dna = dna || reloadDna();
       const verdict = scoreRequest(dna, {
         method,
@@ -429,7 +592,7 @@ export function createHelixProxy(opts) {
       });
       if (!verdict.allow) {
         emitHole('request', verdict.hole, { method, path: pathOnly, host, query: queryFp });
-        if (opts.mode === 'shadow') {
+        if (runtimeMode === 'shadow') {
           res.setHeader('x-helix-shadow-hole', verdict.hole.code);
         } else {
           writeHole(res, req, 403, verdict.hole);
@@ -480,7 +643,7 @@ export function createHelixProxy(opts) {
             }
           }
 
-          if (opts.mode === 'learn') {
+          if (runtimeMode === 'learn') {
             appendNdjson(opts.observePath, {
               method,
               path: pathOnly,
@@ -495,9 +658,10 @@ export function createHelixProxy(opts) {
               setCookie: setCookieObservation(pres.headers['set-cookie']),
               location: pres.headers['location'] || undefined,
             });
+            maybeAutoSeal();
           }
 
-          if ((opts.mode === 'enforce' || opts.mode === 'shadow') && req._helixRoute) {
+          if ((runtimeMode === 'enforce' || runtimeMode === 'shadow') && req._helixRoute) {
             const purposes = cookiePurposesForRoute(cookiePurposes, req._helixRoute);
             const scoredRoute = purposes
               ? { ...req._helixRoute, cookie_purposes: purposes }
@@ -512,7 +676,7 @@ export function createHelixProxy(opts) {
             });
             if (!rv.allow) {
               emitHole('response', rv.hole, { method, path: pathOnly, host });
-              if (opts.mode === 'shadow') {
+              if (runtimeMode === 'shadow') {
                 res.setHeader('x-helix-shadow-hole', rv.hole.code);
               } else {
                 writeHole(res, req, 403, rv.hole);
@@ -559,4 +723,6 @@ export {
   HEALTHZ,
   RELOAD,
   STATUS,
+  SEAL,
+  SET_MODE,
 };

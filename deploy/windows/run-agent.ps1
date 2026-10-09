@@ -24,10 +24,29 @@ Get-Content -LiteralPath $EnvFile | ForEach-Object {
   Set-Item -Path "Env:$name" -Value $value
 }
 
+# Persist panel/tray mode changes back into this env file.
+$env:HELIX_ENV_FILE = $EnvFile
+
 $node = (Get-Command node -ErrorAction Stop).Source
 $agent = Join-Path $HelixRoot 'packages\helix-agent\bin\helix-agent.mjs'
 if (-not (Test-Path $agent)) {
   Write-Error "helix-agent not found at $agent"
+}
+
+# Optional: start the bundled demo API so first-run works without a CLI.
+if ($env:HELIX_START_DEMO -eq '1' -or $env:HELIX_START_DEMO -eq 'true') {
+  $demoPort = 4090
+  if ($env:APP_UPSTREAM -match ':(\d+)\s*$') { $demoPort = [int]$Matches[1] }
+  $listening = $false
+  try {
+    $listening = [bool](Get-NetTCPConnection -LocalPort $demoPort -State Listen -ErrorAction SilentlyContinue)
+  } catch { $listening = $false }
+  if (-not $listening) {
+    $demo = Join-Path $HelixRoot 'fixtures\demo-api\server.mjs'
+    $launch = "`$env:HOST='127.0.0.1'; `$env:PORT='$demoPort'; Set-Location -LiteralPath '$HelixRoot'; & '$node' '$demo'"
+    Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile', '-Command', $launch) -WindowStyle Hidden
+    Start-Sleep -Milliseconds 500
+  }
 }
 
 Set-Location -LiteralPath $HelixRoot
