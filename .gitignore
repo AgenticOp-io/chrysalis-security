@@ -1,5 +1,7 @@
 node_modules/
 data/
+deploy/windows/HelixApp/Helix.exe
+deploy/windows/HelixApp/Helix.pdb
 certificates/demo-draft.json
 reports/
 deploy/k8s/helix-sidecar.rendered.yaml

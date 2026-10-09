@@ -107,6 +107,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] Helix for Windows — Mode A install + system tray + CLI ([INSTALL-MODE-A-WINDOWS.md](./INSTALL-MODE-A-WINDOWS.md) · `windows-app-smoke` → `WINDOWS_APP_SMOKE_OK`)  
 - [x] Shippable bar stamp — [SHIPPABLE.md](./SHIPPABLE.md) · full surface [HELIX-SECURITY-SURFACE.md](./HELIX-SECURITY-SURFACE.md)  
 - [x] Windows consumer UX — Protect wizard + panel Lock DNA / watch / block + auto-seal (`seal-smoke` → `SEAL_SMOKE_OK`)  
+- [x] Windows native desktop app — `Helix.exe` auto-protect pipeline (`helix-desktop-smoke` → `WINDOWS_DESKTOP_SMOKE_OK`)  
 
 ## Post-ship (ops — not engineering)
 
