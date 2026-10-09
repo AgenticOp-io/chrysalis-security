@@ -20,6 +20,7 @@ import {
   buildHolesBridgeReport,
   buildUpstreamTargetsReport,
   loadCwlHoleLookup,
+  consumeDnaFingerprint,
 } from '../packages/cwl-bridge/index.mjs';
 import { scoreRequest, scoreResponse, signDna, verifyDna } from '../packages/dna-core/index.mjs';
 
@@ -2125,12 +2126,13 @@ console.log('=== cutover: tip 1.0.85 (RFC-0042 DNA certificate / fingerprint / m
   const dfSrc = fs.readFileSync(dfPath, 'utf8');
   assert(/dna\s+certificate\s+"app\.dna\.json"\s*;/.test(dfSrc), `${dfDir} declares dna certificate`);
   assert(
-    /dna\s+fingerprint\s+"sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="\s*;/.test(dfSrc),
-    `${dfDir} declares dna fingerprint SRI`,
+    /dna\s+fingerprint\s+"sha384-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"\s*;/.test(dfSrc),
+    `${dfDir} declares dna fingerprint SRI (sha384+ floor)`,
   );
   assert(/dna\s+bank\s+"dna\/"\s*;/.test(dfSrc), `${dfDir} declares dna bank`);
   assert(/match\s+live\s*;/.test(dfSrc), `${dfDir} declares match live`);
   assert(/hole\s+cwl:bad-dna-fingerprint\s*;/.test(dfSrc), `${dfDir} catalogues bad-dna-fingerprint`);
+  assert(/hole\s+cwl:dna-fingerprint-too-weak\s*;/.test(dfSrc), `${dfDir} catalogues dna-fingerprint-too-weak`);
   assert(/hole\s+cwl:dna-certificate-not-url\s*;/.test(dfSrc), `${dfDir} catalogues dna-certificate-not-url`);
   assert(/hole\s+cwl:dna-bank-not-on-route\s*;/.test(dfSrc), `${dfDir} catalogues dna-bank-not-on-route`);
   const dfSeeded = await seedDnaFromCwlFile(dfPath, {
@@ -2139,11 +2141,12 @@ console.log('=== cutover: tip 1.0.85 (RFC-0042 DNA certificate / fingerprint / m
     fixture: `fixtures/language-gold/${dfDir}/routes.cwl`,
     cwlRoot,
   });
-  assert((dfSeeded.routes?.length ?? 0) === 5, `${dfDir} route count`);
+  assert((dfSeeded.routes?.length ?? 0) === 6, `${dfDir} route count`);
   const bind = dfSeeded.bridge?.cwl_dna_bind;
   assert(bind?.cwl_dna_certificate === 'app.dna.json', `${dfDir} module dna certificate document fact`);
   assert(
-    bind?.cwl_dna_fingerprint === 'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+    bind?.cwl_dna_fingerprint ===
+      'sha384-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     `${dfDir} module dna fingerprint document fact`,
   );
   assert(bind?.cwl_dna_bank === 'dna/', `${dfDir} module dna bank document fact`);
@@ -2151,7 +2154,8 @@ console.log('=== cutover: tip 1.0.85 (RFC-0042 DNA certificate / fingerprint / m
   const invoice = (dfSeeded.bridge?.annotations || []).find((a) => a.path_template === '/invoice');
   assert(invoice?.cwl_dna_certificate === 'app.dna.json', `${dfDir} invoice dna certificate document fact`);
   assert(
-    invoice?.cwl_dna_fingerprint === 'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+    invoice?.cwl_dna_fingerprint ===
+      'sha384-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     `${dfDir} invoice dna fingerprint document fact`,
   );
   assert(invoice?.cwl_dna_bank === 'dna/', `${dfDir} invoice inherits dna bank document fact`);
@@ -2159,12 +2163,14 @@ console.log('=== cutover: tip 1.0.85 (RFC-0042 DNA certificate / fingerprint / m
   const api = (dfSeeded.bridge?.annotations || []).find((a) => a.path_template === '/api/invoice');
   assert(api?.cwl_dna_certificate === 'app.dna.json', `${dfDir} api inherits dna certificate`);
   assert(
-    api?.cwl_dna_fingerprint === 'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+    api?.cwl_dna_fingerprint ===
+      'sha384-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     `${dfDir} api inherits dna fingerprint`,
   );
   assert(api?.cwl_match_live === true, `${dfDir} api match live document fact`);
   const expectedHoles = {
     '/refuse-fingerprint': 'cwl:bad-dna-fingerprint',
+    '/refuse-weak-fingerprint': 'cwl:dna-fingerprint-too-weak',
     '/refuse-certificate': 'cwl:dna-certificate-not-url',
     '/refuse-bank-route': 'cwl:dna-bank-not-on-route',
   };
@@ -2191,6 +2197,91 @@ console.log('=== cutover: tip 1.0.85 (RFC-0042 DNA certificate / fingerprint / m
   const dfCmp = compareCwlSurfaceToDna(dfSeeded, dfCertified);
   assert(dfCmp.ok === true, `${dfDir} self-cutover: ${JSON.stringify(dfCmp.missing_in_dna)}`);
   console.log('CUTOVER_TIP_1_0_85_OK');
+}
+
+console.log('=== cutover: tip 1.0.86 (RFC-0043 DNA fingerprint sha384+ floor; refuse sha256 DNA binds) ===');
+{
+  const strongDir = '95-dna-fingerprint-strong';
+  const strongPath = path.join(cwlRoot, 'fixtures', 'language-gold', strongDir, 'routes.cwl');
+  assert(fs.existsSync(strongPath), `missing ${strongDir}`);
+  const strongSrc = fs.readFileSync(strongPath, 'utf8');
+  assert(
+    /dna\s+fingerprint\s+"sha384-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"\s*;/.test(
+      strongSrc,
+    ),
+    `${strongDir} declares module dna fingerprint sha384`,
+  );
+  assert(
+    /dna\s+fingerprint\s+"sha512-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"\s*;/.test(
+      strongSrc,
+    ),
+    `${strongDir} declares route dna fingerprint sha512`,
+  );
+  assert(/hole\s+cwl:dna-fingerprint-too-weak\s*;/.test(strongSrc), `${strongDir} catalogues too-weak`);
+  assert(/hole\s+cwl:bad-dna-fingerprint\s*;/.test(strongSrc), `${strongDir} catalogues bad-dna-fingerprint`);
+
+  const weak = consumeDnaFingerprint('sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=');
+  assert(weak.ok === false && weak.hole === 'cwl:dna-fingerprint-too-weak', 'Secure refuse sha256 DNA bind');
+  const strong384 = consumeDnaFingerprint(
+    'sha384-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  );
+  assert(strong384.ok === true && typeof strong384.value === 'string', 'Secure accept sha384 DNA bind');
+  const strong512 = consumeDnaFingerprint(
+    'sha512-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  );
+  assert(strong512.ok === true && typeof strong512.value === 'string', 'Secure accept sha512 DNA bind');
+  const bad = consumeDnaFingerprint('md5-not-sri');
+  assert(bad.ok === false && bad.hole === 'cwl:bad-dna-fingerprint', 'Secure refuse non-SRI DNA bind');
+
+  const strongSeeded = await seedDnaFromCwlFile(strongPath, {
+    app_id: `cutover-${strongDir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${strongDir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((strongSeeded.routes?.length ?? 0) === 3, `${strongDir} route count`);
+  const bind = strongSeeded.bridge?.cwl_dna_bind;
+  assert(
+    bind?.cwl_dna_fingerprint ===
+      'sha384-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    `${strongDir} module dna fingerprint sha384 document fact`,
+  );
+  assert(bind?.cwl_dna_fingerprint_refused == null, `${strongDir} strong module fingerprint not refused`);
+  assert(bind?.cwl_match_live === true, `${strongDir} module match live`);
+  const invoice = (strongSeeded.bridge?.annotations || []).find((a) => a.path_template === '/invoice');
+  assert(
+    invoice?.cwl_dna_fingerprint ===
+      'sha512-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    `${strongDir} invoice route overrides with sha512`,
+  );
+  assert(invoice?.cwl_match_live === true, `${strongDir} invoice match live`);
+  const expectedHoles = {
+    '/refuse-weak-fingerprint': 'cwl:dna-fingerprint-too-weak',
+    '/refuse-fingerprint': 'cwl:bad-dna-fingerprint',
+  };
+  for (const [pathTemplate, reason] of Object.entries(expectedHoles)) {
+    const ann = (strongSeeded.bridge?.annotations || []).find((a) => a.path_template === pathTemplate);
+    assert(ann?.cwl_hole_reason === reason, `${pathTemplate} hole document fact: ${ann?.cwl_hole_reason}`);
+  }
+  assert(
+    strongSeeded.routes.every(
+      (r) =>
+        r.cwl_dna_certificate == null &&
+        r.cwl_dna_fingerprint == null &&
+        r.cwl_dna_bank == null &&
+        r.cwl_match_live == null &&
+        r.cwl_dna_bind == null,
+    ),
+    `${strongDir} DNA bind facts stay annotations/bridge, not DNA route fields`,
+  );
+  const seededJson = JSON.stringify(strongSeeded);
+  assert(!/createHash\(|subtle\.digest|sri-check|hashFile\(/.test(seededJson), `${strongDir} no digest invent in CWL`);
+  assert(!/ML-DSA|Dilithium|Kyber|PQ.?hash invent/.test(seededJson), `${strongDir} no PQ crypto invent in CWL`);
+  assert(!/NestFactory|LiveView|Flutter|dart:ui/.test(seededJson), `${strongDir} no Nest/LiveView/Flutter invent`);
+  const strongCertified = stripBridgeEnvelope(strongSeeded);
+  const strongCmp = compareCwlSurfaceToDna(strongSeeded, strongCertified);
+  assert(strongCmp.ok === true, `${strongDir} self-cutover: ${JSON.stringify(strongCmp.missing_in_dna)}`);
+  console.log('CUTOVER_TIP_1_0_86_OK');
 }
 
 console.log('CUTOVER_SMOKE_OK');

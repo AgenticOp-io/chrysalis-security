@@ -500,6 +500,9 @@ function sameSiteDocumentPath(action) {
  * document facts — Helix does not invent upload middleware, storage, or transfer.
  * Tip 1.0.85 RFC-0042 DNA certificate / fingerprint / bank / `match live` are
  * document facts — Helix consumes declared DNA bind; does not invent digests or Helix runtimes in CWL.
+ * Tip 1.0.86 RFC-0043 DNA fingerprint floor — live-match consume accepts `sha384` /
+ * `sha512` only; `sha256` DNA binds are refused (`cwl:dna-fingerprint-too-weak`).
+ * Asset integrity may still use sha256. PQ certificate signatures stay Secure-owned.
  * An off-site form is a hole flag. The foreign URL is not copied.
  * @param {object | null | undefined} layout
  * @returns {object | null}
@@ -677,11 +680,34 @@ function dnaIdentityDocumentFacts(route) {
   return Object.keys(facts).length ? facts : null;
 }
 
+/** RFC-0043: DNA bind digests — sha384/sha512 only (sha256 is too light for long-lived DNA). */
+const DNA_FINGERPRINT_STRONG_RE = /^sha(384|512)-[A-Za-z0-9+/=]+$/;
+const DNA_FINGERPRINT_WEAK_RE = /^sha256-[A-Za-z0-9+/=]+$/;
+
 /**
- * RFC-0042 DNA bind (tip 1.0.85): certificate / SRI fingerprint / bank / match live.
- * Document facts on bridge annotations (and module bank on the bridge envelope).
- * Route values override module; Helix verifies digests and enforces live-match —
- * it does not invent hash computation or Helix firewall features inside CWL.
+ * Tip 1.0.86 RFC-0043: live-match consume accepts sha384/sha512 DNA fingerprints only.
+ * `sha256` → refused as `cwl:dna-fingerprint-too-weak` (not copied onto the bind).
+ * Asset integrity (RFC-0040) may still use sha256. PQ certificate signatures stay
+ * Secure-owned — this does not invent CWL crypto or digest computation.
+ * @param {unknown} sri
+ * @returns {{ ok: true, value: string } | { ok: false, hole?: string }}
+ */
+export function consumeDnaFingerprint(sri) {
+  if (typeof sri !== 'string' || !sri) return { ok: false };
+  if (DNA_FINGERPRINT_STRONG_RE.test(sri)) return { ok: true, value: sri };
+  if (DNA_FINGERPRINT_WEAK_RE.test(sri)) {
+    return { ok: false, hole: 'cwl:dna-fingerprint-too-weak' };
+  }
+  return { ok: false, hole: 'cwl:bad-dna-fingerprint' };
+}
+
+/**
+ * RFC-0042 DNA bind (tip 1.0.85) + RFC-0043 floor (tip 1.0.86): certificate /
+ * SRI fingerprint / bank / match live. Document facts on bridge annotations
+ * (and module bank on the bridge envelope). Route values override module;
+ * Helix verifies digests and enforces live-match — it does not invent hash
+ * computation or Helix firewall features inside CWL. Weak (`sha256`) DNA
+ * fingerprints are refused in consume and never become live-match binds.
  * @param {object} route
  * @param {object | null | undefined} mod
  * @returns {object | null}
@@ -695,7 +721,7 @@ function dnaBindDocumentFacts(route, mod) {
       : typeof mod?.dnaCertificate === 'string' && mod.dnaCertificate
         ? mod.dnaCertificate
         : null;
-  const fingerprint =
+  const rawFingerprint =
     typeof route.dnaFingerprint === 'string' && route.dnaFingerprint
       ? route.dnaFingerprint
       : typeof mod?.dnaFingerprint === 'string' && mod.dnaFingerprint
@@ -704,7 +730,11 @@ function dnaBindDocumentFacts(route, mod) {
   const bank = typeof mod?.dnaBank === 'string' && mod.dnaBank ? mod.dnaBank : null;
   const matchLive = route.matchLive === true || mod?.matchLive === true;
   if (cert) facts.cwl_dna_certificate = cert;
-  if (fingerprint) facts.cwl_dna_fingerprint = fingerprint;
+  if (rawFingerprint) {
+    const consumed = consumeDnaFingerprint(rawFingerprint);
+    if (consumed.ok) facts.cwl_dna_fingerprint = consumed.value;
+    else if (consumed.hole) facts.cwl_dna_fingerprint_refused = consumed.hole;
+  }
   if (bank) facts.cwl_dna_bank = bank;
   if (matchLive) facts.cwl_match_live = true;
   return Object.keys(facts).length ? facts : null;
@@ -712,6 +742,7 @@ function dnaBindDocumentFacts(route, mod) {
 
 /**
  * Module-scope RFC-0042 DNA bind for the bridge envelope (bank is module-only).
+ * Tip 1.0.86: refuse weak DNA digests the same way as route consume.
  * @param {object | null | undefined} mod
  * @returns {object | null}
  */
@@ -723,7 +754,9 @@ function moduleDnaBindDocumentFacts(mod) {
     facts.cwl_dna_certificate = mod.dnaCertificate;
   }
   if (typeof mod.dnaFingerprint === 'string' && mod.dnaFingerprint) {
-    facts.cwl_dna_fingerprint = mod.dnaFingerprint;
+    const consumed = consumeDnaFingerprint(mod.dnaFingerprint);
+    if (consumed.ok) facts.cwl_dna_fingerprint = consumed.value;
+    else if (consumed.hole) facts.cwl_dna_fingerprint_refused = consumed.hole;
   }
   if (typeof mod.dnaBank === 'string' && mod.dnaBank) facts.cwl_dna_bank = mod.dnaBank;
   if (mod.matchLive === true) facts.cwl_match_live = true;

@@ -6,11 +6,47 @@
 
 ---
 
+## 2026-10-09 — secure-tip-1.0.86
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.86-dna-fingerprint-strong`)  
+**Status:** **done**  
+
+```text
+SECURE_TIP_1_0_86_OK
+CUTOVER_TIP_1_0_86_OK
+CWL_SYNC_OK: 8122855 cwl@1.0.86
+TOKENS: CUTOVER_TIP_1_0_85_OK · CUTOVER_TIP_1_0_86_OK · CWL_BRIDGE_SMOKE_OK · LIVE_MATCH_OK · TRAFFIC_DECIDES_SECURE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.86
+CWL_SHA: 8122855 (language land 61f4ba3 · ask tip-1.0.86-dna-fingerprint-strong)
+BRANCH: candidate/secure-tip-1.0.86
+PR: (pending push)
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.86** | RFC-0043 DNA fingerprint strength (gold `95`): live-match / bridge consume accepts `sha384` / `sha512` DNA binds only via `consumeDnaFingerprint`. `sha256` DNA binds are refused (`cwl:dna-fingerprint-too-weak` / `cwl_dna_fingerprint_refused`) and never copied onto the bind. Gold `94` floor updated to sha384+. Asset integrity may still use sha256. PQ certificate signatures stay Secure-owned — no CWL crypto invent. Tip seed self-cutover → `CUTOVER_TIP_1_0_86_OK`. Traffic DNA remains the default protect path |
+| Pins | `@chrysalis/cwl` and `@agenticop-io/cwl` stay `file:../chrysalis-cwl/packages/cwl` at **1.0.86** |
+
+### Closes
+
+- CWL OUTBOX Secure row of `tip-1.0.86-dna-fingerprint-strong`
+- Supersedes open Secure tip **1.0.85** pin ([PR #46](https://github.com/AgenticOp-io/chrysalis-security/pull/46) on `candidate/secure-tip-1.0.85`); this tip is the current pin
+
+### Ask
+
+none
+
+---
+
 ## 2026-10-09 — secure-tip-1.0.85
 
 **To:** cwl  
 **Priority:** P0 (reply to `tip-1.0.85-dna-fingerprint`)  
-**Status:** **done**  
+**Status:** **done** (superseded as current pin by `secure-tip-1.0.86`)  
 
 ```text
 SECURE_TIP_1_0_85_OK
@@ -21,6 +57,7 @@ CWL_TIP: 1.0.85
 CWL_SHA: efc2c08 (language land 5215e9c · ask tip-1.0.85-dna-fingerprint)
 BRANCH: candidate/secure-tip-1.0.85
 PR: https://github.com/AgenticOp-io/chrysalis-security/pull/46
+SUPERSEDED_AS_CURRENT_PIN_BY: secure-tip-1.0.86
 HEARTBEAT: waiting
 ```
 
