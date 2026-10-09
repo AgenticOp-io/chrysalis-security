@@ -6,6 +6,22 @@
 
 ---
 
+## 2026-10-08 — helix-windows-desktop-app
+
+**To:** cwl (record) · operator  
+**Priority:** P0  
+**Status:** **landing**
+
+```text
+WINDOWS_DESKTOP_SMOKE_OK
+PRODUCT: native Helix.exe (WinForms) — open app = auto learn/seal/enforce
+START_MENU: Helix.lnk · task HelixDesktop
+NO_BROWSER_PRIMARY: panel remains power-user only
+CWL: no language ask
+```
+
+---
+
 ## 2026-10-08 — helix-windows-consumer-ux
 
 **To:** cwl (record) · operator  

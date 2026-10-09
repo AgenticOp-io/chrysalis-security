@@ -10,6 +10,7 @@ param(
   [string]$DataDir = $(Join-Path $env:ProgramData 'Helix'),
   [switch]$Start,
   [switch]$Tray,
+  [switch]$Desktop,
   [switch]$RegisterTrayAtLogon,
   [switch]$Setup,
   [ValidateSet('learn', 'shadow', 'enforce')]
@@ -79,6 +80,33 @@ if ($RegisterTrayAtLogon) {
   Write-Host 'Scheduled task registered: HelixTray (at logon)'
 }
 
+# Native desktop app is the primary surface (not the browser panel).
+$appDir = Join-Path $PSScriptRoot 'HelixApp'
+$build = Join-Path $appDir 'build.ps1'
+if (Test-Path $build) {
+  & $build -OutDir $appDir
+  $exe = Join-Path $appDir 'Helix.exe'
+  $startMenu = Join-Path ([Environment]::GetFolderPath('StartMenu')) 'Programs\Helix.lnk'
+  $programs = Split-Path $startMenu -Parent
+  New-Item -ItemType Directory -Force -Path $programs | Out-Null
+  $w = New-Object -ComObject WScript.Shell
+  $sc = $w.CreateShortcut($startMenu)
+  $sc.TargetPath = $exe
+  $sc.WorkingDirectory = $HelixRoot
+  $sc.WindowStyle = 1
+  $sc.Description = 'Helix DNA firewall'
+  $sc.Save()
+  Write-Host "Start Menu shortcut: $startMenu"
+
+  if ($RegisterTrayAtLogon -or $Desktop -or $Start) {
+    $deskArg = "-NoProfile -ExecutionPolicy Bypass -File `"$(Join-Path $appDir 'launch.ps1')`" -HelixRoot `"$HelixRoot`""
+    $deskAction = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $deskArg
+    $deskTrigger = New-ScheduledTaskTrigger -AtLogOn
+    Register-ScheduledTask -TaskName 'HelixDesktop' -Action $deskAction -Trigger $deskTrigger -Force | Out-Null
+    Write-Host 'Scheduled task registered: HelixDesktop (at logon)'
+  }
+}
+
 if ($Tray) {
   Start-Process -FilePath 'powershell.exe' -ArgumentList @(
     '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $PSScriptRoot 'HelixTray.ps1'),
@@ -86,24 +114,25 @@ if ($Tray) {
   )
 }
 
-# Default consumer path: Protect wizard (demo) so the PC is usable without CLI.
-if ($Setup -or $Start) {
+if ($Desktop -or $Start) {
+  Start-Process -FilePath 'powershell.exe' -ArgumentList @(
+    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $appDir 'launch.ps1'),
+    '-HelixRoot', $HelixRoot
+  )
+  Write-Host 'Launched Helix desktop app (auto-protect)'
+} elseif ($Setup) {
   $wiz = Join-Path $PSScriptRoot 'Protect-Wizard.ps1'
-  if ($Setup) {
-    Start-Process -FilePath 'powershell.exe' -ArgumentList @(
-      '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $wiz, '-HelixRoot', $HelixRoot
-    )
-  } else {
-    & $wiz -HelixRoot $HelixRoot -SilentDemo
-  }
+  Start-Process -FilePath 'powershell.exe' -ArgumentList @(
+    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $wiz, '-HelixRoot', $HelixRoot
+  )
 }
 
 Write-Host ''
 Write-Host 'Helix for Windows installed (Mode A).'
-Write-Host "  Root   $HelixRoot"
-Write-Host "  Data   $DataDir"
-Write-Host "  Env    $envFile"
-Write-Host '  Panel  http://127.0.0.1:4080/'
-Write-Host '  Docs   docs/INSTALL-MODE-A-WINDOWS.md'
+Write-Host "  Root     $HelixRoot"
+Write-Host "  Data     $DataDir"
+Write-Host "  Env      $envFile"
+Write-Host "  Desktop  $(Join-Path $appDir 'Helix.exe')"
+Write-Host '  Docs     docs/INSTALL-MODE-A-WINDOWS.md'
 Write-Host ''
-Write-Host 'Next: open the panel → use the app through Helix → Lock DNA → watch → block'
+Write-Host 'Open Helix from the Start Menu — it protects automatically.'

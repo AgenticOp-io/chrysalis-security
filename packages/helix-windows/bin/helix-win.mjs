@@ -20,17 +20,16 @@ const envFile = path.join(dataDir, 'helix-agent.env');
 const panelUrl = process.env.HELIX_PANEL_URL || 'http://127.0.0.1:4080/';
 
 function usage() {
-  console.log(`Helix for Windows (Mode A) — tray + panel, no CLI required for daily use
+  console.log(`Helix for Windows — native desktop app (auto-protect)
 
-  npm run helix-win -- install --start --tray [--setup]
-  npm run helix-win -- setup          # Protect wizard (demo or pick a local port)
-  npm run helix-win -- seal           # Lock DNA from learned traffic → watch
-  npm run helix-win -- start | stop | status | tray | open-panel
+  npm run helix-win -- install --start --desktop
+  npm run helix-win -- app            # build + launch Helix.exe (fully automatic)
+  npm run helix-win -- build-app      # compile Helix.exe only
+  npm run helix-win -- start | stop | status
   npm run helix-win -- uninstall [--remove-data]
 
-Everyday path: open panel → use app through Helix → Lock DNA → watch → block
+Open Helix from the Start Menu — it starts the agent, learns, locks DNA, and blocks.
 Docs: docs/INSTALL-MODE-A-WINDOWS.md
-Panel: ${panelUrl}
 `);
 }
 
@@ -160,6 +159,22 @@ async function main(argv) {
   if (cmd === 'tray') return tray();
   if (cmd === 'start' || cmd === 'stop') return startStop(cmd);
 
+  if (cmd === 'app' || cmd === 'desktop') {
+    if (!isWindows()) {
+      console.error('app requires Windows');
+      return 2;
+    }
+    return ps(path.join('HelixApp', 'launch.ps1'), [`-HelixRoot`, root]);
+  }
+
+  if (cmd === 'build-app') {
+    if (!isWindows()) {
+      console.error('build-app requires Windows');
+      return 2;
+    }
+    return ps(path.join('HelixApp', 'build.ps1'), []);
+  }
+
   if (cmd === 'setup' || cmd === 'protect') {
     if (!isWindows()) {
       console.error('setup requires Windows');
@@ -204,10 +219,15 @@ async function main(argv) {
     const args = [`-HelixRoot`, root];
     if (flag(argv, '--start')) args.push('-Start');
     if (flag(argv, '--tray')) args.push('-Tray');
+    if (flag(argv, '--desktop')) args.push('-Desktop');
     if (flag(argv, '--register-tray')) args.push('-RegisterTrayAtLogon');
     if (flag(argv, '--setup')) args.push('-Setup');
     const mode = opt(argv, '--mode');
     if (mode) args.push('-Mode', mode);
+    // Default install launches the native desktop app when --start is set.
+    if (flag(argv, '--start') && !flag(argv, '--tray') && !flag(argv, '--setup')) {
+      if (!flag(argv, '--desktop')) args.push('-Desktop');
+    }
     return ps('install.ps1', args);
   }
 

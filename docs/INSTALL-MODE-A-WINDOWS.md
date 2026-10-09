@@ -1,89 +1,77 @@
-# Helix Mode A on Windows — security app
+# Helix Mode A on Windows — native desktop app
 
-**Product:** Helix for Windows — DNA firewall with a system tray and control panel.  
-**Engine:** same `helix-agent` as Linux Mode A ([INSTALL-MODE-A.md](./INSTALL-MODE-A.md)).  
-**Audience:** everyday operators — **no CLI required** for daily use.  
-**CWL:** optional bridge only (**D5**).  
-**Full Secure map:** [HELIX-SECURITY-SURFACE.md](./HELIX-SECURITY-SURFACE.md).
+**Product:** Helix for Windows — a real desktop app (`Helix.exe`) that protects automatically.  
+**Engine:** same `helix-agent` DNA firewall as Linux.  
+**Not:** a browser admin console as the primary UI (panel still exists for power users).  
+**CWL:** optional (**D5**).
+
+## What “automatic” means
+
+When you open **Helix** from the Start Menu it:
+
+1. Writes Mode A settings under `%ProgramData%\Helix\`
+2. Starts the DNA agent + bundled demo app if needed
+3. Generates normal traffic through the front door
+4. **Locks DNA** from that traffic
+5. Switches to **enforce** (blocks unknown surface)
+6. Proves a backdoor probe gets **403**
+7. Stays in the system tray
+
+You do not run CLI promote/shadow commands for the default path.
 
 ```text
-Your browser / clients  →  http://THIS-PC:4080  (Helix front door)
-                                ↓
-                        localhost app (demo or yours)
+Helix.exe (native WinForms)
+    -> helix-agent :4080
+         -> demo API :4090 (or your APP_UPSTREAM)
 ```
 
-Helix is **not** a whole-PC scanner. Only traffic through the front door is learned and checked.
-
-## Everyday path (recommended)
-
-1. Install + start + tray (elevated once for the startup task):
+## Install
 
 ```powershell
-npm run helix-win -- install --start --tray
+npm run helix-win -- install --start --desktop
+# or:
+npm run helix-win -- app
 ```
 
-2. Open the control panel: [http://127.0.0.1:4080/](http://127.0.0.1:4080/)  
-   - Or tray → **Open control panel** / **Protect an app…**
+Creates:
 
-3. **Generate traffic** through Helix (sample buttons, or use your app via `:4080`).
+| Piece | Location |
+| --- | --- |
+| Desktop app | `deploy/windows/HelixApp/Helix.exe` |
+| Start Menu | Programs → **Helix** |
+| Startup (optional) | Scheduled task `HelixDesktop` |
+| Agent task | `HelixAgent` |
+| Data / DNA | `%ProgramData%\Helix\` |
 
-4. Click **Lock DNA** (or wait for auto-lock after ~12 requests when `HELIX_AUTO_SEAL_AFTER=12`).
-
-5. Helix switches to **watching** (shadow). Review holes in the panel.
-
-6. When the hole list is boring, click **Start blocking** (enforce).
-
-Tray shortcuts: Protect an app… · Lock DNA · Start blocking · Start/Stop Helix.
-
-## Protect an app (wizard)
-
-Tray → **Protect an app…** or:
+Build alone (no Visual Studio — uses .NET Framework `csc`):
 
 ```powershell
-npm run helix-win -- setup
+npm run helix-win -- build-app
+# -> HELIX_DESKTOP_BUILD_OK
 ```
 
-| Choice | What happens |
-| --- | --- |
-| **Sample app** | Starts bundled demo API, Helix on `:4080`, auto-learn + auto-seal ready |
-| **Local listening port** | Guides you to move the app to a private localhost port; Helix stays the front door on `:4080` |
+## Everyday use
 
-You do **not** hand-edit env files for the normal path. Advanced ops can still edit `%ProgramData%\Helix\helix-agent.env`.
+1. Open **Helix** (Start Menu or `npm run helix-win -- app`)
+2. Watch the progress: Starting → Learning → Locking → Protected
+3. Close the window to tray (protection keeps running)
+4. **Protect now** runs the full pipeline again
+5. **Block unknown surface** forces enforce if you stepped back to watching
 
-## What gets installed
+## Honest scope
 
-| Piece | Path |
-| --- | --- |
-| Install / uninstall | `deploy/windows/install.ps1` · `uninstall.ps1` |
-| Agent runner | `deploy/windows/run-agent.ps1` (optional demo auto-start) |
-| Protect wizard | `deploy/windows/Protect-Wizard.ps1` |
-| System tray | `deploy/windows/HelixTray.ps1` |
-| Env | `%ProgramData%\Helix\helix-agent.env` |
-| CLI (optional) | `npm run helix-win -- …` |
-| Control panel | `http://127.0.0.1:4080/` |
-
-Startup task: **HelixAgent**. nft redirect stays Linux-only.
-
-## Panel actions (no promote CLI)
-
-| Button | API | Effect |
-| --- | --- | --- |
-| Lock DNA | `POST /__helix/api/seal` | Learn observations → certified DNA → **shadow** |
-| Start watching | `POST /__helix/api/mode` `{mode:shadow}` | Alert only |
-| Start blocking | `POST /__helix/api/mode` `{mode:enforce}` | Fail closed |
-
-Auto-seal: set `HELIX_AUTO_SEAL_AFTER=12` (default in the Windows env example).
+Helix still protects **one front door** (default `:4080` → localhost app), not every packet on the PC. The desktop app removes operator homework for that path; it does not invent whole-OS DPI.
 
 ## Prove
 
 ```bash
-npm run windows-app-smoke   # → WINDOWS_APP_SMOKE_OK
-npm run seal-smoke          # → SEAL_SMOKE_OK (panel lock path)
+npm run helix-desktop-smoke   # -> WINDOWS_DESKTOP_SMOKE_OK
+npm run windows-app-smoke
+npm run seal-smoke
 ```
 
 ## Uninstall
 
 ```powershell
 npm run helix-win -- uninstall
-# or: uninstall -RemoveData
 ```
