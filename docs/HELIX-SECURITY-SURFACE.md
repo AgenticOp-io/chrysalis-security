@@ -197,7 +197,7 @@ npm run helix-win -- install --start --tray
 | `packages/helix-windows` | Windows install / tray / status CLI |
 | `packages/cwl-bridge` | Optional CWL ↔ DNA (tip-pinned to `chrysalis-cwl`) |
 | `schemas/app-dna-v1.json` | Certificate schema |
-| SIEM | `SIEM_LOG` NDJSON · [SIEM.md](./SIEM.md) · [SPLUNK.md](./SPLUNK.md) · [FILEBEAT.md](./FILEBEAT.md) |
+| SIEM | `SIEM_LOG` NDJSON (`helix.siem.v1`) · [LOGGING.md](./LOGGING.md) · [THREAT-CORRELATION.md](./THREAT-CORRELATION.md) · [SIEM.md](./SIEM.md) |
 | Severity / triage | [SEVERITY.md](./SEVERITY.md) · [TRIAGE.md](./TRIAGE.md) |
 | TLS terminate (optional) | [TLS.md](./TLS.md) — default still cleartext after someone else’s TLS (**D1**) |
 

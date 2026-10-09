@@ -26,6 +26,7 @@ import {
   setCookieObservation,
   learnFromObservations,
   promoteDna,
+  enrichSiemHoleEvent,
 } from '../dna-core/index.mjs';
 
 const HEALTHZ = '/__helix/healthz';
@@ -366,7 +367,7 @@ export function createHelixProxy(opts) {
       path: meta?.path,
       host: meta?.host,
     });
-    const event = {
+    const base = {
       at: new Date().toISOString(),
       kind: 'helix.hole',
       mode: runtimeMode,
@@ -377,6 +378,8 @@ export function createHelixProxy(opts) {
       ...(sev.sensitivity ? { sensitivity: sev.sensitivity, sensitivity_effects: sev.effects } : {}),
       ...meta,
     };
+    // Additive threat/CVE correlation hooks for SIEM join — Helix does not assign CVEs (D3).
+    const event = enrichSiemHoleEvent(base);
     if (runtimeMode === 'shadow') {
       appendNdjson(opts.shadowLogPath, event);
     }

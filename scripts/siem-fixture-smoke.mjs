@@ -220,16 +220,23 @@ async function main() {
   await sleep(150);
 
   const shadowEvents = readNdjson(shadowSiem);
-  assert(
-    shadowEvents.some(
-      (e) =>
-        e.kind === 'helix.hole' &&
-        e.mode === 'shadow' &&
-        e.hole?.code === 'HX-ROUTE-UNKNOWN' &&
-        e.path === '/api/backdoor',
-    ),
-    'shadow hole missing from SIEM_LOG',
+  const shadowHole = shadowEvents.find(
+    (e) =>
+      e.kind === 'helix.hole' &&
+      e.mode === 'shadow' &&
+      e.hole?.code === 'HX-ROUTE-UNKNOWN' &&
+      e.path === '/api/backdoor',
   );
+  assert(shadowHole, 'shadow hole missing from SIEM_LOG');
+  assert(shadowHole.schema_version === 'helix.siem.v1', 'shadow schema_version');
+  assert(shadowHole.threat_correlation?.assigns_cve === false, 'shadow assigns_cve must be false');
+  assert(shadowHole.threat_correlation?.queries_nvd === false, 'shadow queries_nvd must be false');
+  assert(
+    Array.isArray(shadowHole.threat_correlation?.mitre_attack) &&
+      shadowHole.threat_correlation.mitre_attack.includes('T1190'),
+    'shadow MITRE hints',
+  );
+  assert(shadowHole.taxonomy?.family === 'unauthorized_surface', 'shadow taxonomy.family');
   token('SIEM_FIXTURE_SHADOW_OK');
 
   cleanup();
@@ -260,16 +267,17 @@ async function main() {
   await sleep(150);
 
   const enforceEvents = readNdjson(enforceSiem);
-  assert(
-    enforceEvents.some(
-      (e) =>
-        e.kind === 'helix.hole' &&
-        e.mode === 'enforce' &&
-        e.hole?.code === 'HX-ROUTE-UNKNOWN' &&
-        e.path === '/api/backdoor',
-    ),
-    'enforce hole missing from SIEM_LOG',
+  const enforceHole = enforceEvents.find(
+    (e) =>
+      e.kind === 'helix.hole' &&
+      e.mode === 'enforce' &&
+      e.hole?.code === 'HX-ROUTE-UNKNOWN' &&
+      e.path === '/api/backdoor',
   );
+  assert(enforceHole, 'enforce hole missing from SIEM_LOG');
+  assert(enforceHole.schema_version === 'helix.siem.v1', 'enforce schema_version');
+  assert(enforceHole.threat_correlation?.assigns_cve === false, 'enforce assigns_cve must be false');
+  assert(enforceHole.observability?.docs === 'docs/LOGGING.md', 'enforce observability.docs');
   token('SIEM_FIXTURE_ENFORCE_OK');
 
   cleanup();
