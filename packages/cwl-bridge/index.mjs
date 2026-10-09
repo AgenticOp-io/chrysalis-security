@@ -498,6 +498,8 @@ function sameSiteDocumentPath(action) {
  * not hash, verify SRI in a browser, or invent a JS/CSS runtime.
  * Tip 1.0.84 RFC-0041 page form `enctype multipart` + `field … "file"` are
  * document facts — Helix does not invent upload middleware, storage, or transfer.
+ * Tip 1.0.85 RFC-0042 DNA certificate / fingerprint / bank / `match live` are
+ * document facts — Helix consumes declared DNA bind; does not invent digests or Helix runtimes in CWL.
  * An off-site form is a hole flag. The foreign URL is not copied.
  * @param {object | null | undefined} layout
  * @returns {object | null}
@@ -672,6 +674,61 @@ function dnaIdentityDocumentFacts(route) {
     if (caps.length) facts.cwl_capabilities = [...caps];
   }
   if (route.worksWithoutClient === true) facts.cwl_works_without_client = true;
+  return Object.keys(facts).length ? facts : null;
+}
+
+/**
+ * RFC-0042 DNA bind (tip 1.0.85): certificate / SRI fingerprint / bank / match live.
+ * Document facts on bridge annotations (and module bank on the bridge envelope).
+ * Route values override module; Helix verifies digests and enforces live-match —
+ * it does not invent hash computation or Helix firewall features inside CWL.
+ * @param {object} route
+ * @param {object | null | undefined} mod
+ * @returns {object | null}
+ */
+function dnaBindDocumentFacts(route, mod) {
+  /** @type {Record<string, unknown>} */
+  const facts = {};
+  const cert =
+    typeof route.dnaCertificate === 'string' && route.dnaCertificate
+      ? route.dnaCertificate
+      : typeof mod?.dnaCertificate === 'string' && mod.dnaCertificate
+        ? mod.dnaCertificate
+        : null;
+  const fingerprint =
+    typeof route.dnaFingerprint === 'string' && route.dnaFingerprint
+      ? route.dnaFingerprint
+      : typeof mod?.dnaFingerprint === 'string' && mod.dnaFingerprint
+        ? mod.dnaFingerprint
+        : null;
+  const bank = typeof mod?.dnaBank === 'string' && mod.dnaBank ? mod.dnaBank : null;
+  const matchLive = route.matchLive === true || mod?.matchLive === true;
+  if (cert) facts.cwl_dna_certificate = cert;
+  if (fingerprint) facts.cwl_dna_fingerprint = fingerprint;
+  if (bank) facts.cwl_dna_bank = bank;
+  if (matchLive) facts.cwl_match_live = true;
+  return Object.keys(facts).length ? facts : null;
+}
+
+/**
+ * Module-scope RFC-0042 DNA bind for the bridge envelope (bank is module-only).
+ * @param {object | null | undefined} mod
+ * @returns {object | null}
+ */
+function moduleDnaBindDocumentFacts(mod) {
+  if (!mod || typeof mod !== 'object') return null;
+  /** @type {Record<string, unknown>} */
+  const facts = {};
+  if (typeof mod.dnaCertificate === 'string' && mod.dnaCertificate) {
+    facts.cwl_dna_certificate = mod.dnaCertificate;
+  }
+  if (typeof mod.dnaFingerprint === 'string' && mod.dnaFingerprint) {
+    facts.cwl_dna_fingerprint = mod.dnaFingerprint;
+  }
+  if (typeof mod.dnaBank === 'string' && mod.dnaBank) facts.cwl_dna_bank = mod.dnaBank;
+  if (mod.matchLive === true) facts.cwl_match_live = true;
+  const holes = Array.isArray(mod.dnaHoles) ? mod.dnaHoles.filter((h) => typeof h === 'string' && h) : [];
+  if (holes.length) facts.cwl_dna_holes = [...new Set(holes)];
   return Object.keys(facts).length ? facts : null;
 }
 
@@ -994,6 +1051,11 @@ export function genomeRouteAnnotations(mod) {
       Object.assign(fragment, identityFacts);
       carries = true;
     }
+    const dnaBindFacts = dnaBindDocumentFacts(r, mod);
+    if (dnaBindFacts) {
+      Object.assign(fragment, dnaBindFacts);
+      carries = true;
+    }
 
     const purposes = (r.handlerCookiePurposes || []).filter(
       (p) =>
@@ -1027,6 +1089,10 @@ export function genomeRouteAnnotations(mod) {
  */
 export function annotateSeedWithGenomeFacts(seeded, mod) {
   if (!seeded?.bridge || typeof seeded.bridge !== 'object') return seeded;
+  const moduleBind = moduleDnaBindDocumentFacts(mod);
+  if (moduleBind) {
+    seeded.bridge.cwl_dna_bind = { ...(seeded.bridge.cwl_dna_bind || {}), ...moduleBind };
+  }
   const fragments = genomeRouteAnnotations(mod);
   if (!fragments.length) return seeded;
 

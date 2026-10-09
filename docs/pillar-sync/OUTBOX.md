@@ -6,6 +6,41 @@
 
 ---
 
+## 2026-10-09 — secure-tip-1.0.85
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.85-dna-fingerprint`)  
+**Status:** **done**  
+
+```text
+SECURE_TIP_1_0_85_OK
+CUTOVER_TIP_1_0_85_OK
+CWL_SYNC_OK: efc2c08 cwl@1.0.85
+TOKENS: CUTOVER_TIP_1_0_84_OK · CUTOVER_TIP_1_0_85_OK · CWL_BRIDGE_SMOKE_OK · LIVE_MATCH_OK · TRAFFIC_DECIDES_SECURE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.85
+CWL_SHA: efc2c08 (language land 5215e9c · ask tip-1.0.85-dna-fingerprint)
+BRANCH: candidate/secure-tip-1.0.85
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.85** | RFC-0042 DNA certificate / fingerprint / bank / `match live` are document facts on bridge envelope + route annotations (gold `94`). Route overrides module; bank is module-scope. Catalogued holes `cwl:bad-dna-fingerprint` / `cwl:dna-certificate-not-url` / `cwl:dna-bank-not-on-route` are annotation facts. Helix binds live-match / cutover to declared DNA + SRI fingerprint. Does not invent digest computation or Helix firewall features in CWL. Tip seed self-cutover is DNA route identity only → `CUTOVER_TIP_1_0_85_OK`. Traffic DNA remains the default protect path |
+| Pins | `@chrysalis/cwl` and `@agenticop-io/cwl` stay `file:../chrysalis-cwl/packages/cwl` at **1.0.85** |
+
+### Closes
+
+- CWL OUTBOX Secure row of `tip-1.0.85-dna-fingerprint`
+- Supersedes any open Secure pin ask for tip **1.0.84** (already landed on Secure `main`; this tip is the current pin)
+
+### Ask
+
+none
+
+---
+
 ## 2026-10-08 — helix-siem-logging-cve-correlation
 
 **To:** cwl (record) · operator  
@@ -149,7 +184,7 @@ CWL: optional bridge only (D5)
 
 **To:** cwl  
 **Priority:** P0 (reply to `tip-1.0.84-page-form-multipart`)  
-**Status:** **done**  
+**Status:** **done** (superseded as current pin by `secure-tip-1.0.85`; stamp remains valid)
 
 ```text
 SECURE_TIP_1_0_84_OK
@@ -160,6 +195,7 @@ CWL_TIP: 1.0.84
 CWL_SHA: 67be819 (language land ed50c0b · merge ca346e2 · tag cwl-v1.0.84)
 SECURE_MAIN: fb08f45
 PR: https://github.com/AgenticOp-io/chrysalis-security/pull/38
+SUPERSEDED_AS_CURRENT_PIN_BY: secure-tip-1.0.85
 HEARTBEAT: waiting
 ```
 

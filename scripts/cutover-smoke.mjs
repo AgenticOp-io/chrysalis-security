@@ -2117,4 +2117,80 @@ console.log('=== cutover: tip 1.0.84 (RFC-0041 page form multipart is document f
   console.log('CUTOVER_TIP_1_0_84_OK');
 }
 
+console.log('=== cutover: tip 1.0.85 (RFC-0042 DNA certificate / fingerprint / match live are document facts, not Helix invent) ===');
+{
+  const dfDir = '94-dna-fingerprint';
+  const dfPath = path.join(cwlRoot, 'fixtures', 'language-gold', dfDir, 'routes.cwl');
+  assert(fs.existsSync(dfPath), `missing ${dfDir}`);
+  const dfSrc = fs.readFileSync(dfPath, 'utf8');
+  assert(/dna\s+certificate\s+"app\.dna\.json"\s*;/.test(dfSrc), `${dfDir} declares dna certificate`);
+  assert(
+    /dna\s+fingerprint\s+"sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="\s*;/.test(dfSrc),
+    `${dfDir} declares dna fingerprint SRI`,
+  );
+  assert(/dna\s+bank\s+"dna\/"\s*;/.test(dfSrc), `${dfDir} declares dna bank`);
+  assert(/match\s+live\s*;/.test(dfSrc), `${dfDir} declares match live`);
+  assert(/hole\s+cwl:bad-dna-fingerprint\s*;/.test(dfSrc), `${dfDir} catalogues bad-dna-fingerprint`);
+  assert(/hole\s+cwl:dna-certificate-not-url\s*;/.test(dfSrc), `${dfDir} catalogues dna-certificate-not-url`);
+  assert(/hole\s+cwl:dna-bank-not-on-route\s*;/.test(dfSrc), `${dfDir} catalogues dna-bank-not-on-route`);
+  const dfSeeded = await seedDnaFromCwlFile(dfPath, {
+    app_id: `cutover-${dfDir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${dfDir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((dfSeeded.routes?.length ?? 0) === 5, `${dfDir} route count`);
+  const bind = dfSeeded.bridge?.cwl_dna_bind;
+  assert(bind?.cwl_dna_certificate === 'app.dna.json', `${dfDir} module dna certificate document fact`);
+  assert(
+    bind?.cwl_dna_fingerprint === 'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+    `${dfDir} module dna fingerprint document fact`,
+  );
+  assert(bind?.cwl_dna_bank === 'dna/', `${dfDir} module dna bank document fact`);
+  assert(bind?.cwl_match_live === true, `${dfDir} module match live document fact`);
+  const invoice = (dfSeeded.bridge?.annotations || []).find((a) => a.path_template === '/invoice');
+  assert(invoice?.cwl_dna_certificate === 'app.dna.json', `${dfDir} invoice dna certificate document fact`);
+  assert(
+    invoice?.cwl_dna_fingerprint === 'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+    `${dfDir} invoice dna fingerprint document fact`,
+  );
+  assert(invoice?.cwl_dna_bank === 'dna/', `${dfDir} invoice inherits dna bank document fact`);
+  assert(invoice?.cwl_match_live === true, `${dfDir} invoice match live document fact`);
+  const api = (dfSeeded.bridge?.annotations || []).find((a) => a.path_template === '/api/invoice');
+  assert(api?.cwl_dna_certificate === 'app.dna.json', `${dfDir} api inherits dna certificate`);
+  assert(
+    api?.cwl_dna_fingerprint === 'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+    `${dfDir} api inherits dna fingerprint`,
+  );
+  assert(api?.cwl_match_live === true, `${dfDir} api match live document fact`);
+  const expectedHoles = {
+    '/refuse-fingerprint': 'cwl:bad-dna-fingerprint',
+    '/refuse-certificate': 'cwl:dna-certificate-not-url',
+    '/refuse-bank-route': 'cwl:dna-bank-not-on-route',
+  };
+  for (const [pathTemplate, reason] of Object.entries(expectedHoles)) {
+    const ann = (dfSeeded.bridge?.annotations || []).find((a) => a.path_template === pathTemplate);
+    assert(ann?.cwl_hole_reason === reason, `${pathTemplate} hole document fact: ${ann?.cwl_hole_reason}`);
+  }
+  assert(
+    dfSeeded.routes.every(
+      (r) =>
+        r.cwl_dna_certificate == null &&
+        r.cwl_dna_fingerprint == null &&
+        r.cwl_dna_bank == null &&
+        r.cwl_match_live == null &&
+        r.cwl_dna_bind == null,
+    ),
+    `${dfDir} DNA bind facts stay annotations/bridge, not DNA route fields`,
+  );
+  const seededJson = JSON.stringify(dfSeeded);
+  assert(!/createHash\(|subtle\.digest|sri-check|hashFile\(/.test(seededJson), `${dfDir} Helix does not invent digest computation in CWL`);
+  assert(!/NGFW|iptables invent|HelixFirewallGrammar/.test(seededJson), `${dfDir} Helix does not invent firewall features in CWL`);
+  assert(!/NestFactory|LiveView|Flutter|dart:ui/.test(seededJson), `${dfDir} Helix does not invent Nest/LiveView/Flutter`);
+  const dfCertified = stripBridgeEnvelope(dfSeeded);
+  const dfCmp = compareCwlSurfaceToDna(dfSeeded, dfCertified);
+  assert(dfCmp.ok === true, `${dfDir} self-cutover: ${JSON.stringify(dfCmp.missing_in_dna)}`);
+  console.log('CUTOVER_TIP_1_0_85_OK');
+}
+
 console.log('CUTOVER_SMOKE_OK');
