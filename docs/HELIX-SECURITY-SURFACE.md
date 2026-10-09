@@ -234,14 +234,16 @@ Helix **does not** require CWL to learn or enforce.
 
 ---
 
-## 11. What remains (ops, not invent)
+## 11. Shippable vs post-ship
 
-| Open | Owner |
+**Engineering shippable bar:** **closed** — [SHIPPABLE.md](./SHIPPABLE.md).
+
+| Open (post-ship) | Owner |
 | --- | --- |
 | Customer shadow soak → enforce on real traffic | Operator ([SOAK.md](./SOAK.md)) |
 | EXTFMAP / live EXTFMAP hunts where applicable | Operator (sibling runbooks) |
 
-Shippable engine + Linux Mode A + Windows Mode A app + Mode B/K8s recipes are in-tree. Credibility gap is **living with real customer traffic**, not more fingerprint invent.
+Credibility after ship is **living with real customer traffic**, not more fingerprint invent.
 
 ---
 

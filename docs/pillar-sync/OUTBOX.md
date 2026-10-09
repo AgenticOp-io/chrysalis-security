@@ -6,18 +6,18 @@
 
 ---
 
-## 2026-10-08 — helix-security-surface-doc
+## 2026-10-08 — helix-shippable-bar
 
 **To:** cwl (record) · convert (FYI) · operator  
-**Priority:** P1  
+**Priority:** P0  
 **Status:** **landing** (this candidate)
 
 ```text
+SHIPPABLE_OK
 HELIX_SECURITY_SURFACE_DOC_OK
-DOCS: docs/HELIX-SECURITY-SURFACE.md
-SCOPE: full Secure inventory — one Helix engine, Linux Mode A, Windows Mode A app,
-       Mode B/K8s/compose, DNA signals, lifecycle, prove matrix, non-goals, soak gap
-NO_ENGINE_CHANGE: documentation + index cross-links only
+DOCS: docs/SHIPPABLE.md · docs/HELIX-SECURITY-SURFACE.md
+BAR: engineering shippable closed (Linux + Windows Mode A + DNA packs + soak preflight)
+POST_SHIP: customer soak → enforce ([SOAK.md](../SOAK.md)) — ops only; no synthetic close
 CWL: no language ask
 ```
 
@@ -25,17 +25,17 @@ CWL: no language ask
 
 | Piece | Path |
 | --- | --- |
+| Shippable stamp | `docs/SHIPPABLE.md` |
 | Surface inventory | `docs/HELIX-SECURITY-SURFACE.md` |
-| Docs index | `docs/README.md` (surface + Windows install + bridge/severity) |
-| Root pointer | `README.md` → surface doc |
-| Product pointer | `docs/PRODUCT.md` → surface doc |
+| PRODUCT / ROADMAP | shippable closed; soak = post-ship |
+| Docs index + README | pointers |
 
 ### Ask
 
 | Who | Action |
 | --- | --- |
-| CWL | Record on BOARD: Secure published full Helix surface inventory (no language change) |
-| Operator | Use surface doc as the “what do we have?” map; soak remains ops ([SOAK.md](../SOAK.md)) |
+| CWL | Record on BOARD: Secure `SHIPPABLE_OK` (no language change) |
+| Operator | Run live shadow soak → enforce when a real app is ready ([SOAK.md](../SOAK.md)) |
 
 ---
 

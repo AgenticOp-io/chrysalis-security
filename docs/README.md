@@ -5,6 +5,7 @@ Behavioral DNA firewall. **Trust nothing** that isn’t in certified DNA.
 | Doc | What |
 |-----|------|
 | [HELIX-SECURITY-SURFACE.md](./HELIX-SECURITY-SURFACE.md) | **Full inventory** — Linux + Windows, modes, DNA, prove, non-goals |
+| [SHIPPABLE.md](./SHIPPABLE.md) | **Shippable bar closed** — prove tokens; soak is post-ship ops |
 | [BEGINNING.md](./BEGINNING.md) | **Basic beginning** — internet out of the box |
 | [PRODUCT.md](./PRODUCT.md) | **Gap to “changes security” + build order** |
 | [CERT-LIFECYCLE.md](./CERT-LIFECYCLE.md) | Promote / parent_hash / revoke-replace |
