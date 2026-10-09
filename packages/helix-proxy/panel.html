@@ -231,11 +231,30 @@
     </header>
 
     <div class="grid fade-in">
+      <section class="tile full" id="guideTile">
+        <p class="label">How to use Helix</p>
+        <p class="value sm" style="font-size:1.05rem;line-height:1.35;font-family:inherit;font-weight:600" id="guideTitle">
+          Use your app through this address — Helix learns what “normal” looks like.
+        </p>
+        <p class="hint" id="guideHint">
+          Helix is not a whole-PC scanner. Only traffic that hits this front door is checked.
+          When you’ve used the app a bit, lock its DNA. Unknown new surface will then alert or block.
+        </p>
+        <div class="actions">
+          <button type="button" id="btnSeal">Lock DNA</button>
+          <button type="button" class="secondary" id="btnWatch">Start watching</button>
+          <button type="button" class="secondary" id="btnBlock">Start blocking</button>
+          <a class="btn secondary" href="/api/health" target="_blank" rel="noopener">Generate sample traffic</a>
+          <button type="button" id="btnAttack" title="GET /api/backdoor — should 403 in enforce">Simulate attack</button>
+        </div>
+        <p class="hint" id="guideNote"></p>
+      </section>
+
       <section class="tile">
         <p class="label">Mode</p>
         <p class="value sm" id="modeValue">—</p>
         <span class="mode-pill" id="modePill">…</span>
-        <p class="hint" id="modeHint">learn → promote → shadow → enforce</p>
+        <p class="hint" id="modeHint">learn → lock DNA → watch → block</p>
       </section>
       <section class="tile">
         <p class="label">DNA certificate</p>
@@ -245,21 +264,18 @@
       <section class="tile">
         <p class="label">Live traffic</p>
         <p class="value" id="obsValue">0</p>
-        <p class="hint">Observations recorded</p>
+        <p class="hint">Requests learned through Helix</p>
       </section>
 
       <section class="tile wide">
         <p class="label">Next step</p>
         <p class="value sm" id="nextCode">—</p>
-        <p class="hint" id="nextHint">learn → promote → shadow → enforce</p>
-        <p class="hint" style="margin-top:0.75rem">Reload DNA after promote without restarting Helix. Probe the demo API through the proxy.</p>
+        <p class="hint" id="nextHint">Use the app, then Lock DNA</p>
         <div class="actions">
-          <button type="button" id="btnReload">Reload DNA</button>
-          <a class="btn secondary" href="/api/health" target="_blank" rel="noopener">Probe demo API</a>
+          <button type="button" class="secondary" id="btnReload">Reload DNA file</button>
           <a class="btn secondary" href="/api/items" target="_blank" rel="noopener">Probe /api/items</a>
           <a class="btn secondary" href="/__helix/healthz" target="_blank" rel="noopener">Helix healthz</a>
           <button type="button" class="secondary" id="btnRefresh">Refresh now</button>
-          <button type="button" id="btnAttack" title="GET /api/backdoor — should 403 in enforce">Simulate attack</button>
           <a class="btn secondary" href="/__helix/attack">Proof page</a>
         </div>
         <p class="hint" id="reloadNote"></p>
@@ -306,10 +322,21 @@
     }
 
     function modeHint(mode) {
-      if (mode === "learn") return "Passing traffic and learning the app’s DNA.";
-      if (mode === "shadow") return "Passing traffic; logging holes without blocking.";
-      if (mode === "enforce") return "Blocking anything outside certified DNA.";
-      return "learn → promote → shadow → enforce";
+      if (mode === "learn") return "Learning — traffic passes; DNA is being recorded.";
+      if (mode === "shadow") return "Watching — traffic passes; unknown surface is logged.";
+      if (mode === "enforce") return "Blocking — unknown surface gets a 403.";
+      return "learn → lock DNA → watch → block";
+    }
+
+    async function postJson(url, body) {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body || {}),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.hole?.reason || data.hole?.code || res.status);
+      return data;
     }
 
     function rowsHtml(headers, rows, empty) {
@@ -347,14 +374,18 @@
         $("dnaValue").textContent = s.dna ? `${s.routes} routes` : "None";
         $("dnaHint").textContent = s.dna
           ? s.dnaPath || "Certified DNA loaded"
-          : "Promote a draft after learn, then reload";
+          : "Lock DNA after Helix has seen normal traffic";
         $("obsValue").textContent = String(s.observations?.count ?? 0);
         $("siemValue").textContent = String(s.siem?.count ?? 0);
         $("nextCode").textContent = s.next?.code || "—";
         $("nextHint").textContent = s.next?.hint || modeHint(s.mode);
         $("reloadNote").textContent = s.dnaPath
           ? `DNA file: ${s.dnaPath}`
-          : "Set DNA=… after promote to enable reload.";
+          : "DNA path appears after you lock a certificate.";
+        if (s.autoSealAfter) {
+          $("guideHint").textContent =
+            `Helix can auto-lock after ${s.autoSealAfter} requests. Or click Lock DNA when ready. Only traffic through this front door is checked.`;
+        }
         $("updated").textContent = "Updated " + new Date(s.at).toLocaleTimeString();
 
         const obsRows = (s.observations?.recent || []).map((o) => [
@@ -403,6 +434,40 @@
     }
 
     $("btnRefresh").addEventListener("click", () => refresh());
+    $("btnSeal").addEventListener("click", async () => {
+      const note = $("guideNote");
+      note.textContent = "Locking DNA from learned traffic…";
+      try {
+        const body = await postJson("/__helix/api/seal", { mode: "shadow" });
+        note.textContent = `Locked · ${body.routes || 0} routes · now watching (shadow)`;
+        toast("DNA locked · watching");
+        await refresh();
+      } catch (err) {
+        note.textContent = "Lock failed: " + (err.message || err);
+        toast("Lock failed");
+      }
+    });
+    $("btnWatch").addEventListener("click", async () => {
+      try {
+        await postJson("/__helix/api/mode", { mode: "shadow" });
+        toast("Watching (shadow)");
+        $("guideNote").textContent = "Watching — holes are logged, traffic still passes.";
+        await refresh();
+      } catch (err) {
+        $("guideNote").textContent = "Watch failed: " + (err.message || err);
+      }
+    });
+    $("btnBlock").addEventListener("click", async () => {
+      if (!confirm("Start blocking unknown surface? Legitimate new features must be locked into DNA first.")) return;
+      try {
+        await postJson("/__helix/api/mode", { mode: "enforce" });
+        toast("Blocking (enforce)");
+        $("guideNote").textContent = "Blocking — out-of-DNA requests get 403.";
+        await refresh();
+      } catch (err) {
+        $("guideNote").textContent = "Block failed: " + (err.message || err);
+      }
+    });
     $("btnAttack").addEventListener("click", async () => {
       const note = $("attackNote");
       note.textContent = "Hitting /api/backdoor…";

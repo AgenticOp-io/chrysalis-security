@@ -1,92 +1,89 @@
 # Helix Mode A on Windows — security app
 
-**Product:** Helix for Windows — host DNA firewall with a system tray and the existing `/__helix/` control panel.  
-**Engine:** same `helix-agent` as Linux Mode A ([INSTALL-MODE-A.md](./INSTALL-MODE-A.md)). No second security invent.  
-**CWL:** optional bridge only (**D5**). Traffic DNA protects out of the box.  
+**Product:** Helix for Windows — DNA firewall with a system tray and control panel.  
+**Engine:** same `helix-agent` as Linux Mode A ([INSTALL-MODE-A.md](./INSTALL-MODE-A.md)).  
+**Audience:** everyday operators — **no CLI required** for daily use.  
+**CWL:** optional bridge only (**D5**).  
 **Full Secure map:** [HELIX-SECURITY-SURFACE.md](./HELIX-SECURITY-SURFACE.md).
 
 ```text
-Internet / LAN → this host :LISTEN_PORT (Helix)
-                      ↓
-              127.0.0.1:APP_PORT (your app)
+Your browser / clients  →  http://THIS-PC:4080  (Helix front door)
+                                ↓
+                        localhost app (demo or yours)
 ```
 
-NGFW VIP/NAT stays pointed at the Windows host (D4).
+Helix is **not** a whole-PC scanner. Only traffic through the front door is learned and checked.
 
-## What you get
+## Everyday path (recommended)
+
+1. Install + start + tray (elevated once for the startup task):
+
+```powershell
+npm run helix-win -- install --start --tray
+```
+
+2. Open the control panel: [http://127.0.0.1:4080/](http://127.0.0.1:4080/)  
+   - Or tray → **Open control panel** / **Protect an app…**
+
+3. **Generate traffic** through Helix (sample buttons, or use your app via `:4080`).
+
+4. Click **Lock DNA** (or wait for auto-lock after ~12 requests when `HELIX_AUTO_SEAL_AFTER=12`).
+
+5. Helix switches to **watching** (shadow). Review holes in the panel.
+
+6. When the hole list is boring, click **Start blocking** (enforce).
+
+Tray shortcuts: Protect an app… · Lock DNA · Start blocking · Start/Stop Helix.
+
+## Protect an app (wizard)
+
+Tray → **Protect an app…** or:
+
+```powershell
+npm run helix-win -- setup
+```
+
+| Choice | What happens |
+| --- | --- |
+| **Sample app** | Starts bundled demo API, Helix on `:4080`, auto-learn + auto-seal ready |
+| **Local listening port** | Guides you to move the app to a private localhost port; Helix stays the front door on `:4080` |
+
+You do **not** hand-edit env files for the normal path. Advanced ops can still edit `%ProgramData%\Helix\helix-agent.env`.
+
+## What gets installed
 
 | Piece | Path |
 | --- | --- |
 | Install / uninstall | `deploy/windows/install.ps1` · `uninstall.ps1` |
-| Agent runner | `deploy/windows/run-agent.ps1` |
+| Agent runner | `deploy/windows/run-agent.ps1` (optional demo auto-start) |
+| Protect wizard | `deploy/windows/Protect-Wizard.ps1` |
 | System tray | `deploy/windows/HelixTray.ps1` |
-| Env template | `deploy/windows/helix-agent.env.example` → `%ProgramData%\Helix\helix-agent.env` |
-| CLI | `npm run helix-win -- …` (`packages/helix-windows`) |
-| Control panel | `http://127.0.0.1:4080/` (same panel as Linux) |
+| Env | `%ProgramData%\Helix\helix-agent.env` |
+| CLI (optional) | `npm run helix-win -- …` |
+| Control panel | `http://127.0.0.1:4080/` |
 
-Startup uses a **Scheduled Task** (`HelixAgent`) — honest Windows host persistence without inventing a custom kernel driver. Linux nft redirect stays Linux-only (`NFT_SMOKE_SKIP` on Win32).
+Startup task: **HelixAgent**. nft redirect stays Linux-only.
 
-## Install
+## Panel actions (no promote CLI)
 
-From the `chrysalis-security` repo (Node ≥ 22 on PATH):
+| Button | API | Effect |
+| --- | --- | --- |
+| Lock DNA | `POST /__helix/api/seal` | Learn observations → certified DNA → **shadow** |
+| Start watching | `POST /__helix/api/mode` `{mode:shadow}` | Alert only |
+| Start blocking | `POST /__helix/api/mode` `{mode:enforce}` | Fail closed |
 
-```powershell
-powershell -ExecutionPolicy Bypass -File deploy\windows\install.ps1 -Start -Tray
-# or:
-npm run helix-win -- install --start --tray
-```
-
-Edit `%ProgramData%\Helix\helix-agent.env`:
-
-1. `APP_UPSTREAM=http://127.0.0.1:<your-app-port>`
-2. Bind your app to **localhost only**
-3. `MODE=learn` → collect traffic → `npm run helix -- promote …` → `shadow` → `enforce`
-
-Optional tray at every logon:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File deploy\windows\install.ps1 -RegisterTrayAtLogon -Tray
-```
-
-## Tray menu
-
-- Open control panel / attack proof page  
-- Start / Stop Helix  
-- Live status (running + mode from env)
-
-Double-click the shield icon → panel.
-
-## CLI
-
-```bash
-npm run helix-win -- status
-npm run helix-win -- open-panel
-npm run helix-win -- start
-npm run helix-win -- stop
-npm run helix-win -- tray
-npm run helix-win -- uninstall
-```
+Auto-seal: set `HELIX_AUTO_SEAL_AFTER=12` (default in the Windows env example).
 
 ## Prove
 
 ```bash
-npm run windows-app-smoke
-# → WINDOWS_APP_SMOKE_OK on Windows
-# → WINDOWS_APP_SMOKE_SKIP on non-Windows (honest)
+npm run windows-app-smoke   # → WINDOWS_APP_SMOKE_OK
+npm run seal-smoke          # → SEAL_SMOKE_OK (panel lock path)
 ```
-
-## Lab vs product
-
-| Path | Use |
-| --- | --- |
-| `npm run local-lab` + `local-lab-windows-start.ps1` | Desktop fixture flip (demo/real-site) |
-| `deploy/windows/install.ps1` | **Product** Mode A on this host for a real localhost app |
-
-Customer soak → enforce remains operator-only ([SOAK.md](./SOAK.md)).
 
 ## Uninstall
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File deploy\windows\uninstall.ps1
-# DNA kept unless: -RemoveData
+npm run helix-win -- uninstall
+# or: uninstall -RemoveData
 ```

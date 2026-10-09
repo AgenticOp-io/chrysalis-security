@@ -106,6 +106,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] Response surface DNA ([RESPONSE-SURFACE.md](./RESPONSE-SURFACE.md) · `response-surface-smoke`) — `set_cookie_names` / `redirect_targets`; `HX-COOKIE-DRIFT` / `HX-REDIRECT-DRIFT`; names and hostnames only, absent ≠ empty  
 - [x] Helix for Windows — Mode A install + system tray + CLI ([INSTALL-MODE-A-WINDOWS.md](./INSTALL-MODE-A-WINDOWS.md) · `windows-app-smoke` → `WINDOWS_APP_SMOKE_OK`)  
 - [x] Shippable bar stamp — [SHIPPABLE.md](./SHIPPABLE.md) · full surface [HELIX-SECURITY-SURFACE.md](./HELIX-SECURITY-SURFACE.md)  
+- [x] Windows consumer UX — Protect wizard + panel Lock DNA / watch / block + auto-seal (`seal-smoke` → `SEAL_SMOKE_OK`)  
 
 ## Post-ship (ops — not engineering)
 

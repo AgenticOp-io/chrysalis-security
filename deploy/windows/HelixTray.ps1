@@ -1,5 +1,5 @@
-# Helix for Windows - system tray (Mode A operator surface).
-# Opens the existing /__helix/ control panel; does not invent a second security engine.
+# Helix for Windows - system tray (consumer Mode A surface).
+# Protect wizard + panel Lock DNA — no CLI required.
 #
 #   powershell -ExecutionPolicy Bypass -File deploy\windows\HelixTray.ps1
 #   npm run helix-win -- tray
@@ -57,6 +57,12 @@ function Stop-HelixAgentTask {
     ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 }
 
+function Invoke-HelixPost([string]$Path, $Body) {
+  $url = ($PanelUrl.TrimEnd('/') + $Path)
+  $json = if ($Body) { ($Body | ConvertTo-Json -Compress) } else { '{}' }
+  Invoke-RestMethod -Uri $url -Method Post -Body $json -ContentType 'application/json' -TimeoutSec 10
+}
+
 function New-TrayItem([string]$text, [scriptblock]$onClick) {
   $item = New-Object System.Windows.Forms.ToolStripMenuItem
   $item.Text = $text
@@ -81,7 +87,34 @@ function Refresh-StatusItem {
 }
 
 [void]$menu.Items.Add((New-TrayItem 'Open control panel' { Start-Process $PanelUrl }))
-[void]$menu.Items.Add((New-TrayItem 'Open attack proof' { Start-Process ($PanelUrl.TrimEnd('/') + '/__helix/attack') }))
+[void]$menu.Items.Add((New-TrayItem 'Protect an app…' {
+  $wiz = Join-Path $HelixRoot 'deploy\windows\Protect-Wizard.ps1'
+  Start-Process -FilePath 'powershell.exe' -ArgumentList @(
+    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $wiz, '-HelixRoot', $HelixRoot
+  )
+}))
+[void]$menu.Items.Add((New-TrayItem 'Lock DNA (then watch)' {
+  try {
+    $r = Invoke-HelixPost '/__helix/api/seal' @{ mode = 'shadow' }
+    $notify.ShowBalloonTip(5000, 'Helix', "DNA locked ($($r.routes) routes). Watching for unknown surface.", 'Info')
+  } catch {
+    $notify.ShowBalloonTip(6000, 'Helix', "Lock failed: $($_.Exception.Message)", 'Warning')
+  }
+  Refresh-StatusItem
+}))
+[void]$menu.Items.Add((New-TrayItem 'Start blocking' {
+  $ok = [System.Windows.Forms.MessageBox]::Show(
+    'Block unknown surface? New legitimate features must be locked into DNA first.',
+    'Helix', 'YesNo', 'Warning')
+  if ($ok -ne 'Yes') { return }
+  try {
+    Invoke-HelixPost '/__helix/api/mode' @{ mode = 'enforce' } | Out-Null
+    $notify.ShowBalloonTip(4000, 'Helix', 'Blocking enabled (enforce).', 'Info')
+  } catch {
+    $notify.ShowBalloonTip(6000, 'Helix', "Block failed: $($_.Exception.Message)", 'Warning')
+  }
+  Refresh-StatusItem
+}))
 [void]$menu.Items.Add('-')
 [void]$menu.Items.Add((New-TrayItem 'Start Helix' { Start-HelixAgentTask; Start-Sleep -Seconds 1; Refresh-StatusItem }))
 [void]$menu.Items.Add((New-TrayItem 'Stop Helix' { Stop-HelixAgentTask; Start-Sleep -Milliseconds 500; Refresh-StatusItem }))
@@ -98,9 +131,9 @@ $notify.add_DoubleClick({ Start-Process $PanelUrl })
 
 Refresh-StatusItem
 $notify.ShowBalloonTip(
-  4000,
+  5000,
   'Helix',
-  'DNA firewall tray. Double-click opens the control panel.',
+  'Use the control panel: generate traffic, Lock DNA, then watch or block.',
   [System.Windows.Forms.ToolTipIcon]::Info
 )
 

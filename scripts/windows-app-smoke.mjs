@@ -18,6 +18,7 @@ const required = [
   'deploy/windows/uninstall.ps1',
   'deploy/windows/run-agent.ps1',
   'deploy/windows/HelixTray.ps1',
+  'deploy/windows/Protect-Wizard.ps1',
   'deploy/windows/helix-agent.env.example',
   'packages/helix-windows/bin/helix-win.mjs',
   'packages/helix-agent/bin/helix-agent.mjs',
@@ -62,7 +63,7 @@ if (help.status !== 0 || !String(help.stdout).includes('Helix for Windows')) {
 }
 
 // Syntax-check PowerShell installers without mutating the host
-for (const name of ['install.ps1', 'uninstall.ps1', 'run-agent.ps1', 'HelixTray.ps1']) {
+for (const name of ['install.ps1', 'uninstall.ps1', 'run-agent.ps1', 'HelixTray.ps1', 'Protect-Wizard.ps1']) {
   const script = path.join(root, 'deploy', 'windows', name);
   const chk = spawnSync(
     'powershell.exe',

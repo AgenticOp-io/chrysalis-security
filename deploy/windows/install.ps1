@@ -11,6 +11,7 @@ param(
   [switch]$Start,
   [switch]$Tray,
   [switch]$RegisterTrayAtLogon,
+  [switch]$Setup,
   [ValidateSet('learn', 'shadow', 'enforce')]
   [string]$Mode = 'learn'
 )
@@ -85,6 +86,18 @@ if ($Tray) {
   )
 }
 
+# Default consumer path: Protect wizard (demo) so the PC is usable without CLI.
+if ($Setup -or $Start) {
+  $wiz = Join-Path $PSScriptRoot 'Protect-Wizard.ps1'
+  if ($Setup) {
+    Start-Process -FilePath 'powershell.exe' -ArgumentList @(
+      '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $wiz, '-HelixRoot', $HelixRoot
+    )
+  } else {
+    & $wiz -HelixRoot $HelixRoot -SilentDemo
+  }
+}
+
 Write-Host ''
 Write-Host 'Helix for Windows installed (Mode A).'
 Write-Host "  Root   $HelixRoot"
@@ -93,4 +106,4 @@ Write-Host "  Env    $envFile"
 Write-Host '  Panel  http://127.0.0.1:4080/'
 Write-Host '  Docs   docs/INSTALL-MODE-A-WINDOWS.md'
 Write-Host ''
-Write-Host 'Next: point APP_UPSTREAM at your localhost app; then learn, promote, shadow, enforce'
+Write-Host 'Next: open the panel → use the app through Helix → Lock DNA → watch → block'
