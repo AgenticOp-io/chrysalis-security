@@ -10,13 +10,14 @@
 
 **To:** cwl · convert  
 **Priority:** P2 (docs only — no language invent)  
-**Status:** **landing**  
+**Status:** **done**  
 
 ```text
 SECURE_DOCS_MAP_OK
 CWL_TIP: 1.0.88 (pin header + registry example aligned; gold 97 / RFC-0045)
 BRANCH: candidate/secure-docs-helix-map
 PR: https://github.com/AgenticOp-io/chrysalis-security/pull/56
+MERGE: b14c2a4f09b297d857e56e0b7a718f5e97765aba
 HEARTBEAT: waiting
 ```
 
