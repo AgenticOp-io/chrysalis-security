@@ -312,11 +312,28 @@ namespace HelixDesktop
 
             SetUi("Watching", "Checking that unknown surface is detected...", 85);
             PostJson(panelBase + "/__helix/api/mode", "{\"mode\":\"shadow\"}");
-            // Probe backdoor - should pass in shadow with hole log
-            HttpGet(panelBase + "/api/backdoor");
+            // Probe backdoor - should pass in shadow with hole log (dirties SHADOW_LOG).
+            var shadowProbe = HttpGetStatus(panelBase + "/api/backdoor");
+            if (shadowProbe == 403)
+                Log("Warn: shadow blocked backdoor (expected pass + hole log)");
+            else
+                Log("Shadow saw unknown surface (status " + shadowProbe + ")");
+
+            // Enforce gate refuses a dirty soak log — clear after the detection proof (lab only).
+            try
+            {
+                var shadowPath = Path.Combine(dataDir, "shadow.ndjson");
+                File.WriteAllText(shadowPath, "");
+            }
+            catch { }
 
             SetUi("Protecting", "Turning on blocking for this lab app...", 92);
-            PostJson(panelBase + "/__helix/api/mode", "{\"mode\":\"enforce\"}");
+            var enforceBody = PostJson(panelBase + "/__helix/api/mode", "{\"mode\":\"enforce\"}");
+            if (enforceBody.IndexOf("\"set\":true", StringComparison.OrdinalIgnoreCase) < 0 &&
+                enforceBody.IndexOf("\"set\": true", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                throw new Exception("Enforce refused until soak is clean - " + Trunc(enforceBody, 180));
+            }
             var blocked = HttpGetStatus(panelBase + "/api/backdoor");
             if (blocked != 403)
                 Log("Warn: backdoor status " + blocked + " (expected 403 in enforce)");

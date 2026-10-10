@@ -62,8 +62,18 @@ $trigger = New-ScheduledTaskTrigger -AtStartup
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
 $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Highest
 
-Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Force | Out-Null
-Write-Host "Scheduled task registered: $taskName (at startup, silent)"
+try {
+  Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Force | Out-Null
+  Write-Host "Scheduled task registered: $taskName (at startup, silent)"
+} catch {
+  # Already installed / non-elevated re-run: keep the existing task and continue loading the app.
+  $existing = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+  if ($existing) {
+    Write-Host "Keeping existing scheduled task: $taskName (re-register needs elevation)"
+  } else {
+    throw
+  }
+}
 
 [Environment]::SetEnvironmentVariable('HELIX_ROOT', $HelixRoot, 'User')
 $env:HELIX_ROOT = $HelixRoot
@@ -111,11 +121,15 @@ if (Test-Path $build) {
   Write-Host "Start Menu shortcut: $startMenu"
 
   if ($RegisterTrayAtLogon -or $Desktop -or $Start) {
-    # Launch Helix.exe directly — never wrap in a visible PowerShell.
-    $deskAction = New-ScheduledTaskAction -Execute $exe -WorkingDirectory $HelixRoot
-    $deskTrigger = New-ScheduledTaskTrigger -AtLogOn
-    Register-ScheduledTask -TaskName 'HelixDesktop' -Action $deskAction -Trigger $deskTrigger -Force | Out-Null
-    Write-Host 'Scheduled task registered: HelixDesktop (at logon)'
+    # Launch Helix.exe directly - never wrap in a visible PowerShell.
+    try {
+      $deskAction = New-ScheduledTaskAction -Execute $exe -WorkingDirectory $HelixRoot
+      $deskTrigger = New-ScheduledTaskTrigger -AtLogOn
+      Register-ScheduledTask -TaskName 'HelixDesktop' -Action $deskAction -Trigger $deskTrigger -Force | Out-Null
+      Write-Host 'Scheduled task registered: HelixDesktop (at logon)'
+    } catch {
+      Write-Host 'HelixDesktop logon task skipped (needs elevation) - Start Menu shortcut is enough'
+    }
   }
 }
 
@@ -129,7 +143,7 @@ if ($Tray) {
 
 if ($Desktop -or $Start) {
   if (-not $exe) { $exe = Join-Path $appDir 'Helix.exe' }
-  if (-not (Test-Path $exe)) { throw "Helix.exe missing at $exe — build failed" }
+  if (-not (Test-Path $exe)) { throw "Helix.exe missing at $exe - build failed" }
   $env:HELIX_ROOT = $HelixRoot
   Start-Process -FilePath $exe -WorkingDirectory $HelixRoot
   Write-Host 'Launched Helix desktop app (auto-protect)'
@@ -149,4 +163,4 @@ Write-Host "  Env      $envFile"
 Write-Host "  Desktop  $(Join-Path $appDir 'Helix.exe')"
 Write-Host '  Docs     docs/INSTALL-MODE-A-WINDOWS.md'
 Write-Host ''
-Write-Host 'Open Helix from the Start Menu — it protects automatically.'
+Write-Host 'Open Helix from the Start Menu - it protects automatically.'
