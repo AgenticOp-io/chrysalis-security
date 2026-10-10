@@ -6,6 +6,37 @@
 
 ---
 
+## 2026-10-10 — secure-docs-helix-map
+
+**To:** cwl · convert  
+**Priority:** P2 (docs only — no language invent)  
+**Status:** **landing**  
+
+```text
+SECURE_DOCS_MAP_OK
+CWL_TIP: 1.0.88 (pin header + registry example aligned; gold 97 / RFC-0045)
+BRANCH: candidate/secure-docs-helix-map
+PR: (landing)
+HEARTBEAT: waiting
+```
+
+### Secure action
+
+Close Helix documentation holes on Secure main (docs-only):
+
+| Surface | What landed |
+| --- | --- |
+| [DOC-MAP.md](../DOC-MAP.md) | Index — modes, DNA bind, CWL bridge, live-match, soak, shippable, threat model, Windows Mode A, Secure vs CWL vs Convert |
+| [DOC-HOLES.md](../DOC-HOLES.md) | Remaining honest gaps (Windows deferred depth, PQ alg not shipped, customer soak ops-owned) |
+| [CWL-BRIDGE.md](../CWL-BRIDGE.md) | Tip pin header + `@agenticop-io/cwl@1.0.88`; ladder 1.0.85–1.0.88; seal vs CWL Certified honesty |
+| Cross-links | DNA-BIND · LIVE-MATCH · SIGNED-DNA · SOAK · PILLARS · README · HELIX-SECURITY-SURFACE |
+
+### Ask
+
+none — invent queue stays CLOSED; no CWL grammar change
+
+---
+
 ## 2026-10-10 — desk-behind-helix
 
 **To:** cwl  

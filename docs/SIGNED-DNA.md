@@ -1,11 +1,17 @@
 # Signed DNA certificates
 
-Certified DNA may carry a signature so enforce fails closed on tamper. Two algorithms:
+Certified DNA may carry a signature so enforce fails closed on tamper. **Certificate signatures are Secure-owned** — CWL genomes may *name* digests / proof units (tips **1.0.85–1.0.88**); they do not invent Helix signing crypto.
+
+Shipped algorithms today (`DNA_SIG_ALGS`):
 
 | `alg` | Key material | `signature.value` |
 |-------|--------------|-------------------|
 | `hmac-sha256` (default) | Shared secret string | Hex HMAC |
 | `ed25519` (optional) | Ed25519 private (sign) / public (verify) | Hex 64-byte sig |
+
+Post-quantum signature algorithms are a **Secure lane** if productized later — not documented as CLI options until shipped. See [DOC-HOLES.md](./DOC-HOLES.md).
+
+**Not the same as:** genome “CWL Certified” site form, or Helix panel **Lock DNA** / seal (those promote traffic DNA — [CERT-LIFECYCLE.md](./CERT-LIFECYCLE.md)). Fingerprint SRI digests for bind are separate from certificate `signature` — [DNA-BIND.md](./DNA-BIND.md).
 
 ```json
 "signature": {
@@ -76,3 +82,5 @@ npm run sign-smoke
 ```
 
 Signed promote with fixture key must verify under `--require`. Unsigned promote (no `--key`) must fail `verify --require` / `HELIX_DNA_REQUIRE=1` with `HX-DNA-UNSIGNED`. Wired into `test:dna` and `gce-smoke` (D5 DNA-only).
+
+Related: [DNA-BIND.md](./DNA-BIND.md) · [CWL-BRIDGE.md](./CWL-BRIDGE.md) · [LIVE-MATCH.md](./LIVE-MATCH.md) · [SOAK.md](./SOAK.md) · [DOC-MAP.md](./DOC-MAP.md)

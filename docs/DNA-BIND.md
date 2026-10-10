@@ -95,4 +95,15 @@ npm run dna-bind-smoke
 # → DNA_BIND_UNIT_OK · ENFORCE_OK · WITNESS_OK · SUPERSEDES_OK · CWL_OK · DNA_BIND_SMOKE_OK
 ```
 
-Related: [CWL-BRIDGE.md](./CWL-BRIDGE.md) · [LIVE-MATCH.md](./LIVE-MATCH.md) · [SIGNED-DNA.md](./SIGNED-DNA.md) · [CERT-LIFECYCLE.md](./CERT-LIFECYCLE.md)
+### Tip ladder (consume)
+
+| Tip | What bind gained |
+| --- | --- |
+| **1.0.85** | `dna certificate` / fingerprint / bank / `match live` (RFC-0042 · gold `94`) |
+| **1.0.86** | sha384+ floor; refuse `sha256` DNA binds (RFC-0043 · gold `95`) |
+| **1.0.87** | multi-fingerprint · `match bank` · `dna expect` (RFC-0044 · gold `96`) |
+| **1.0.88** | named proof units · quorum · lineage · supersedes · witness · scope (RFC-0045 · gold `97`) |
+
+Traffic DNA remains default protect. Seal / Lock DNA promotes traffic certificates — genome “CWL Certified” form is not Helix enforce. PQ certificate signatures stay Secure-owned ([SIGNED-DNA.md](./SIGNED-DNA.md)); shipped algs today are `hmac-sha256` / `ed25519`.
+
+Related: [CWL-BRIDGE.md](./CWL-BRIDGE.md) · [LIVE-MATCH.md](./LIVE-MATCH.md) · [SIGNED-DNA.md](./SIGNED-DNA.md) · [SOAK.md](./SOAK.md) · [CERT-LIFECYCLE.md](./CERT-LIFECYCLE.md) · [DOC-MAP.md](./DOC-MAP.md)

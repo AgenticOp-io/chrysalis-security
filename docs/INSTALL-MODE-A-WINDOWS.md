@@ -65,6 +65,8 @@ npm run helix-win -- build-app
 
 Helix still protects **one front door** (default `:4080` → localhost app), not every packet on the PC. The desktop app removes operator homework for that path; it does not invent whole-OS DPI.
 
+Deferred / not claimed (see [DOC-HOLES.md](./DOC-HOLES.md)): Store/MSIX distribution, auto-update channel, whole-OS protection. Panel **Lock DNA** / Protect wizard seal traffic DNA — not genome “CWL Certified” site form.
+
 ## Prove
 
 ```bash

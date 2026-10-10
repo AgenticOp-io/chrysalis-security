@@ -8,6 +8,8 @@ Helix changes security only if enforce follows a boring **soak**, not a flip on 
 learn → report → promote → shadow → soak → ready --shadow-log → enforce → reload
 ```
 
+Optional tip **1.0.85–1.0.88** DNA bind on the ready gate: `helix ready … --bind` / `HELIX_DNA_BIND` — [DNA-BIND.md](./DNA-BIND.md). Traffic DNA remains the default protect path; genome “CWL Certified” form is not this soak gate. Cross-links: [CWL-BRIDGE.md](./CWL-BRIDGE.md) · [LIVE-MATCH.md](./LIVE-MATCH.md) · [SIGNED-DNA.md](./SIGNED-DNA.md) · [DOC-MAP.md](./DOC-MAP.md).
+
 ## Preflight (automatable — no fake customers)
 
 Prove the **tooling path** before ops starts a live soak. Fixture observations + fixture shadow logs only — never synthetic production traffic.

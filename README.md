@@ -14,8 +14,10 @@ Helix protects with **traffic DNA** out of the box (D5). Any CWL bridge consumes
 
 Locks: [`docs/DECISIONS.md`](./docs/DECISIONS.md) · Beginning: [`docs/BEGINNING.md`](./docs/BEGINNING.md) · NGFW: [`docs/AUGMENT.md`](./docs/AUGMENT.md)
 
+**Doc map:** [`docs/DOC-MAP.md`](./docs/DOC-MAP.md) · **doc holes:** [`docs/DOC-HOLES.md`](./docs/DOC-HOLES.md)  
 **Full surface (Linux + Windows + modes + prove):** [`docs/HELIX-SECURITY-SURFACE.md`](./docs/HELIX-SECURITY-SURFACE.md)  
-**Shippable bar:** [`docs/SHIPPABLE.md`](./docs/SHIPPABLE.md) (`SHIPPABLE_OK` — customer soak is post-ship)
+**Shippable bar:** [`docs/SHIPPABLE.md`](./docs/SHIPPABLE.md) (`SHIPPABLE_OK` — customer soak is post-ship)  
+**CWL tip pin:** **1.0.88** — [`docs/CWL-BRIDGE.md`](./docs/CWL-BRIDGE.md)
 
 ## Prove
 
