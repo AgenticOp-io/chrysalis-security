@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Account — Desk</title>
+    <title>Operator — Desk</title>
     <link rel="stylesheet" href="/assets/desk.css" />
   </head>
   <body>
@@ -11,16 +11,16 @@
       <header class="top">
         <a class="brand" href="/">Desk</a>
         <nav>
-          <a href="/">Home</a>
-          <a href="/catalog.html">Catalog</a>
-          <a class="active" href="/account.html">Account</a>
+          <a href="/">Overview</a>
+          <a href="/sites.html">Sites</a>
+          <a class="active" href="/account.html">Operator</a>
           <a class="danger" href="/api/backdoor">Hidden admin</a>
         </nav>
       </header>
 
       <main class="hero">
-        <p class="eyebrow">Account</p>
-        <h1>Session surface</h1>
+        <p class="eyebrow">Operator</p>
+        <h1>Session for this desk</h1>
         <p class="lede">
           Sign-in is a credential surface. Helix can mark it high-severity in an ops overlay —
           the cookie value itself is never certified.
@@ -31,8 +31,8 @@
       <section class="panel">
         <h2>Sign in</h2>
         <form id="loginForm">
-          <label for="email">Email</label>
-          <input id="email" name="email" type="email" required placeholder="ops@example.com" />
+          <label for="email">Operator email</label>
+          <input id="email" name="email" type="email" required placeholder="ops@agenticop.io" />
           <div class="row">
             <button class="btn" type="submit">Mint session</button>
             <button class="btn ghost" type="button" id="logoutBtn">Sign out</button>
@@ -44,7 +44,7 @@
         </p>
       </section>
 
-      <footer>Desk · session cookie name only · AgenticOp-io</footer>
+      <footer>Desk · operator session · AgenticOp-io</footer>
     </div>
     <script src="/assets/desk.a1b2c3d4.js"></script>
   </body>

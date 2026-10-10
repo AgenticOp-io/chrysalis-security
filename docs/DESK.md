@@ -1,6 +1,6 @@
-# Desk — real app behind Helix
+# Desk — ops console behind Helix
 
-**Desk** is the default Mode A upstream: a small multi-surface web app Helix can learn, soak, and enforce against. It is not another Helix UI.
+**Desk** is the default Mode A upstream: a small **operator console** Helix can learn, soak, and enforce against. It is not a storefront and not another Helix UI.
 
 ```text
 Browser → Helix :4080 → Desk :4090
@@ -10,12 +10,13 @@ Browser → Helix :4080 → Desk :4090
 
 | Kind | Paths |
 | --- | --- |
-| HTML | `/` · `/catalog.html` · `/account.html` |
+| HTML | `/` · `/sites.html` · `/account.html` |
 | Assets | `/assets/desk.css` · `/assets/desk.a1b2c3d4.js` |
-| JSON | `/api/health` · `/api/catalog` · `/api/items` · `/api/orders` · `/api/session` · `/api/me` |
+| JSON | `/api/health` · `/api/sites` · `/api/tickets` · `/api/session` · `/api/me` |
+| Aliases | `/api/catalog` · `/api/items` → sites · `/api/orders` → tickets (lab transition) |
 | Attack proof | `/api/backdoor` (unauthorized — enforce → 403) |
 
-Session mint sets cookie **name** `sid` only. Order POST uses `{ sku, qty }`. Catalog is learned without query names (client-side filter); adding `?sku=` later is honest query drift until re-promote.
+Session mint sets cookie **name** `sid` only. Tickets POST `{ site, severity, note }`.
 
 ## Run
 
@@ -24,7 +25,7 @@ npm run desk                 # http://127.0.0.1:4090/
 npm run desk-smoke           # → DESK_SMOKE_OK (learn → promote → enforce)
 ```
 
-Windows desktop / `HELIX_START_DEMO=1` starts Desk on `:4090` automatically. With `HELIX_ROOT_PANEL=1`, Helix serves its panel at `/` — use `http://127.0.0.1:4080/catalog.html` (through Helix) or `http://127.0.0.1:4090/` (direct).
+Windows desktop / `HELIX_START_DEMO=1` starts Desk on `:4090` automatically. With `HELIX_ROOT_PANEL=1`, Helix serves its panel at `/` — use `http://127.0.0.1:4080/sites.html` (through Helix) or `http://127.0.0.1:4090/` (direct).
 
 ## Prove
 

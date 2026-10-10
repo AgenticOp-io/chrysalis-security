@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Desk — protected by Helix</title>
+    <title>Desk — ops console</title>
     <link rel="stylesheet" href="/assets/desk.css" />
   </head>
   <body>
@@ -11,23 +11,23 @@
       <header class="top">
         <a class="brand" href="/">Desk</a>
         <nav>
-          <a class="active" href="/">Home</a>
-          <a href="/catalog.html">Catalog</a>
-          <a href="/account.html">Account</a>
+          <a class="active" href="/">Overview</a>
+          <a href="/sites.html">Sites</a>
+          <a href="/account.html">Operator</a>
           <a class="danger" href="/api/backdoor" title="Not in DNA — Helix should block">Hidden admin</a>
         </nav>
       </header>
 
       <main class="hero">
-        <p class="eyebrow">App behind Helix</p>
-        <h1>Operator desk for this front door</h1>
+        <p class="eyebrow">Ops console · behind Helix</p>
+        <h1>Front doors you are watching</h1>
         <p class="lede">
-          A real HTML + JSON app Helix learns and certifies. Browse the catalog, place an
-          order, sign in — then prove unknown surface is blocked.
+          Desk is the app Helix protects — site inventory, tickets, operator sign-in.
+          Not a store. Not Helix itself.
         </p>
         <div class="actions">
-          <a class="btn" href="/catalog.html">Open catalog</a>
-          <a class="btn ghost" href="/account.html">Sign in</a>
+          <a class="btn" href="/sites.html">Open sites</a>
+          <a class="btn ghost" href="/account.html">Operator sign-in</a>
           <a class="btn ghost" href="/__helix/">Helix panel</a>
         </div>
         <p class="status" id="health">Checking API…</p>
@@ -35,20 +35,20 @@
 
       <section class="grid">
         <article class="card">
-          <h2>Certified surface</h2>
-          <p>Home, catalog, account, and the JSON APIs Helix saw during learn stay open.</p>
+          <h2>Sites</h2>
+          <p>Each row is a front door Helix can learn → shadow → enforce on.</p>
         </article>
         <article class="card">
-          <h2>Session cookie</h2>
-          <p>Sign-in mints a <code>sid</code> cookie name only — Helix fingerprints names, not tokens.</p>
+          <h2>Tickets</h2>
+          <p>Open an incident against a site — JSON shape Helix can certify.</p>
         </article>
         <article class="card">
           <h2>Attack proof</h2>
-          <p><code>/api/backdoor</code> is intentional unauthorized surface. Enforce should 403 it.</p>
+          <p><code>/api/backdoor</code> is unauthorized surface. Enforce should 403 it.</p>
         </article>
       </section>
 
-      <footer>Desk · local upstream on :4090 · traffic DNA decides · AgenticOp-io</footer>
+      <footer>Desk · ops console on :4090 · traffic DNA decides · AgenticOp-io</footer>
     </div>
     <script src="/assets/desk.a1b2c3d4.js"></script>
   </body>

@@ -670,20 +670,19 @@ namespace HelixDesktop
 
         void SeedTraffic()
         {
-            // Desk surfaces: HTML + hashed assets + JSON + session/order shapes.
+            // Desk ops console: sites + tickets + session (not a storefront).
             string[] paths = {
-                "/", "/catalog.html", "/account.html",
+                "/", "/sites.html", "/account.html",
                 "/assets/desk.css", "/assets/desk.a1b2c3d4.js",
-                "/api/health", "/api/catalog",
-                "/api/items", "/api/orders",
-                "/api/health", "/api/catalog"
+                "/api/health", "/api/sites", "/api/tickets",
+                "/api/health", "/api/sites"
             };
             foreach (var p in paths)
             {
                 HttpGet(panelBase + p);
                 Thread.Sleep(60);
             }
-            PostJson(panelBase + "/api/orders", "{\"sku\":\"HX-LAB\",\"qty\":1}");
+            PostJson(panelBase + "/api/tickets", "{\"site\":\"edge.lab\",\"severity\":\"normal\",\"note\":\"lab seed\"}");
             PostJson(panelBase + "/api/session", "{\"email\":\"ops@agenticop.io\"}");
             HttpGet(panelBase + "/api/me");
         }

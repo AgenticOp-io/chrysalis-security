@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sites — Desk</title>
+    <link rel="stylesheet" href="/assets/desk.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="top">
+        <a class="brand" href="/">Desk</a>
+        <nav>
+          <a href="/">Overview</a>
+          <a class="active" href="/sites.html">Sites</a>
+          <a href="/account.html">Operator</a>
+          <a class="danger" href="/api/backdoor">Hidden admin</a>
+        </nav>
+      </header>
+
+      <main class="hero">
+        <p class="eyebrow">Sites</p>
+        <h1>Protected front doors</h1>
+        <p class="lede">
+          Inventory from <code>/api/sites</code>. Open a ticket when a site needs attention.
+        </p>
+        <p class="status" id="sitesStatus">Loading…</p>
+      </main>
+
+      <div class="grid" id="sitesGrid"></div>
+
+      <section class="panel">
+        <h2>Open ticket</h2>
+        <form id="ticketForm">
+          <label for="site">Site</label>
+          <select id="site" name="site" required></select>
+          <label for="severity">Severity</label>
+          <select id="severity" name="severity" required>
+            <option value="low">low</option>
+            <option value="normal" selected>normal</option>
+            <option value="high">high</option>
+          </select>
+          <label for="note">Note</label>
+          <input id="note" name="note" type="text" maxlength="120" placeholder="shadow hole on /admin" />
+          <div class="row">
+            <button class="btn" type="submit">File ticket</button>
+          </div>
+        </form>
+        <p class="note" id="ticketNote">
+          Posts JSON <code>{ site, severity, note }</code> to <code>/api/tickets</code>.
+        </p>
+      </section>
+
+      <footer>Desk · sites + tickets · protected by Helix</footer>
+    </div>
+    <script src="/assets/desk.a1b2c3d4.js"></script>
+  </body>
+</html>
