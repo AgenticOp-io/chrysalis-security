@@ -38,6 +38,7 @@ Creates:
 | Piece | Location |
 | --- | --- |
 | Desktop app | `deploy/windows/HelixApp/Helix.exe` |
+| App icon | `deploy/windows/HelixApp/Helix.ico` (AgenticOps teal ops-graph + DNA twist; tray + Start Menu) |
 | Start Menu | Programs → **Helix** |
 | Startup (optional) | Scheduled task `HelixDesktop` |
 | Agent task | `HelixAgent` |

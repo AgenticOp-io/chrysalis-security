@@ -9,7 +9,9 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const appDir = path.join(root, 'deploy', 'windows', 'HelixApp');
-const required = ['HelixApp.cs', 'build.ps1', 'launch.ps1'].map((n) => path.join(appDir, n));
+const required = ['HelixApp.cs', 'build.ps1', 'launch.ps1', 'make-icon.ps1'].map((n) =>
+  path.join(appDir, n),
+);
 const missing = required.filter((p) => !fs.existsSync(p));
 if (missing.length) {
   console.error(JSON.stringify({ ok: false, missing }, null, 2));
@@ -39,8 +41,13 @@ if (build.status !== 0) {
   process.exit(build.status ?? 1);
 }
 const exe = path.join(appDir, 'Helix.exe');
+const ico = path.join(appDir, 'Helix.ico');
 if (!fs.existsSync(exe)) {
   console.error('Helix.exe missing after build');
+  process.exit(1);
+}
+if (!fs.existsSync(ico) || fs.statSync(ico).size < 200) {
+  console.error('Helix.ico missing or too small after build');
   process.exit(1);
 }
 
@@ -51,6 +58,8 @@ console.log(
     token: 'WINDOWS_DESKTOP_SMOKE_OK',
     exe,
     bytes: fs.statSync(exe).size,
+    icon: ico,
+    iconBytes: fs.statSync(ico).size,
   }),
 );
 console.log('WINDOWS_DESKTOP_SMOKE_OK');
