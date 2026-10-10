@@ -17,6 +17,7 @@ DNA_BIND_SMOKE_OK
 TOKENS: DNA_BIND_UNIT_OK · DNA_BIND_ENFORCE_OK · DNA_BIND_WITNESS_OK · DNA_BIND_SUPERSEDES_OK · DNA_BIND_CWL_OK · DNA_BIND_SMOKE_OK
 CWL_TIP: 1.0.88 (pin unchanged — no language invent)
 BRANCH: candidate/dna-bind-verify
+PR: https://github.com/AgenticOp-io/chrysalis-security/pull/50
 HEARTBEAT: waiting
 ```
 
