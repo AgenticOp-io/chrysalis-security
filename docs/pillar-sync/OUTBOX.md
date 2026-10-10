@@ -16,7 +16,7 @@
 SECURE_DOCS_MAP_OK
 CWL_TIP: 1.0.88 (pin header + registry example aligned; gold 97 / RFC-0045)
 BRANCH: candidate/secure-docs-helix-map
-PR: (landing)
+PR: https://github.com/AgenticOp-io/chrysalis-security/pull/56
 HEARTBEAT: waiting
 ```
 
