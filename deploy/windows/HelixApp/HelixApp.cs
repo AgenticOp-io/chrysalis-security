@@ -417,8 +417,8 @@ namespace HelixDesktop
                 "HELIX_MAX_BODY_BYTES=1048576",
                 "HELIX_ROOT_PANEL=1",
                 "HELIX_START_DEMO=1",
-                "HELIX_AUTO_SEAL_AFTER=6",
-                "HELIX_APP_ID=helix-windows-desktop"
+                "HELIX_AUTO_SEAL_AFTER=12",
+                "HELIX_APP_ID=desk"
             };
             if (resetLearn)
             {
@@ -444,16 +444,40 @@ namespace HelixDesktop
 
         void EnsureDemoApi()
         {
-            if (HttpGetStatus("http://127.0.0.1:4090/api/health") == 200) return;
-            var demo = Path.Combine(helixRoot, "fixtures", "demo-api", "server.mjs");
-            if (!File.Exists(demo)) return;
+            var health = HttpGet("http://127.0.0.1:4090/api/health");
+            if (health.IndexOf("\"service\":\"desk\"", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                health.IndexOf("\"service\": \"desk\"", StringComparison.OrdinalIgnoreCase) >= 0)
+                return;
+            // Replace thin demo-api (or a dead listener) with Desk.
+            try
+            {
+                using (var searcher = new ManagementObjectSearcher(
+                    "SELECT ProcessId, CommandLine FROM Win32_Process WHERE Name = 'node.exe'"))
+                {
+                    foreach (ManagementObject mo in searcher.Get())
+                    {
+                        var cmd = (mo["CommandLine"] ?? "").ToString();
+                        if (cmd.IndexOf("demo-api", StringComparison.OrdinalIgnoreCase) < 0 &&
+                            cmd.IndexOf("fixtures\\desk", StringComparison.OrdinalIgnoreCase) < 0 &&
+                            cmd.IndexOf("fixtures/desk", StringComparison.OrdinalIgnoreCase) < 0)
+                            continue;
+                        try { Process.GetProcessById(Convert.ToInt32(mo["ProcessId"])).Kill(); } catch { }
+                    }
+                }
+            }
+            catch { }
+            Thread.Sleep(300);
+            var desk = Path.Combine(helixRoot, "fixtures", "desk", "server.mjs");
+            if (!File.Exists(desk))
+                desk = Path.Combine(helixRoot, "fixtures", "demo-api", "server.mjs");
+            if (!File.Exists(desk)) return;
             var env = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 { "HOST", "127.0.0.1" },
                 { "PORT", "4090" }
             };
-            StartNodeHidden(demo, env, helixRoot);
-            Thread.Sleep(600);
+            StartNodeHidden(desk, env, helixRoot);
+            Thread.Sleep(700);
         }
 
         void StartNodeHidden(string script, Dictionary<string, string> extraEnv, string workDir)
@@ -586,7 +610,9 @@ namespace HelixDesktop
                     {
                         var cmd = (mo["CommandLine"] ?? "").ToString();
                         if (cmd.IndexOf("helix-agent", StringComparison.OrdinalIgnoreCase) < 0 &&
-                            cmd.IndexOf("demo-api", StringComparison.OrdinalIgnoreCase) < 0)
+                            cmd.IndexOf("demo-api", StringComparison.OrdinalIgnoreCase) < 0 &&
+                            cmd.IndexOf("fixtures\\desk", StringComparison.OrdinalIgnoreCase) < 0 &&
+                            cmd.IndexOf("fixtures/desk", StringComparison.OrdinalIgnoreCase) < 0)
                             continue;
                         try
                         {
@@ -639,17 +665,27 @@ namespace HelixDesktop
                 if (HttpGetStatus(panelBase + "/api/health") == 200) return;
                 Thread.Sleep(300);
             }
-            throw new Exception("Demo app not reachable through Helix yet");
+            throw new Exception("Desk app not reachable through Helix yet");
         }
 
         void SeedTraffic()
         {
-            string[] paths = { "/api/health", "/api/items", "/api/health", "/api/items", "/api/health", "/api/items", "/api/health", "/api/items" };
+            // Desk surfaces: HTML + hashed assets + JSON + session/order shapes.
+            string[] paths = {
+                "/", "/catalog.html", "/account.html",
+                "/assets/desk.css", "/assets/desk.a1b2c3d4.js",
+                "/api/health", "/api/catalog",
+                "/api/items", "/api/orders",
+                "/api/health", "/api/catalog"
+            };
             foreach (var p in paths)
             {
                 HttpGet(panelBase + p);
-                Thread.Sleep(80);
+                Thread.Sleep(60);
             }
+            PostJson(panelBase + "/api/orders", "{\"sku\":\"HX-LAB\",\"qty\":1}");
+            PostJson(panelBase + "/api/session", "{\"email\":\"ops@agenticop.io\"}");
+            HttpGet(panelBase + "/api/me");
         }
 
         void SetMode(string mode)

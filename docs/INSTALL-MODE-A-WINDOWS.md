@@ -22,8 +22,10 @@ You do not run CLI promote/shadow commands for the default path.
 ```text
 Helix.exe (native WinForms)
     -> helix-agent :4080
-         -> demo API :4090 (or your APP_UPSTREAM)
+         -> Desk :4090 (HTML+JSON app) or your APP_UPSTREAM
 ```
+
+Default upstream is **Desk** ([DESK.md](./DESK.md)) — catalog, orders, session cookie, attack proof — not a two-route toy.
 
 ## Install
 

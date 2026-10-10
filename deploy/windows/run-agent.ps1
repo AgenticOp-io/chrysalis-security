@@ -33,7 +33,7 @@ if (-not (Test-Path $agent)) {
   Write-Error "helix-agent not found at $agent"
 }
 
-# Optional: start the bundled demo API so first-run works without a CLI.
+# Optional: start the bundled Desk app (HTML+JSON) so first-run has a real upstream.
 if ($env:HELIX_START_DEMO -eq '1' -or $env:HELIX_START_DEMO -eq 'true') {
   $demoPort = 4090
   if ($env:APP_UPSTREAM -match ':(\d+)\s*$') { $demoPort = [int]$Matches[1] }
@@ -42,8 +42,9 @@ if ($env:HELIX_START_DEMO -eq '1' -or $env:HELIX_START_DEMO -eq 'true') {
     $listening = [bool](Get-NetTCPConnection -LocalPort $demoPort -State Listen -ErrorAction SilentlyContinue)
   } catch { $listening = $false }
   if (-not $listening) {
-    $demo = Join-Path $HelixRoot 'fixtures\demo-api\server.mjs'
-    $launch = "`$env:HOST='127.0.0.1'; `$env:PORT='$demoPort'; Set-Location -LiteralPath '$HelixRoot'; & '$node' '$demo'"
+    $desk = Join-Path $HelixRoot 'fixtures\desk\server.mjs'
+    if (-not (Test-Path $desk)) { $desk = Join-Path $HelixRoot 'fixtures\demo-api\server.mjs' }
+    $launch = "`$env:HOST='127.0.0.1'; `$env:PORT='$demoPort'; Set-Location -LiteralPath '$HelixRoot'; & '$node' '$desk'"
     Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList @(
       '-NoProfile', '-WindowStyle', 'Hidden', '-Command', $launch
     )

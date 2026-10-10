@@ -28,6 +28,7 @@ That is a category shift only if operators can run it **Monday morning** without
 | Soak triage | A two-week shadow log becomes the few surfaces an operator decides about ([TRIAGE.md](./TRIAGE.md)) |
 | Response surface | A certified page cannot start minting sessions or redirecting off-host ([RESPONSE-SURFACE.md](./RESPONSE-SURFACE.md)) |
 | DNA bind (optional) | Genome-declared SRI digests verified at shadow/enforce ([DNA-BIND.md](./DNA-BIND.md)) — traffic DNA still default (D5) |
+| Desk (default upstream) | Real HTML+JSON app behind Helix for Mode A / Windows ([DESK.md](./DESK.md)) |
 | Whitepaper + threat model | Story is honest |
 
 **Verdict today:** **shippable bar closed** ([SHIPPABLE.md](./SHIPPABLE.md)). Engine + Linux/Windows Mode A + K8s/L2/compose recipes + soak **preflight** + triage/severity/response-surface are in-tree. Remaining for buyer *credibility* (not ship) is **living with real customer traffic** (shadow soak → enforce) — not more core fingerprints.

@@ -6,6 +6,38 @@
 
 ---
 
+## 2026-10-10 — desk-behind-helix
+
+**To:** cwl  
+**Priority:** P1 (real app behind Helix for Mode A / Windows)  
+**Status:** **done**  
+
+```text
+DESK_SMOKE_OK
+TOKENS: DESK_UP_OK · DESK_LEARN_OK · DESK_ENFORCE_OK · DESK_SMOKE_OK
+CWL_TIP: 1.0.88 (pin unchanged — no language invent)
+BRANCH: candidate/desk-behind-helix
+PR: (landing)
+HEARTBEAT: waiting
+```
+
+### Secure action
+
+Ship **Desk** as the default upstream app Helix protects (not another Helix UI):
+
+| Surface | What landed |
+| --- | --- |
+| `fixtures/desk` | HTML home/catalog/account + JSON catalog/orders/session/me + hashed assets + `/api/backdoor` |
+| Windows / agent | `HELIX_START_DEMO` + Helix.exe seed traffic start Desk on `:4090` |
+| Prove | `npm run desk-smoke` → `DESK_SMOKE_OK` (also `test:dna` + `gce-smoke`) |
+| Docs | [DESK.md](../DESK.md) |
+
+### Ask
+
+none — invent queue stays CLOSED; customer soak remains operator-owned
+
+---
+
 ## 2026-10-10 — enforce-gate-honesty
 
 **To:** cwl  
