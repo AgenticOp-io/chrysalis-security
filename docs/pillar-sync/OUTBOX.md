@@ -20,7 +20,7 @@ TOKENS: CUTOVER_TIP_1_0_86_OK · CUTOVER_TIP_1_0_87_OK · CWL_BRIDGE_SMOKE_OK ·
 CWL_TIP: 1.0.87
 CWL_SHA: 90ce353 (CWL PR #128 candidate · language land 537c0bc · ask tip-1.0.87-dna-proof)
 BRANCH: candidate/secure-tip-1.0.87
-PR: (pending)
+PR: https://github.com/AgenticOp-io/chrysalis-security/pull/48
 HEARTBEAT: waiting
 ```
 
