@@ -687,6 +687,9 @@ const DNA_FINGERPRINT_WEAK_RE = /^sha256-[A-Za-z0-9+/=]+$/;
 /** RFC-0044: Helix lifecycle modes named as document facts (Secure owns promote/shadow/enforce). */
 const DNA_EXPECT_MODES = new Set(['promote', 'shadow', 'enforce']);
 
+/** RFC-0045: bind granularity document facts (Helix verifies; CWL does not invent scope engines). */
+const DNA_SCOPES = new Set(['path', 'host', 'method', 'surface']);
+
 /**
  * Tip 1.0.86 RFC-0043: live-match consume accepts sha384/sha512 DNA fingerprints only.
  * `sha256` → refused as `cwl:dna-fingerprint-too-weak` (not copied onto the bind).
@@ -702,6 +705,72 @@ export function consumeDnaFingerprint(sri) {
     return { ok: false, hole: 'cwl:dna-fingerprint-too-weak' };
   }
   return { ok: false, hole: 'cwl:bad-dna-fingerprint' };
+}
+
+/**
+ * Tip 1.0.88 RFC-0045: DNA certificate / lineage artifact path — document fact only.
+ * Same-site path, relative path, or absolute http(s). Helix does not invent fetch.
+ * @param {unknown} href
+ * @returns {{ ok: true, value: string } | { ok: false, hole?: string }}
+ */
+export function consumeDnaArtifactPath(href) {
+  if (typeof href !== 'string' || !href) return { ok: false };
+  if (href.startsWith('/') && !href.startsWith('//')) return { ok: true, value: href };
+  if (/^https?:\/\//i.test(href)) return { ok: true, value: href };
+  if (href.includes('://') || href.startsWith('//')) {
+    return { ok: false, hole: 'cwl:bad-dna-lineage' };
+  }
+  if (/^[A-Za-z0-9_./@+-]+$/.test(href)) return { ok: true, value: href };
+  return { ok: false, hole: 'cwl:bad-dna-lineage' };
+}
+
+/**
+ * Tip 1.0.88: external witness URL — absolute http(s) only. Helix may fetch; CWL does not.
+ * @param {unknown} href
+ * @returns {{ ok: true, value: string } | { ok: false, hole?: string }}
+ */
+export function consumeDnaWitness(href) {
+  if (typeof href !== 'string' || !href) return { ok: false };
+  if (/^https?:\/\//i.test(href)) return { ok: true, value: href };
+  return { ok: false, hole: 'cwl:bad-dna-witness' };
+}
+
+/**
+ * Tip 1.0.88: bind scope — closed set `path|host|method|surface`.
+ * @param {unknown} scope
+ * @returns {{ ok: true, value: string } | { ok: false, hole?: string }}
+ */
+export function consumeDnaScope(scope) {
+  if (typeof scope !== 'string' || !scope) return { ok: false };
+  const normalized = scope.toLowerCase();
+  if (DNA_SCOPES.has(normalized)) return { ok: true, value: normalized };
+  return { ok: false, hole: 'cwl:dna-scope-unknown' };
+}
+
+/**
+ * Tip 1.0.88: quorum N — positive integer document fact (Helix verifies; no invent).
+ * @param {unknown} n
+ * @returns {{ ok: true, value: number } | { ok: false, hole?: string }}
+ */
+export function consumeDnaQuorum(n) {
+  if (typeof n !== 'number' || !Number.isInteger(n) || n < 1) {
+    return { ok: false, hole: 'cwl:dna-quorum-bad' };
+  }
+  return { ok: true, value: n };
+}
+
+/**
+ * Tip 1.0.88: `dna supersedes "<sri>"` — sha384+ floor via `consumeDnaFingerprint`.
+ * Weak/bad digests are refused and never copied.
+ * @param {unknown} sri
+ * @returns {{ ok: true, value: string } | { ok: false, hole?: string }}
+ */
+export function consumeDnaSupersedes(sri) {
+  const consumed = consumeDnaFingerprint(sri);
+  if (consumed.ok) return consumed;
+  if (consumed.hole === 'cwl:dna-fingerprint-too-weak') return consumed;
+  if (consumed.hole) return { ok: false, hole: 'cwl:bad-dna-supersedes' };
+  return { ok: false };
 }
 
 /**
@@ -757,13 +826,140 @@ function consumeDnaExpect(mode) {
 }
 
 /**
+ * Tip 1.0.88: resolve quorum / lineage / supersedes / witness / scope.
+ * Route overrides module. Each field is a document fact; Helix verifies — no CWL crypto invent.
+ * @param {object | null | undefined} route
+ * @param {object | null | undefined} mod
+ * @returns {Record<string, unknown>}
+ */
+function resolveDnaProofUnitFacts(route, mod) {
+  /** @type {Record<string, unknown>} */
+  const facts = {};
+  const proofName =
+    typeof route?.dnaProof === 'string' && route.dnaProof
+      ? route.dnaProof
+      : null;
+  if (proofName) facts.cwl_dna_proof = proofName;
+
+  const quorumRaw =
+    typeof route?.dnaQuorum === 'number'
+      ? route.dnaQuorum
+      : typeof mod?.dnaQuorum === 'number'
+        ? mod.dnaQuorum
+        : null;
+  if (quorumRaw != null) {
+    const q = consumeDnaQuorum(quorumRaw);
+    if (q.ok) facts.cwl_dna_quorum = q.value;
+  }
+
+  const lineageRaw =
+    typeof route?.dnaLineage === 'string' && route.dnaLineage
+      ? route.dnaLineage
+      : typeof mod?.dnaLineage === 'string' && mod.dnaLineage
+        ? mod.dnaLineage
+        : null;
+  if (lineageRaw) {
+    const lineage = consumeDnaArtifactPath(lineageRaw);
+    if (lineage.ok) facts.cwl_dna_lineage = lineage.value;
+  }
+
+  const supersedesRaw =
+    typeof route?.dnaSupersedes === 'string' && route.dnaSupersedes
+      ? route.dnaSupersedes
+      : typeof mod?.dnaSupersedes === 'string' && mod.dnaSupersedes
+        ? mod.dnaSupersedes
+        : null;
+  if (supersedesRaw) {
+    const supersedes = consumeDnaSupersedes(supersedesRaw);
+    if (supersedes.ok) facts.cwl_dna_supersedes = supersedes.value;
+    else if (supersedes.hole) facts.cwl_dna_supersedes_refused = supersedes.hole;
+  }
+
+  const witnessRaw =
+    typeof route?.dnaWitness === 'string' && route.dnaWitness
+      ? route.dnaWitness
+      : typeof mod?.dnaWitness === 'string' && mod.dnaWitness
+        ? mod.dnaWitness
+        : null;
+  if (witnessRaw) {
+    const witness = consumeDnaWitness(witnessRaw);
+    if (witness.ok) facts.cwl_dna_witness = witness.value;
+  }
+
+  const scopeRaw =
+    typeof route?.dnaScope === 'string' && route.dnaScope
+      ? route.dnaScope
+      : typeof mod?.dnaScope === 'string' && mod.dnaScope
+        ? mod.dnaScope
+        : null;
+  if (scopeRaw) {
+    const scope = consumeDnaScope(scopeRaw);
+    if (scope.ok) facts.cwl_dna_scope = scope.value;
+  }
+
+  return facts;
+}
+
+/**
+ * Tip 1.0.88: summarize one named `dna proof` unit as bridge document facts.
+ * Fingerprints and supersedes keep the sha384+ floor. Helix verifies — no digest invent.
+ * @param {object} proof
+ * @returns {object | null}
+ */
+function summarizeDnaProofUnit(proof) {
+  if (!proof || typeof proof !== 'object' || typeof proof.name !== 'string' || !proof.name) {
+    return null;
+  }
+  /** @type {Record<string, unknown>} */
+  const unit = { name: proof.name };
+  if (typeof proof.certificate === 'string' && proof.certificate) {
+    unit.certificate = proof.certificate;
+  }
+  /** @type {string[]} */
+  const fingerprints = [];
+  for (const fp of proof.fingerprints || []) {
+    const consumed = consumeDnaFingerprint(fp);
+    if (consumed.ok && !fingerprints.includes(consumed.value)) fingerprints.push(consumed.value);
+  }
+  if (fingerprints.length) {
+    unit.fingerprints = fingerprints;
+    unit.fingerprint = fingerprints[0];
+  }
+  if (typeof proof.bank === 'string' && proof.bank) unit.bank = proof.bank;
+  if (proof.matchLive === true) unit.match_live = true;
+  if (proof.matchBank === true) unit.match_bank = true;
+  const expect = consumeDnaExpect(proof.expect);
+  if (expect) unit.expect = expect;
+  const quorum = consumeDnaQuorum(proof.quorum);
+  if (quorum.ok) unit.quorum = quorum.value;
+  if (typeof proof.lineage === 'string' && proof.lineage) {
+    const lineage = consumeDnaArtifactPath(proof.lineage);
+    if (lineage.ok) unit.lineage = lineage.value;
+  }
+  if (typeof proof.supersedes === 'string' && proof.supersedes) {
+    const supersedes = consumeDnaSupersedes(proof.supersedes);
+    if (supersedes.ok) unit.supersedes = supersedes.value;
+  }
+  if (typeof proof.witness === 'string' && proof.witness) {
+    const witness = consumeDnaWitness(proof.witness);
+    if (witness.ok) unit.witness = witness.value;
+  }
+  if (typeof proof.scope === 'string' && proof.scope) {
+    const scope = consumeDnaScope(proof.scope);
+    if (scope.ok) unit.scope = scope.value;
+  }
+  return unit;
+}
+
+/**
  * RFC-0042 DNA bind (tip 1.0.85) + RFC-0043 floor (tip 1.0.86) + RFC-0044 proof
- * deepen (tip 1.0.87): certificate / SRI fingerprint(s) / bank / match live /
- * match bank / dna expect. Document facts on bridge annotations (and module bank
- * on the bridge envelope). Route values override module; Helix verifies digests
- * and owns promote/shadow/enforce — it does not invent hash computation or Helix
- * firewall features inside CWL. Weak (`sha256`) DNA fingerprints are refused in
- * consume and never become live-match binds.
+ * deepen (tip 1.0.87) + RFC-0045 named proof units (tip 1.0.88): certificate /
+ * SRI fingerprint(s) / bank / match live / match bank / dna expect / named proof /
+ * quorum / lineage / supersedes / witness / scope. Document facts on bridge
+ * annotations (and module bank / dnaProofs on the bridge envelope). Route values
+ * override module; Helix verifies digests and owns promote/shadow/enforce — it
+ * does not invent hash computation or Helix firewall features inside CWL. Weak
+ * (`sha256`) DNA fingerprints are refused in consume and never become live-match binds.
  * @param {object} route
  * @param {object | null | undefined} mod
  * @returns {object | null}
@@ -778,7 +974,12 @@ function dnaBindDocumentFacts(route, mod) {
         ? mod.dnaCertificate
         : null;
   const { fingerprints, primary, refused } = resolveDnaFingerprints(route, mod);
-  const bank = typeof mod?.dnaBank === 'string' && mod.dnaBank ? mod.dnaBank : null;
+  const bank =
+    typeof route.dnaBankFromProof === 'string' && route.dnaBankFromProof
+      ? route.dnaBankFromProof
+      : typeof mod?.dnaBank === 'string' && mod.dnaBank
+        ? mod.dnaBank
+        : null;
   const matchLive = route.matchLive === true || mod?.matchLive === true;
   const matchBank = route.matchBank === true || mod?.matchBank === true;
   const dnaExpect =
@@ -791,13 +992,14 @@ function dnaBindDocumentFacts(route, mod) {
   if (matchLive) facts.cwl_match_live = true;
   if (matchBank) facts.cwl_match_bank = true;
   if (dnaExpect) facts.cwl_dna_expect = dnaExpect;
+  Object.assign(facts, resolveDnaProofUnitFacts(route, mod));
   return Object.keys(facts).length ? facts : null;
 }
 
 /**
- * Module-scope RFC-0042/0044 DNA bind for the bridge envelope (bank is module-only).
- * Tip 1.0.86: refuse weak DNA digests. Tip 1.0.87: multi-fingerprint, match bank,
- * dna expect document facts.
+ * Module-scope RFC-0042/0044/0045 DNA bind for the bridge envelope (bank + dnaProofs
+ * are module-scope). Tip 1.0.86: refuse weak DNA digests. Tip 1.0.87: multi-fingerprint,
+ * match bank, dna expect. Tip 1.0.88: named proof units + quorum/lineage/witness/scope.
  * @param {object | null | undefined} mod
  * @returns {object | null}
  */
@@ -817,6 +1019,11 @@ function moduleDnaBindDocumentFacts(mod) {
   if (mod.matchBank === true) facts.cwl_match_bank = true;
   const dnaExpect = consumeDnaExpect(mod.dnaExpect);
   if (dnaExpect) facts.cwl_dna_expect = dnaExpect;
+  Object.assign(facts, resolveDnaProofUnitFacts(null, mod));
+  if (Array.isArray(mod.dnaProofs) && mod.dnaProofs.length) {
+    const units = mod.dnaProofs.map(summarizeDnaProofUnit).filter(Boolean);
+    if (units.length) facts.cwl_dna_proofs = units;
+  }
   const holes = Array.isArray(mod.dnaHoles) ? mod.dnaHoles.filter((h) => typeof h === 'string' && h) : [];
   if (holes.length) facts.cwl_dna_holes = [...new Set(holes)];
   return Object.keys(facts).length ? facts : null;

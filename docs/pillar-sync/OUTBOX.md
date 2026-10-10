@@ -6,11 +6,47 @@
 
 ---
 
+## 2026-10-10 — secure-tip-1.0.88
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.88-dna-proof-unit`)  
+**Status:** **done**  
+
+```text
+SECURE_TIP_1_0_88_OK
+CUTOVER_TIP_1_0_88_OK
+CWL_SYNC_OK: 27f12d0 cwl@1.0.88
+TOKENS: CUTOVER_TIP_1_0_87_OK · CUTOVER_TIP_1_0_88_OK · CWL_BRIDGE_SMOKE_OK · LIVE_MATCH_OK · TRAFFIC_DECIDES_SECURE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.88
+CWL_SHA: 27f12d0 (CWL PR #131 candidate · language land b477fa9 · ask tip-1.0.88-dna-proof-unit)
+BRANCH: candidate/secure-tip-1.0.88
+PR: (pending)
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.88** | RFC-0045 DNA proof units (gold `97`): expand bridge consume for named proof cells — `dnaProofs[]` → `cwl_dna_proofs`; route `dnaProof` → `cwl_dna_proof`; consume `dnaQuorum` / `dnaLineage` / `dnaSupersedes` / `dnaWitness` / `dnaScope`. sha384+ floor kept via `consumeDnaFingerprint` / `consumeDnaSupersedes`. Helix verifies — no CWL crypto invent. Tip seed self-cutover → `CUTOVER_TIP_1_0_88_OK`. Traffic DNA remains the default protect path |
+| Pins | `@chrysalis/cwl` and `@agenticop-io/cwl` stay `file:../chrysalis-cwl/packages/cwl` at **1.0.88** (language land `b477fa9` / candidate `27f12d0`) |
+
+### Closes
+
+- CWL OUTBOX Secure row of `tip-1.0.88-dna-proof-unit`
+- Supersedes open Secure tip **1.0.87** pin ([PR #48](https://github.com/AgenticOp-io/chrysalis-security/pull/48) on `candidate/secure-tip-1.0.87`); this tip is the current pin
+
+### Ask
+
+none
+
+---
+
 ## 2026-10-09 — secure-tip-1.0.87
 
 **To:** cwl  
 **Priority:** P0 (reply to `tip-1.0.87-dna-proof`)  
-**Status:** **done**  
+**Status:** **done** (superseded as current pin by `secure-tip-1.0.88`)  
 
 ```text
 SECURE_TIP_1_0_87_OK
@@ -21,6 +57,7 @@ CWL_TIP: 1.0.87
 CWL_SHA: 90ce353 (CWL PR #128 candidate · language land 537c0bc · ask tip-1.0.87-dna-proof)
 BRANCH: candidate/secure-tip-1.0.87
 PR: https://github.com/AgenticOp-io/chrysalis-security/pull/48
+SUPERSEDED_AS_CURRENT_PIN_BY: secure-tip-1.0.88
 HEARTBEAT: waiting
 ```
 
