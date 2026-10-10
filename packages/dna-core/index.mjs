@@ -5,6 +5,7 @@
  */
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import path from 'node:path';
 
 /** @typedef {{ method: string, path: string, host?: string, status?: number, contentType?: string, body?: unknown, requestContentType?: string, requestBody?: unknown, query?: string|Record<string, unknown>|null }} Observation */
 /** @typedef {{ method: string, path_template: string, host: string, content_class: string, status_classes: number[], response_key_fingerprint: string|null, request_key_fingerprint?: string|null, query_key_fingerprint?: string|null }} DnaRoute */
@@ -1094,6 +1095,260 @@ export function loadSensitivityMap(filePath) {
   if (!filePath || !fs.existsSync(filePath)) return null;
   const doc = JSON.parse(fs.readFileSync(filePath, 'utf8'));
   return Array.isArray(doc?.routes) ? doc : null;
+}
+
+/** SRI algorithms accepted for DNA certificate fingerprints (RFC-0043). */
+export const DNA_BIND_ALGS = Object.freeze(['sha384', 'sha512']);
+
+/**
+ * Canonical bytes of a DNA certificate for SRI fingerprinting.
+ * Same payload the signature covers — pretty-print and the signature block do not churn the digest.
+ * @param {object} dna
+ * @returns {Buffer}
+ */
+export function dnaArtifactBytes(dna) {
+  return Buffer.from(dnaSigningPayload(dna), 'utf8');
+}
+
+/**
+ * SRI digest (`sha384-<base64>` / `sha512-<base64>`). Helix computes; CWL only declares.
+ * @param {string|Buffer} data
+ * @param {'sha384'|'sha512'} [alg]
+ */
+export function sriFingerprint(data, alg = 'sha384') {
+  const normalized = String(alg || 'sha384').toLowerCase();
+  if (!DNA_BIND_ALGS.includes(normalized)) {
+    throw new Error(`DNA bind alg must be sha384 or sha512, got ${alg}`);
+  }
+  const buf = Buffer.isBuffer(data) ? data : Buffer.from(String(data), 'utf8');
+  return `${normalized}-${crypto.createHash(normalized).update(buf).digest('base64')}`;
+}
+
+/**
+ * Strong fingerprints of a DNA certificate (sha384 + sha512 by default).
+ * @param {object} dna
+ * @param {string[]} [algs]
+ * @returns {string[]}
+ */
+export function fingerprintDna(dna, algs = ['sha384', 'sha512']) {
+  const bytes = dnaArtifactBytes(dna);
+  return algs.map((alg) => sriFingerprint(bytes, alg));
+}
+
+/**
+ * Ops DNA-bind overlay (RFC-0042–0045). Absent file ⇒ no bind check (D5).
+ * @param {string} filePath
+ */
+export function loadDnaBindMap(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) return null;
+  const doc = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  if (!doc || typeof doc !== 'object') return null;
+  if (doc.kind && doc.kind !== 'chrysalis.helix.dna-bind') return null;
+  return doc;
+}
+
+/**
+ * Resolve the bind that applies to one request. Route overrides merge over module.
+ * @param {object|null} bind
+ * @param {{ method?: string, path?: string, path_template?: string, host?: string }} req
+ * @returns {object|null} active bind cell, or null when this request is not match-live
+ */
+export function dnaBindForRequest(bind, req) {
+  if (!bind || typeof bind !== 'object') return null;
+  const method = String(req?.method || 'GET').toUpperCase();
+  const template = req?.path_template || pathTemplate(req?.path);
+  const host = String(req?.host || 'default').toLowerCase();
+  const routes = Array.isArray(bind.routes) ? bind.routes : [];
+  const hit = routes.find((r) => {
+    if (String(r.method || 'GET').toUpperCase() !== method) return false;
+    if (String(r.path_template) !== String(template)) return false;
+    const rHost = String(r.host || 'default').toLowerCase();
+    return rHost === 'default' || rHost === host;
+  });
+  if (hit) {
+    const proofs = Array.isArray(bind.proofs) ? bind.proofs : [];
+    const named =
+      hit.proof && proofs.length
+        ? proofs.find((p) => p && p.name === hit.proof)
+        : null;
+    const cell = {
+      ...(bind.module || {}),
+      ...(named || {}),
+      ...hit,
+      match_live: hit.match_live !== false && (hit.match_live || named?.match_live || bind.module?.match_live),
+    };
+    return cell.match_live ? cell : null;
+  }
+  if (bind.module?.match_live) return { ...bind.module };
+  return null;
+}
+
+/**
+ * Verify a DNA bind cell against the live certificate.
+ *
+ * Helix computes digests — CWL only declared them. Witness fetch is optional and
+ * injected (`opts.fetchWitness`) so labs never need a network.
+ *
+ * @param {object|null} cell bind cell from `dnaBindForRequest` or `bind.module`
+ * @param {{
+ *   dna?: object|null,
+ *   lineageDna?: object|null,
+ *   bankDir?: string|null,
+ *   fetchWitness?: ((url: string) => Promise<{ status: number, body: string }>)|null,
+ *   skipWitness?: boolean,
+ * }} [opts]
+ * @returns {Promise<{
+ *   ok: boolean,
+ *   skipped: boolean,
+ *   digests: string[],
+ *   matched: string[],
+ *   quorum: number,
+ *   holes: { code: string, reason: string }[],
+ *   witness?: { ok: boolean, status?: number }|null,
+ * }>}
+ */
+export async function verifyDnaBind(cell, opts = {}) {
+  const empty = {
+    ok: true,
+    skipped: true,
+    digests: [],
+    matched: [],
+    quorum: 0,
+    holes: [],
+    witness: null,
+  };
+  if (!cell || !cell.match_live) return empty;
+  if (!opts.dna || typeof opts.dna !== 'object') {
+    return {
+      ...empty,
+      skipped: false,
+      ok: false,
+      holes: [{ code: 'HX-DNA-BIND', reason: 'match live requires a loaded DNA certificate' }],
+    };
+  }
+
+  const digests = fingerprintDna(opts.dna);
+  /** @type {string[]} */
+  let declared = [];
+  if (Array.isArray(cell.fingerprints) && cell.fingerprints.length) {
+    declared = cell.fingerprints.filter((s) => typeof s === 'string' && s);
+  } else if (typeof cell.fingerprint === 'string' && cell.fingerprint) {
+    declared = [cell.fingerprint];
+  }
+
+  /** @type {{ code: string, reason: string }[]} */
+  const holes = [];
+  if (!declared.length) {
+    holes.push({
+      code: 'HX-DNA-BIND',
+      reason: 'match live declared without a strong DNA fingerprint',
+    });
+  }
+
+  const matched = declared.filter((fp) => digests.includes(fp));
+  const quorum =
+    typeof cell.quorum === 'number' && Number.isInteger(cell.quorum) && cell.quorum > 0
+      ? cell.quorum
+      : declared.length
+        ? 1
+        : 0;
+
+  if (declared.length && matched.length < quorum) {
+    holes.push({
+      code: 'HX-DNA-QUORUM',
+      reason: `DNA bind matched ${matched.length}/${declared.length} fingerprints; need quorum ${quorum}`,
+    });
+  }
+
+  if (typeof cell.supersedes === 'string' && cell.supersedes) {
+    if (!opts.lineageDna) {
+      holes.push({
+        code: 'HX-DNA-SUPERSEDES',
+        reason: 'dna supersedes declared but no lineage certificate was provided to prove succession',
+      });
+    } else {
+      const prior = fingerprintDna(opts.lineageDna);
+      if (!prior.includes(cell.supersedes)) {
+        holes.push({
+          code: 'HX-DNA-SUPERSEDES',
+          reason: 'lineage certificate does not carry the superseded fingerprint',
+        });
+      }
+    }
+  }
+
+  if (cell.match_bank && (cell.bank || opts.bankDir)) {
+    const dir = opts.bankDir || cell.bank;
+    if (!dir || !fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
+      holes.push({
+        code: 'HX-DNA-BANK',
+        reason: `match bank requires a readable bank directory (got ${dir || 'none'})`,
+      });
+    } else {
+      const bankHits = [];
+      for (const name of fs.readdirSync(dir)) {
+        if (!name.endsWith('.json')) continue;
+        try {
+          const doc = JSON.parse(fs.readFileSync(path.join(dir, name), 'utf8'));
+          const fps = fingerprintDna(doc);
+          if (fps.some((fp) => digests.includes(fp) || declared.includes(fp))) bankHits.push(name);
+        } catch {
+          /* skip junk */
+        }
+      }
+      // Live DNA itself must appear in the bank (by digest), or a declared fingerprint must.
+      const liveInBank = bankHits.length > 0;
+      if (!liveInBank) {
+        holes.push({
+          code: 'HX-DNA-BANK',
+          reason: 'live DNA digest not found in the declared bank',
+        });
+      }
+    }
+  }
+
+  let witness = null;
+  if (typeof cell.witness === 'string' && cell.witness && !opts.skipWitness) {
+    const fetchFn = opts.fetchWitness;
+    if (typeof fetchFn !== 'function') {
+      holes.push({
+        code: 'HX-DNA-WITNESS',
+        reason: 'dna witness declared but no fetchWitness was configured',
+      });
+      witness = { ok: false };
+    } else {
+      try {
+        const res = await fetchFn(cell.witness);
+        const body = String(res?.body || '');
+        const attested =
+          Number(res?.status) === 200 &&
+          (declared.some((fp) => body.includes(fp)) || digests.some((fp) => body.includes(fp)));
+        witness = { ok: attested, status: Number(res?.status) || 0 };
+        if (!attested) {
+          holes.push({
+            code: 'HX-DNA-WITNESS',
+            reason: `witness ${cell.witness} did not attest a declared fingerprint`,
+          });
+        }
+      } catch (err) {
+        witness = { ok: false };
+        holes.push({
+          code: 'HX-DNA-WITNESS',
+          reason: `witness fetch failed: ${err?.message || err}`,
+        });
+      }
+    }
+  }
+
+  return {
+    ok: holes.length === 0,
+    skipped: false,
+    digests,
+    matched,
+    quorum,
+    holes,
+    witness,
+  };
 }
 
 /**

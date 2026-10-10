@@ -90,7 +90,12 @@ Two operator commands read these facts:
 ```bash
 npm run helix -- upstreams   --cwl app.cwl                       # declared forwards, exit 2 if any unresolved
 npm run helix -- sensitivity --cwl app.cwl --out sensitivity.json # credential surfaces → severity overlay
+npm run helix -- dna-bind    --cwl app.cwl --out dna-bind.json   # RFC-0042–0045 match-live overlay
+npm run helix -- fingerprint --in certificates/app.dna.json      # mint sha384/sha512 for the genome
+npm run helix -- verify-bind --bind dna-bind.json --dna certificates/app.dna.json
 ```
+
+Runtime verify of declared digests (ops overlay `HELIX_DNA_BIND`, holes `HX-DNA-*`): [DNA-BIND.md](./DNA-BIND.md).
 
 `upstreams` lists declared forward origins for egress review. A target CWL rejected (`cwl:unknown-proxy-param:*`) is reported as **unresolved** and never becomes a destination. Tip **1.0.37** resolves those parameterized reasons through `lookupFullstackHole` so the report carries the catalog `summary` / `rfc` (exact match for non-`param` entries; prefix only when the entry opts in). Helix scores inbound DNA — **egress filtering is not a Helix control**.
 

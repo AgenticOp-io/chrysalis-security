@@ -27,6 +27,7 @@ That is a category shift only if operators can run it **Monday morning** without
 | Credential-surface severity | Login drift outranks brochure noise, and blocks enforce ([SEVERITY.md](./SEVERITY.md)) |
 | Soak triage | A two-week shadow log becomes the few surfaces an operator decides about ([TRIAGE.md](./TRIAGE.md)) |
 | Response surface | A certified page cannot start minting sessions or redirecting off-host ([RESPONSE-SURFACE.md](./RESPONSE-SURFACE.md)) |
+| DNA bind (optional) | Genome-declared SRI digests verified at shadow/enforce ([DNA-BIND.md](./DNA-BIND.md)) — traffic DNA still default (D5) |
 | Whitepaper + threat model | Story is honest |
 
 **Verdict today:** **shippable bar closed** ([SHIPPABLE.md](./SHIPPABLE.md)). Engine + Linux/Windows Mode A + K8s/L2/compose recipes + soak **preflight** + triage/severity/response-surface are in-tree. Remaining for buyer *credibility* (not ship) is **living with real customer traffic** (shadow soak → enforce) — not more core fingerprints.
@@ -99,6 +100,7 @@ That sentence is only credible with Tier 1 install + readiness + real-app prove.
 | Ops | SIEM_LOG fixture smoke | **done** (`npm run siem-fixture-smoke` → `SIEM_FIXTURE_OK`) — file sink only |
 | Ops | Reload fixture smoke | **done** (`npm run reload-fixture-smoke` → `RELOAD_FIXTURE_OK`) — promote → hot reload, no restart |
 | Ops | Shadow-log triage | **done** (`npm run triage-smoke` → `TRIAGE_SMOKE_OK`) — holes → surfaces; proposes no DNA |
+| Ops | DNA bind runtime verify | **done** (`npm run dna-bind-smoke` → `DNA_BIND_SMOKE_OK`) — [DNA-BIND.md](./DNA-BIND.md); optional overlay |
 | Ops | Customer shadow soak | **post-ship** ([SOAK.md](./SOAK.md)) — live traffic only; does not block `SHIPPABLE_OK` |
 | Done | Shippable stamp | **closed** ([SHIPPABLE.md](./SHIPPABLE.md)) |
 

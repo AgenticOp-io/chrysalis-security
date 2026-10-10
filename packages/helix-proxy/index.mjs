@@ -20,6 +20,9 @@ import {
   assessReadiness,
   loadSensitivityMap,
   loadCookiePurposeMap,
+  loadDnaBindMap,
+  dnaBindForRequest,
+  verifyDnaBind,
   cookiePurposesForRoute,
   severityForRoute,
   triageShadowLog,
@@ -43,6 +46,22 @@ const ATTACK_PAGE = '/__helix/attack';
 // The panel polls every few seconds, so it digests a bounded tail rather than a soak-sized log.
 const SNAPSHOT_TRIAGE_LINES = 500;
 const SNAPSHOT_TRIAGE_GROUPS = 8;
+
+/**
+ * Default witness fetch for RFC-0045. Labs inject `fetchWitness` or set it null to skip network.
+ * @param {string} url
+ */
+async function defaultWitnessFetch(url) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 3000);
+  try {
+    const res = await fetch(url, { signal: ctrl.signal, redirect: 'manual' });
+    const body = await res.text();
+    return { status: res.status, body };
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 function readRecentNdjson(filePath, limit = 12) {
   if (!filePath || !fs.existsSync(filePath)) return { count: 0, recent: [] };
@@ -171,6 +190,10 @@ async function readJsonRequest(req) {
  *   siemLogPath?: string,
  *   sensitivityPath?: string,
  *   sensitivity?: { routes: object[] },
+ *   dnaBindPath?: string,
+ *   dnaBind?: object,
+ *   dnaLineagePath?: string,
+ *   fetchWitness?: ((url: string) => Promise<{ status: number, body: string }>)|null,
  *   dnaKey?: string,
  *   dnaKeyId?: string,
  *   requireSignedDna?: boolean,
@@ -197,7 +220,17 @@ export function createHelixProxy(opts) {
   // Ops overlay (optional): credential surfaces get louder holes. Absent ⇒ all holes normal.
   const sensitivity = opts.sensitivity || loadSensitivityMap(opts.sensitivityPath);
   const cookiePurposes = opts.cookiePurposes || loadCookiePurposeMap(opts.cookiePurposePath);
+  // Ops overlay (optional): RFC-0042–0045 DNA bind. Absent ⇒ traffic DNA only (D5).
+  const dnaBind = opts.dnaBind || loadDnaBindMap(opts.dnaBindPath);
+  const fetchWitness =
+    typeof opts.fetchWitness === 'function'
+      ? opts.fetchWitness
+      : opts.fetchWitness === null
+        ? null
+        : defaultWitnessFetch;
   const placement = opts.placement || 'proxy';
+  /** @type {Map<string, object>} */
+  const bindVerifyCache = new Map();
   const maxBodyBytes =
     opts.maxBodyBytes != null && Number(opts.maxBodyBytes) > 0 ? Number(opts.maxBodyBytes) : 0;
   const autoSealAfter =
@@ -212,7 +245,51 @@ export function createHelixProxy(opts) {
 
   function reloadDna() {
     dna = loadDna(opts.dnaPath, verifyOpts);
+    bindVerifyCache.clear();
     return dna;
+  }
+
+  function resolveLineageDna(cell) {
+    const lineagePath =
+      opts.dnaLineagePath ||
+      process.env.HELIX_DNA_LINEAGE ||
+      (cell?.lineage && !/^https?:\/\//i.test(cell.lineage) ? cell.lineage : null);
+    if (!lineagePath) return null;
+    const resolved = path.isAbsolute(lineagePath)
+      ? lineagePath
+      : path.resolve(opts.dnaPath ? path.dirname(opts.dnaPath) : process.cwd(), lineagePath);
+    if (!fs.existsSync(resolved)) return null;
+    try {
+      return JSON.parse(fs.readFileSync(resolved, 'utf8'));
+    } catch {
+      return null;
+    }
+  }
+
+  function resolveBankDir(cell) {
+    const bank = cell?.bank;
+    if (!bank || /^https?:\/\//i.test(bank)) return null;
+    const resolved = path.isAbsolute(bank)
+      ? bank
+      : path.resolve(opts.dnaPath ? path.dirname(opts.dnaPath) : process.cwd(), bank);
+    return resolved;
+  }
+
+  async function checkDnaBind(reqMeta) {
+    if (!dnaBind) return null;
+    const cell = dnaBindForRequest(dnaBind, reqMeta);
+    if (!cell) return null;
+    const cacheKey = `${reqMeta.method} ${reqMeta.path_template || reqMeta.path} ${cell.proof || ''} ${cell.fingerprint || ''}`;
+    if (bindVerifyCache.has(cacheKey)) return bindVerifyCache.get(cacheKey);
+    const result = await verifyDnaBind(cell, {
+      dna,
+      lineageDna: resolveLineageDna(cell),
+      bankDir: resolveBankDir(cell),
+      fetchWitness: cell.witness ? fetchWitness : null,
+      skipWitness: !cell.witness,
+    });
+    bindVerifyCache.set(cacheKey, result);
+    return result;
   }
 
   function countNdjson(filePath) {
@@ -334,6 +411,8 @@ export function createHelixProxy(opts) {
       routes: Array.isArray(dna?.routes) ? dna.routes.length : 0,
       maxBodyBytes: maxBodyBytes || null,
       credentialSurfaces: Array.isArray(sensitivity?.routes) ? sensitivity.routes.length : 0,
+      dnaBind: Boolean(dnaBind),
+      dnaBindRoutes: Array.isArray(dnaBind?.routes) ? dnaBind.routes.length : 0,
       autoSealAfter: autoSealAfter || null,
       frontDoor: opts.upstream ? true : false,
     };
@@ -590,6 +669,37 @@ export function createHelixProxy(opts) {
 
     if (runtimeMode === 'enforce' || runtimeMode === 'shadow') {
       dna = dna || reloadDna();
+
+      // RFC-0042–0045: when the genome said match live, verify declared digests before traffic DNA.
+      const bindResult = await checkDnaBind({
+        method,
+        path: pathOnly,
+        path_template: pathTemplate(pathOnly),
+        host,
+      });
+      if (bindResult && !bindResult.skipped && !bindResult.ok) {
+        const hole = bindResult.holes[0] || {
+          code: 'HX-DNA-BIND',
+          reason: 'DNA bind verification failed',
+        };
+        emitHole('request', hole, {
+          method,
+          path: pathOnly,
+          host,
+          dna_bind: {
+            matched: bindResult.matched,
+            quorum: bindResult.quorum,
+            holes: bindResult.holes,
+          },
+        });
+        if (runtimeMode === 'shadow') {
+          res.setHeader('x-helix-shadow-hole', hole.code);
+        } else {
+          writeHole(res, req, 403, hole);
+          return;
+        }
+      }
+
       const verdict = scoreRequest(dna, {
         method,
         path: pathOnly,
