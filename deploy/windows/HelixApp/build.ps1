@@ -15,6 +15,11 @@ if (-not (Test-Path $csc)) { throw 'csc.exe not found (needs .NET Framework 4.x)
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 $src = Join-Path $here 'HelixApp.cs'
 $out = Join-Path $OutDir 'Helix.exe'
+$ico = Join-Path $here 'Helix.ico'
+$makeIcon = Join-Path $here 'make-icon.ps1'
+if (Test-Path $makeIcon) {
+  & $makeIcon -OutIco $ico
+}
 $refs = @(
   '/reference:System.dll',
   '/reference:System.Core.dll',
@@ -23,7 +28,13 @@ $refs = @(
   '/reference:System.Net.dll',
   '/reference:System.Management.dll'
 )
+$args = @(
+  '/nologo', '/target:winexe', '/platform:anycpu', '/optimize+',
+  "/out:$out"
+) + $refs
+if (Test-Path $ico) { $args += "/win32icon:$ico" }
+$args += $src
 
-& $csc /nologo /target:winexe /platform:anycpu /optimize+ /out:$out @refs $src
+& $csc @args
 if ($LASTEXITCODE -ne 0) { throw "csc failed: $LASTEXITCODE" }
 Write-Host "HELIX_DESKTOP_BUILD_OK $out"

@@ -117,6 +117,9 @@ if (Test-Path $build) {
   $sc.WorkingDirectory = $HelixRoot
   $sc.WindowStyle = 1
   $sc.Description = 'Helix DNA firewall'
+  $ico = Join-Path $appDir 'Helix.ico'
+  if (Test-Path $ico) { $sc.IconLocation = "$ico,0" }
+  elseif (Test-Path $exe) { $sc.IconLocation = "$exe,0" }
   $sc.Save()
   Write-Host "Start Menu shortcut: $startMenu"
 

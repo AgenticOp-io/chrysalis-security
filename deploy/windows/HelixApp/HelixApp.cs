@@ -62,6 +62,7 @@ namespace HelixDesktop
             BackColor = Color.FromArgb(15, 20, 25);
             ForeColor = Color.FromArgb(232, 238, 244);
             Font = new Font("Segoe UI", 10f);
+            Icon = LoadHelixIcon();
 
             title = new Label
             {
@@ -177,7 +178,7 @@ namespace HelixDesktop
 
             tray = new NotifyIcon
             {
-                Icon = SystemIcons.Shield,
+                Icon = LoadHelixIcon(),
                 Text = "Helix",
                 Visible = true,
                 ContextMenu = new ContextMenu(new[]
@@ -205,6 +206,27 @@ namespace HelixDesktop
                 Hide();
                 tray.ShowBalloonTip(3000, "Helix", "Still protecting in the tray.", ToolTipIcon.Info);
             }
+        }
+
+        static Icon LoadHelixIcon()
+        {
+            try
+            {
+                var exe = Application.ExecutablePath;
+                if (!string.IsNullOrEmpty(exe) && File.Exists(exe))
+                {
+                    var fromExe = Icon.ExtractAssociatedIcon(exe);
+                    if (fromExe != null) return fromExe;
+                }
+            }
+            catch { }
+            try
+            {
+                var beside = Path.Combine(Path.GetDirectoryName(Application.ExecutablePath) ?? ".", "Helix.ico");
+                if (File.Exists(beside)) return new Icon(beside);
+            }
+            catch { }
+            return SystemIcons.Shield;
         }
 
         static string ResolveHelixRoot()
