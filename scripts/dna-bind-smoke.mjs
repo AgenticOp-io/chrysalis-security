@@ -10,11 +10,14 @@ import path from 'node:path';
 import http from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { createHelixProxy } from '../packages/helix-proxy/index.mjs';
+import { spawnSync } from 'node:child_process';
 import {
   fingerprintDna,
   verifyDnaBind,
   signDna,
   sriFingerprint,
+  assessReadiness,
+  verifyDnaBindMap,
 } from '../packages/dna-core/index.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -293,5 +296,71 @@ const backdoor = await req(naked.address().port, '/api/backdoor');
 assert(backdoor.status === 403, 'traffic DNA still enforces without bind');
 naked.close();
 upstream.close();
+
+console.log('=== dna-bind: ready gate sees the same digests enforce will ===');
+const bindReady = await verifyDnaBindMap(bind, { dna, skipWitness: true });
+assert(bindReady.ok === true && !bindReady.skipped, 'bind map ready');
+const readyOk = assessReadiness('enforce', dna, {
+  minRoutes: 1,
+  shadowHoles: 0,
+  maxShadowHoles: 0,
+  dnaBind: bindReady,
+});
+assert(readyOk.ok === true, 'ready with matching bind');
+assert(readyOk.checks.some((c) => c.id === 'dna_bind' && c.ok), 'dna_bind check passed');
+
+const bindBad = await verifyDnaBindMap(driftedBind, { dna, skipWitness: true });
+assert(bindBad.ok === false, 'drifted bind map fails');
+const readyBad = assessReadiness('enforce', dna, {
+  minRoutes: 1,
+  shadowHoles: 0,
+  maxShadowHoles: 0,
+  dnaBind: bindBad,
+});
+assert(readyBad.ok === false, 'ready refuses drifted bind');
+assert(readyBad.checks.some((c) => c.id === 'dna_bind' && !c.ok), 'dna_bind check failed');
+
+const cli = path.join(ROOT, 'packages', 'helix-cli', 'bin', 'helix.mjs');
+const shadowClean = path.join(OUT, 'shadow-clean.ndjson');
+fs.writeFileSync(shadowClean, '');
+const cliReady = spawnSync(
+  process.execPath,
+  [
+    cli,
+    'ready',
+    '--in',
+    dnaPath,
+    '--target',
+    'enforce',
+    '--shadow-log',
+    shadowClean,
+    '--bind',
+    bindPath,
+    '--min-routes',
+    '1',
+  ],
+  { encoding: 'utf8' },
+);
+assert(cliReady.status === 0, `cli ready+bind: ${cliReady.stdout}${cliReady.stderr}`);
+const cliDrift = spawnSync(
+  process.execPath,
+  [
+    cli,
+    'ready',
+    '--in',
+    dnaPath,
+    '--target',
+    'enforce',
+    '--shadow-log',
+    shadowClean,
+    '--bind',
+    driftedPath,
+    '--min-routes',
+    '1',
+  ],
+  { encoding: 'utf8' },
+);
+assert(cliDrift.status === 2, 'cli ready+drifted bind exits 2');
+console.log('DNA_BIND_READY_OK');
 
 console.log('DNA_BIND_SMOKE_OK');

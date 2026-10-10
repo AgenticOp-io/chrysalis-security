@@ -465,7 +465,9 @@
         $("guideNote").textContent = "Blocking — out-of-DNA requests get 403.";
         await refresh();
       } catch (err) {
-        $("guideNote").textContent = "Block failed: " + (err.message || err);
+        toast("Not ready for enforce");
+        $("guideNote").textContent =
+          "Block refused — finish the soak first (" + (err.message || err) + ").";
       }
     });
     $("btnAttack").addEventListener("click", async () => {

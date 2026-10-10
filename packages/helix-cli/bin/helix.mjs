@@ -13,6 +13,7 @@ import {
   triageShadowLogFile,
   fingerprintDna,
   verifyDnaBind,
+  verifyDnaBindMap,
   loadDnaBindMap,
 } from '../../dna-core/index.mjs';
 import {
@@ -37,6 +38,8 @@ Usage:
                    [--min-routes n] [--require-signed]
                    [--shadow-log <shadow.ndjson>] [--shadow-holes n] [--max-shadow-holes n]
                    [--max-credential-holes n]   # default 0 — login/session drift blocks enforce
+                   [--bind <dna-bind.json>] [--lineage <prev.dna.json>] [--check-witness]
+                   # missing --shadow-log path fails enforce (not a clean soak); optional DNA bind
   helix triage     --shadow-log <shadow.ndjson> [--in <dna.json>]
                    [--since <iso>] [--until <iso>] [--top n] [--samples n] [--out <report.json>]
                    # soak digest: holes → surfaces to review. Exit 2 if credential surfaces drifted
@@ -166,20 +169,59 @@ if (cmd === 'ready') {
   const shadowLog = flag(rest, '--shadow-log');
   let shadowHoles = holes != null ? Number(holes) : undefined;
   let shadowMeta = null;
+  let shadowLogMissing = false;
   if (shadowLog) {
     shadowMeta = countShadowHoles(shadowLog);
-    if (shadowHoles == null) shadowHoles = shadowMeta.count;
+    shadowLogMissing = Boolean(shadowMeta.missing);
+    if (shadowHoles == null && !shadowLogMissing) shadowHoles = shadowMeta.count;
   }
   const maxCredentialHoles = flag(rest, '--max-credential-holes');
-  const result = assessReadiness(target, readJson(input), {
+  const dna = readJson(input);
+  const bindPath = flag(rest, '--bind') || process.env.HELIX_DNA_BIND || '';
+  const lineagePath = flag(rest, '--lineage') || process.env.HELIX_DNA_LINEAGE || '';
+  let dnaBind = null;
+  if (target === 'enforce' && bindPath) {
+    const bind = loadDnaBindMap(bindPath) || (fs.existsSync(bindPath) ? readJson(bindPath) : null);
+    if (!bind) {
+      dnaBind = {
+        ok: false,
+        skipped: false,
+        checked: 0,
+        holes: [{ code: 'HX-DNA-BIND', reason: `DNA bind overlay missing at ${bindPath}` }],
+      };
+    } else {
+      const checkWitness = hasFlag(rest, '--check-witness');
+      dnaBind = await verifyDnaBindMap(bind, {
+        dna,
+        lineageDna: lineagePath && fs.existsSync(lineagePath) ? readJson(lineagePath) : null,
+        skipWitness: !checkWitness,
+        fetchWitness: checkWitness
+          ? async (url) => {
+              const ctrl = new AbortController();
+              const timer = setTimeout(() => ctrl.abort(), 3000);
+              try {
+                const res = await fetch(url, { signal: ctrl.signal, redirect: 'manual' });
+                return { status: res.status, body: await res.text() };
+              } finally {
+                clearTimeout(timer);
+              }
+            }
+          : null,
+      });
+    }
+  }
+  const result = assessReadiness(target, dna, {
     minRoutes: minRoutes != null ? Number(minRoutes) : undefined,
     requireSigned: hasFlag(rest, '--require-signed'),
     shadowHoles,
     maxShadowHoles: maxHoles != null ? Number(maxHoles) : target === 'enforce' && shadowHoles != null ? 0 : undefined,
-    highShadowHoles: shadowMeta ? shadowMeta.high : undefined,
+    highShadowHoles: shadowMeta && !shadowLogMissing ? shadowMeta.high : undefined,
     maxHighShadowHoles: maxCredentialHoles != null ? Number(maxCredentialHoles) : undefined,
+    shadowLogMissing,
+    dnaBind,
   });
   if (shadowMeta) result.shadow_log = shadowMeta;
+  if (dnaBind) result.dna_bind = dnaBind;
   console.log(JSON.stringify(result, null, 2));
   process.exit(result.ok ? 0 : 2);
 }

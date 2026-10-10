@@ -75,6 +75,10 @@ In **enforce**, a failed bind on a `match live` surface is **403** before traffi
 helix verify-bind --bind data/dna-bind.json --dna certificates/app.dna.json \
   [--lineage certificates/prev.dna.json] [--witness-body "sha384-…"]
 # exit 0 ok · exit 2 failed
+
+helix ready --in certificates/app.dna.json --target enforce \
+  --shadow-log data/shadow.ndjson --bind data/dna-bind.json
+# same digests as enforce; optional --check-witness / --lineage
 ```
 
 ## Agent env

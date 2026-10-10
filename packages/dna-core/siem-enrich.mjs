@@ -81,6 +81,55 @@ const BY_CODE = {
     siem_lookups: ['dos_probe', 'oversized_upload'],
     cve_join: 'Usually ops policy; join DoS/vuln findings only if scanners flag the same endpoint',
   },
+  'HX-DNA-BIND': {
+    family: 'certificate_bind',
+    class: 'match_live',
+    mitre_attack: ['T1553', 'T1606'],
+    siem_lookups: ['cert_swap', 'supply_chain_dna', 'wrong_certificate'],
+    cve_join: 'Join deploy / cert rotation events; Helix saw a live DNA digest that the genome did not name',
+  },
+  'HX-DNA-QUORUM': {
+    family: 'certificate_bind',
+    class: 'quorum',
+    mitre_attack: ['T1553'],
+    siem_lookups: ['partial_fingerprint', 'stale_bind'],
+    cve_join: 'Join promote / reload timing; fewer digests matched than the genome quorum',
+  },
+  'HX-DNA-SUPERSEDES': {
+    family: 'certificate_bind',
+    class: 'lineage',
+    mitre_attack: ['T1553'],
+    siem_lookups: ['lineage_break', 'orphan_promote'],
+    cve_join: 'Join certificate lifecycle; supersedes fingerprint missing from lineage DNA',
+  },
+  'HX-DNA-BANK': {
+    family: 'certificate_bind',
+    class: 'bank',
+    mitre_attack: ['T1553'],
+    siem_lookups: ['unknown_bank_cert', 'bank_dir_gap'],
+    cve_join: 'Join bank directory inventory; live digest not among banked certificates',
+  },
+  'HX-DNA-WITNESS': {
+    family: 'certificate_bind',
+    class: 'witness',
+    mitre_attack: ['T1557', 'T1553'],
+    siem_lookups: ['witness_fail', 'attestation_gap'],
+    cve_join: 'Join witness URL availability / TLS findings; Helix does not invent attestation crypto',
+  },
+  'HX-NOT-READY': {
+    family: 'ops',
+    class: 'enforce_gate',
+    mitre_attack: [],
+    siem_lookups: ['soak_incomplete', 'ready_blocked'],
+    cve_join: 'none — operator tried to enter enforce before helix ready passed',
+  },
+  'HX-NO-SHADOW-LOG': {
+    family: 'ops',
+    class: 'missing_shadow_log',
+    mitre_attack: [],
+    siem_lookups: ['misconfiguration', 'soak_gap'],
+    cve_join: 'none — configure SHADOW_LOG before soak → enforce',
+  },
 };
 
 const DEFAULT_TAXONOMY = {

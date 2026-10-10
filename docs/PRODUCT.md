@@ -101,6 +101,7 @@ That sentence is only credible with Tier 1 install + readiness + real-app prove.
 | Ops | Reload fixture smoke | **done** (`npm run reload-fixture-smoke` → `RELOAD_FIXTURE_OK`) — promote → hot reload, no restart |
 | Ops | Shadow-log triage | **done** (`npm run triage-smoke` → `TRIAGE_SMOKE_OK`) — holes → surfaces; proposes no DNA |
 | Ops | DNA bind runtime verify | **done** (`npm run dna-bind-smoke` → `DNA_BIND_SMOKE_OK`) — [DNA-BIND.md](./DNA-BIND.md); optional overlay |
+| Ops | Enforce-gate honesty | **done** — missing soak log / dirty soak / DNA bind block panel+CLI enforce flip |
 | Ops | Customer shadow soak | **post-ship** ([SOAK.md](./SOAK.md)) — live traffic only; does not block `SHIPPABLE_OK` |
 | Done | Shippable stamp | **closed** ([SHIPPABLE.md](./SHIPPABLE.md)) |
 

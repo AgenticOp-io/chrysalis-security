@@ -6,6 +6,39 @@
 
 ---
 
+## 2026-10-10 — enforce-gate-honesty
+
+**To:** cwl  
+**Priority:** P1 (ops credibility — soak→enforce fail-closed)  
+**Status:** **done**  
+
+```text
+ENFORCE_GATE_OK
+TOKENS: READY_SMOKE_OK · SOAK_PREFLIGHT_MISSING_LOG_FAIL · SEAL_SMOKE_GATE_OK · DNA_BIND_READY_OK
+CWL_TIP: 1.0.88 (pin unchanged — no language invent)
+BRANCH: candidate/enforce-gate-honesty
+HEARTBEAT: waiting
+```
+
+### Secure action
+
+Make soak → enforce fail closed for operators (no fake traffic, no CWL invent):
+
+| Surface | What landed |
+| --- | --- |
+| `assessReadiness` | `shadow_log_present` when `--shadow-log` path is missing; optional `dna_bind` check |
+| CLI `helix ready` | Honors missing log; `--bind` / `HELIX_DNA_BIND` (+ `--lineage`, `--check-witness`) |
+| Panel / `POST /__helix/api/mode` | Refuse enforce until ready (`HX-NOT-READY` / `HX-NO-SHADOW-LOG`); shadow creates durable empty log |
+| Snapshot | Enforce ready uses full shadow-hole count + credential high + bind (not SIEM line count) |
+| SIEM | Taxonomy for `HX-DNA-*` / `HX-NOT-READY` / `HX-NO-SHADOW-LOG` |
+| Docs | [SOAK.md](../SOAK.md) · [DNA-BIND.md](../DNA-BIND.md) |
+
+### Ask
+
+none — invent queue stays CLOSED; live customer soak remains operator-owned
+
+---
+
 ## 2026-10-10 — dna-bind-verify
 
 **To:** cwl  
