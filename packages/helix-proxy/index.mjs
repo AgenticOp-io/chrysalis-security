@@ -18,11 +18,14 @@ import {
   signDna,
   reportDna,
   assessReadiness,
+  countShadowHoles,
+  ensureShadowLog,
   loadSensitivityMap,
   loadCookiePurposeMap,
   loadDnaBindMap,
   dnaBindForRequest,
   verifyDnaBind,
+  verifyDnaBindMap,
   cookiePurposesForRoute,
   severityForRoute,
   triageShadowLog,
@@ -327,7 +330,60 @@ export function createHelixProxy(opts) {
     fs.writeFileSync(modePersistPath, text, 'utf8');
   }
 
-  function setRuntimeMode(mode) {
+  async function assessEnforceGate() {
+    if (!opts.shadowLogPath) {
+      return {
+        ok: false,
+        hole: {
+          code: 'HX-NO-SHADOW-LOG',
+          reason: 'SHADOW_LOG is required before enforce — a soak with no log is not a clean soak',
+        },
+        ready: null,
+      };
+    }
+    ensureShadowLog(opts.shadowLogPath);
+    const shadowMeta = countShadowHoles(opts.shadowLogPath);
+    let lineageDna = null;
+    if (opts.dnaLineagePath && fs.existsSync(opts.dnaLineagePath)) {
+      try {
+        lineageDna = JSON.parse(fs.readFileSync(opts.dnaLineagePath, 'utf8'));
+      } catch {
+        lineageDna = null;
+      }
+    }
+    const dnaBindResult = dnaBind
+      ? await verifyDnaBindMap(dnaBind, {
+          dna,
+          lineageDna,
+          skipWitness: !fetchWitness,
+          fetchWitness,
+        })
+      : null;
+    const ready = assessReadiness('enforce', dna, {
+      minRoutes: 1,
+      requireSigned: Boolean(opts.requireSignedDna),
+      shadowHoles: shadowMeta.missing ? undefined : shadowMeta.count,
+      maxShadowHoles: 0,
+      highShadowHoles: shadowMeta.missing ? undefined : shadowMeta.high,
+      maxHighShadowHoles: 0,
+      shadowLogMissing: Boolean(shadowMeta.missing),
+      dnaBind: dnaBindResult,
+    });
+    if (!ready.ok) {
+      const failed = ready.checks.filter((c) => !c.ok).map((c) => c.id);
+      return {
+        ok: false,
+        hole: {
+          code: 'HX-NOT-READY',
+          reason: `enforce blocked until ready: ${failed.join(', ') || 'checks failed'}`,
+        },
+        ready,
+      };
+    }
+    return { ok: true, hole: null, ready };
+  }
+
+  async function setRuntimeMode(mode) {
     if (!['learn', 'shadow', 'enforce'].includes(mode)) {
       const err = new Error(`Invalid mode ${mode}`);
       err.hole = { code: 'HX-BAD-MODE', reason: err.message };
@@ -344,12 +400,25 @@ export function createHelixProxy(opts) {
       err.hole = { code: 'HX-NO-DNA', reason: err.message };
       throw err;
     }
+    // Durable soak path: entering shadow creates an empty log so enforce never sees "missing".
+    if ((mode === 'shadow' || mode === 'enforce') && opts.shadowLogPath) {
+      ensureShadowLog(opts.shadowLogPath);
+    }
+    if (mode === 'enforce') {
+      const gate = await assessEnforceGate();
+      if (!gate.ok) {
+        const err = new Error(gate.hole.reason);
+        err.hole = gate.hole;
+        err.ready = gate.ready;
+        throw err;
+      }
+    }
     runtimeMode = mode;
     persistMode(mode);
     return runtimeMode;
   }
 
-  function sealFromObservations(switchTo) {
+  async function sealFromObservations(switchTo) {
     if (!opts.observePath) {
       const err = new Error('No observation file configured');
       err.hole = { code: 'HX-NO-OBSERVE', reason: err.message };
@@ -379,7 +448,7 @@ export function createHelixProxy(opts) {
     fs.writeFileSync(opts.dnaPath, JSON.stringify(certified, null, 2) + '\n', 'utf8');
     dna = certified;
     const mode = switchTo || 'shadow';
-    if (mode !== 'learn') setRuntimeMode(mode);
+    if (mode !== 'learn') await setRuntimeMode(mode);
     return {
       sealed: true,
       routes: Array.isArray(certified.routes) ? certified.routes.length : 0,
@@ -390,12 +459,12 @@ export function createHelixProxy(opts) {
     };
   }
 
-  function maybeAutoSeal() {
+  async function maybeAutoSeal() {
     if (autoSealAfter <= 0 || runtimeMode !== 'learn' || dna) return null;
     const n = countNdjson(opts.observePath);
     if (n < autoSealAfter) return null;
     try {
-      return sealFromObservations('shadow');
+      return await sealFromObservations('shadow');
     } catch {
       return null;
     }
@@ -514,16 +583,36 @@ export function createHelixProxy(opts) {
       let ready = null;
       let next = null;
       if (dna) {
+        const shadowMeta = countShadowHoles(opts.shadowLogPath || opts.siemLogPath || '');
+        let lineageDna = null;
+        if (opts.dnaLineagePath && fs.existsSync(opts.dnaLineagePath)) {
+          try {
+            lineageDna = JSON.parse(fs.readFileSync(opts.dnaLineagePath, 'utf8'));
+          } catch {
+            lineageDna = null;
+          }
+        }
+        const dnaBindResult = dnaBind
+          ? await verifyDnaBindMap(dnaBind, {
+              dna,
+              lineageDna,
+              skipWitness: true,
+            })
+          : null;
         report = reportDna(dna, {
           observations: obs.count,
-          shadowHoles: siem.count,
+          shadowHoles: shadowMeta.missing ? null : shadowMeta.count,
         });
         ready = {
           shadow: assessReadiness('shadow', dna, { minRoutes: 1 }),
           enforce: assessReadiness('enforce', dna, {
             minRoutes: 1,
-            shadowHoles: siem.count,
+            shadowHoles: shadowMeta.missing ? undefined : shadowMeta.count,
             maxShadowHoles: 0,
+            highShadowHoles: shadowMeta.missing ? undefined : shadowMeta.high,
+            maxHighShadowHoles: 0,
+            shadowLogMissing: Boolean(shadowMeta.missing) || !opts.shadowLogPath,
+            dnaBind: dnaBindResult,
           }),
         };
       }
@@ -544,10 +633,19 @@ export function createHelixProxy(opts) {
           hint: 'DNA is ready — click “Start watching” (shadow) to alert without blocking.',
         };
       } else if (st.mode === 'shadow') {
-        next = {
-          code: 'soak_then_enforce',
-          hint: 'When the hole list is boring, click “Start blocking” (enforce).',
-        };
+        const enforceReady = ready?.enforce;
+        const blockers = (enforceReady?.checks || []).filter((c) => !c.ok).map((c) => c.id);
+        next = enforceReady?.ok
+          ? {
+              code: 'soak_then_enforce',
+              hint: 'Ready checks are green — click “Start blocking” (enforce).',
+            }
+          : {
+              code: 'soak_blocked',
+              hint: blockers.length
+                ? `Stay in watch until ready: ${blockers.join(', ')}`
+                : 'Stay in watch until the soak log is clean, then Start blocking.',
+            };
       } else if (st.mode === 'enforce') {
         next = {
           code: 'gated',
@@ -585,13 +683,13 @@ export function createHelixProxy(opts) {
       try {
         const body = await readJsonRequest(req);
         const switchTo = body?.mode || 'shadow';
-        const result = sealFromObservations(switchTo);
+        const result = await sealFromObservations(switchTo);
         res.writeHead(200, { 'content-type': 'application/json' });
         res.end(JSON.stringify({ ...result, ...dnaStatus() }));
       } catch (err) {
         const hole = err.hole || { code: 'HX-SEAL', reason: String(err.message || err) };
         res.writeHead(400, { 'content-type': 'application/json', 'x-helix-hole': hole.code });
-        res.end(JSON.stringify({ sealed: false, hole }));
+        res.end(JSON.stringify({ sealed: false, hole, ready: err.ready || null }));
       }
       return;
     }
@@ -599,13 +697,13 @@ export function createHelixProxy(opts) {
       try {
         const body = await readJsonRequest(req);
         const mode = body?.mode;
-        setRuntimeMode(mode);
+        await setRuntimeMode(mode);
         res.writeHead(200, { 'content-type': 'application/json' });
         res.end(JSON.stringify({ set: true, ...dnaStatus() }));
       } catch (err) {
         const hole = err.hole || { code: 'HX-SET-MODE', reason: String(err.message || err) };
         res.writeHead(400, { 'content-type': 'application/json', 'x-helix-hole': hole.code });
-        res.end(JSON.stringify({ set: false, hole }));
+        res.end(JSON.stringify({ set: false, hole, ready: err.ready || null }));
       }
       return;
     }

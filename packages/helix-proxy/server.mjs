@@ -24,6 +24,8 @@ const dnaPath = process.env.DNA || '';
 const observePath = process.env.OBSERVE || './data/observations.ndjson';
 const shadowLogPath = process.env.SHADOW_LOG || './data/shadow.ndjson';
 const siemLogPath = process.env.SIEM_LOG || process.env.HELIX_SIEM_LOG || '';
+const dnaBindPath = process.env.HELIX_DNA_BIND || '';
+const dnaLineagePath = process.env.HELIX_DNA_LINEAGE || '';
 const port = Number(process.env.PORT || 4080);
 const dnaKey = process.env.HELIX_DNA_KEY || '';
 const dnaKeyId = process.env.HELIX_DNA_KEY_ID || '';
@@ -65,6 +67,8 @@ try {
     observePath,
     shadowLogPath,
     siemLogPath: siemLogPath || undefined,
+    dnaBindPath: dnaBindPath || undefined,
+    dnaLineagePath: dnaLineagePath || undefined,
     dnaKey: dnaKey || undefined,
     dnaKeyId: dnaKeyId || undefined,
     requireSignedDna,

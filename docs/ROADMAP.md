@@ -93,6 +93,7 @@ North star: [BEGINNING.md](./BEGINNING.md) · locks: [DECISIONS.md](./DECISIONS.
 - [x] CWL tip `1.0.87` consume — DNA proof deepen (`CUTOVER_TIP_1_0_87_OK`); gold `96` multi-fingerprint `cwl_dna_fingerprints[]`, `cwl_match_bank`, `cwl_dna_expect` (promote|shadow|enforce document fact). Helix owns lifecycle — no CWL crypto invent. Traffic DNA stays the default protect path
 - [x] CWL tip `1.0.88` consume — DNA proof units (`CUTOVER_TIP_1_0_88_OK`); gold `97` named `dnaProofs[]` / `dnaProof`, `dnaQuorum`, `dnaLineage`, `dnaSupersedes`, `dnaWitness`, `dnaScope`. sha384+ floor kept. Helix verifies — no CWL crypto invent. Traffic DNA stays the default protect path
 - [x] Runtime DNA bind verify — [DNA-BIND.md](./DNA-BIND.md) · `dna-bind-smoke` → `DNA_BIND_SMOKE_OK` (digest / quorum / witness / supersedes / `match live` holes; overlay `HELIX_DNA_BIND`; traffic DNA stays D5 default)
+- [x] Enforce-gate honesty — missing soak log fails `helix ready`; panel/API `MODE=enforce` runs ready (`HX-NOT-READY`); optional DNA bind on ready; SIEM taxonomy for `HX-DNA-*`
 - [x] Rosetta Step 4 Live match — `docs/LIVE-MATCH.md` · `npm run live-match-smoke`  
 - [x] Mode B L2 **deepen** — nft divert + fail-closed + teardown (`BRIDGE_L2_FAILCLOSED_OK` / `TEARDOWN_OK`)  
 - [x] Mode B L2 **Phase 2** — dual-iface NIC-A/NIC-B in appliance ns (`BRIDGE_L2_P2_IFACE_OK` / `CROSS_OK` / `DNA_OK` / `SMOKE_OK`)  

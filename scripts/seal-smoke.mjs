@@ -107,6 +107,7 @@ if (!sealed.sealed || sealed.mode !== 'shadow' || !(sealed.routes >= 1)) {
 }
 console.log('SEAL_SMOKE_SEAL_OK');
 
+// Shadow allows unknown surface but must record it — that dirties the soak log.
 const backdoorShadow = await request(proxyPort, 'GET', '/api/backdoor');
 if (backdoorShadow.status === 403) {
   console.error('shadow should not 403 backdoor');
@@ -114,9 +115,23 @@ if (backdoorShadow.status === 403) {
 }
 console.log('SEAL_SMOKE_SHADOW_OK');
 
+const dirtyFlip = await request(proxyPort, 'POST', '/__helix/api/mode', JSON.stringify({ mode: 'enforce' }));
+if (dirtyFlip.status === 200) {
+  console.error('enforce must refuse after shadow holes', dirtyFlip);
+  process.exit(1);
+}
+const dirtyBody = JSON.parse(dirtyFlip.body || '{}');
+if (dirtyBody.hole?.code !== 'HX-NOT-READY') {
+  console.error('expected HX-NOT-READY', dirtyBody);
+  process.exit(1);
+}
+console.log('SEAL_SMOKE_GATE_OK');
+
+// Clean soak log → enforce allowed → backdoor 403.
+fs.writeFileSync(path.join(dataDir, 'shadow.ndjson'), '');
 const mode = await request(proxyPort, 'POST', '/__helix/api/mode', JSON.stringify({ mode: 'enforce' }));
 if (mode.status !== 200) {
-  console.error('mode enforce failed', mode);
+  console.error('mode enforce failed after clean soak', mode);
   process.exit(1);
 }
 const blocked = await request(proxyPort, 'GET', '/api/backdoor');

@@ -98,4 +98,19 @@ const r4 = spawnSync(
 );
 assert(r4.status === 0, `clean shadow log allows enforce: ${r4.stdout}`);
 
+const missingPath = path.join(dataDir, 'no-such-shadow.ndjson');
+const r5 = spawnSync(
+  process.execPath,
+  [cli, 'ready', '--in', dnaPath, '--target', 'enforce', '--shadow-log', missingPath, '--min-routes', '3'],
+  { encoding: 'utf8' },
+);
+assert(r5.status === 2, 'missing shadow log blocks enforce');
+const missingReady = JSON.parse(r5.stdout);
+assert(missingReady.ok === false, 'missing ready.ok false');
+assert(
+  missingReady.checks.some((c) => c.id === 'shadow_log_present' && c.ok === false),
+  'shadow_log_present check failed',
+);
+assert(missingReady.shadow_log?.missing === true, 'shadow_log.missing meta');
+
 console.log('READY_SMOKE_OK');

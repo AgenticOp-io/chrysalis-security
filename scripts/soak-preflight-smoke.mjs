@@ -190,13 +190,40 @@ assert(cleanResult.ok === true, 'clean ready.ok true');
 assert(cleanResult.shadow_log?.count === 0, 'clean shadow_log count 0');
 token('SOAK_PREFLIGHT_READY_CLEAN_OK');
 
+// --- missing shadow log is not a clean soak ---
+const missingLog = path.join(dataDir, 'never-written.ndjson');
+const readyMissing = helix(
+  [
+    'ready',
+    '--in',
+    certPath,
+    '--target',
+    'enforce',
+    '--shadow-log',
+    missingLog,
+    '--min-routes',
+    '3',
+    '--max-shadow-holes',
+    '0',
+    '--require-signed',
+  ],
+  { expectStatus: 2 },
+);
+const missingResult = JSON.parse(readyMissing.stdout);
+assert(missingResult.ok === false, 'missing ready.ok false');
+assert(
+  missingResult.checks.some((c) => c.id === 'shadow_log_present' && !c.ok),
+  'shadow_log_present failed',
+);
+token('SOAK_PREFLIGHT_MISSING_LOG_FAIL');
+
 // --- gate inventory (SOAK.md codified) ---
 assert(AUTOMATABLE_GATES.length >= 5, 'automatable gates listed');
 assert(OPS_ONLY_GATES.includes('real_customer_traffic'), 'ops gap: real traffic');
 console.log(
   JSON.stringify({
     kind: 'helix.soak_preflight',
-    automatable: AUTOMATABLE_GATES,
+    automatable: [...AUTOMATABLE_GATES, 'ready_enforce_missing_shadow_log'],
     ops_only: OPS_ONLY_GATES,
     enforce_after:
       'helix ready --target enforce --shadow-log <ops SHADOW_LOG> --max-shadow-holes 0 → MODE=enforce + reload',

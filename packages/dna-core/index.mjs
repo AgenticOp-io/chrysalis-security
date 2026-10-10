@@ -947,7 +947,9 @@ export function reportDna(dna, extra = {}) {
  * @param {'shadow'|'enforce'} target
  * @param {AppDna|null|undefined} dna
  * @param {{ minRoutes?: number, requireSigned?: boolean, shadowHoles?: number, maxShadowHoles?: number,
- *   highShadowHoles?: number, maxHighShadowHoles?: number }} [opts]
+ *   highShadowHoles?: number, maxHighShadowHoles?: number,
+ *   shadowLogMissing?: boolean,
+ *   dnaBind?: { ok: boolean, skipped?: boolean, holes?: { code: string, reason: string }[], checked?: number }|null }} [opts]
  */
 export function assessReadiness(target, dna, opts = {}) {
   const minRoutes = opts.minRoutes != null ? Number(opts.minRoutes) : target === 'enforce' ? 3 : 1;
@@ -985,7 +987,15 @@ export function assessReadiness(target, dna, opts = {}) {
     }
   }
 
-  if (target === 'enforce' && shadowHoles != null) {
+  // A named soak log that is not on disk is not a clean soak (same honesty as helix triage).
+  if (target === 'enforce' && opts.shadowLogMissing) {
+    fail(
+      'shadow_log_present',
+      'shadow log path is missing — a soak with no log is not a clean soak',
+    );
+  }
+
+  if (target === 'enforce' && shadowHoles != null && !opts.shadowLogMissing) {
     if (shadowHoles > maxShadowHoles) {
       fail('shadow_clean', `${shadowHoles} shadow holes > max ${maxShadowHoles}`);
     } else {
@@ -993,7 +1003,7 @@ export function assessReadiness(target, dna, opts = {}) {
     }
   }
 
-  if (target === 'enforce' && highShadowHoles != null) {
+  if (target === 'enforce' && highShadowHoles != null && !opts.shadowLogMissing) {
     if (highShadowHoles > maxHighShadowHoles) {
       fail(
         'shadow_clean_credential',
@@ -1001,6 +1011,19 @@ export function assessReadiness(target, dna, opts = {}) {
       );
     } else {
       pass('shadow_clean_credential', `${highShadowHoles} <= ${maxHighShadowHoles}`);
+    }
+  }
+
+  // Optional DNA-bind overlay: when present and match-live, ready must see the same digests enforce will.
+  if (target === 'enforce' && opts.dnaBind && !opts.dnaBind.skipped) {
+    if (!opts.dnaBind.ok) {
+      const why =
+        Array.isArray(opts.dnaBind.holes) && opts.dnaBind.holes.length
+          ? opts.dnaBind.holes.map((h) => h.code).join(', ')
+          : 'HX-DNA-BIND';
+      fail('dna_bind', `genome DNA bind failed before enforce (${why})`);
+    } else {
+      pass('dna_bind', `${opts.dnaBind.checked || 0} match-live cell(s) ok`);
     }
   }
 
@@ -1349,6 +1372,54 @@ export async function verifyDnaBind(cell, opts = {}) {
     holes,
     witness,
   };
+}
+
+/**
+ * Verify every match-live cell in a DNA-bind overlay (module, proofs, routes).
+ * Absent overlay or no match-live cells ⇒ skipped (D5).
+ *
+ * @param {object|null} bind
+ * @param {Parameters<typeof verifyDnaBind>[1]} [opts]
+ */
+export async function verifyDnaBindMap(bind, opts = {}) {
+  if (!bind || typeof bind !== 'object') {
+    return { ok: true, skipped: true, holes: [], checked: 0 };
+  }
+  /** @type {object[]} */
+  const cells = [];
+  if (bind.module?.match_live) cells.push({ ...bind.module });
+  for (const p of Array.isArray(bind.proofs) ? bind.proofs : []) {
+    if (p?.match_live) cells.push({ ...(bind.module || {}), ...p });
+  }
+  for (const r of Array.isArray(bind.routes) ? bind.routes : []) {
+    if (!r) continue;
+    const cell = dnaBindForRequest(bind, {
+      method: r.method,
+      path_template: r.path_template,
+      host: r.host,
+    });
+    if (cell) cells.push(cell);
+  }
+  if (!cells.length) return { ok: true, skipped: true, holes: [], checked: 0 };
+
+  /** @type {{ code: string, reason: string }[]} */
+  const holes = [];
+  for (const cell of cells) {
+    const result = await verifyDnaBind(cell, opts);
+    if (!result.ok && Array.isArray(result.holes)) holes.push(...result.holes);
+  }
+  return { ok: holes.length === 0, skipped: false, holes, checked: cells.length };
+}
+
+/**
+ * Ensure a soak log path exists on disk (empty file is fine — missing is not).
+ * @param {string} filePath
+ */
+export function ensureShadowLog(filePath) {
+  if (!filePath) return false;
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  if (!fs.existsSync(filePath)) fs.writeFileSync(filePath, '', 'utf8');
+  return true;
 }
 
 /**

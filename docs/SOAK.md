@@ -49,10 +49,12 @@ helix triage --shadow-log "$SHADOW_LOG" --in certified.dna.json
 
 ```bash
 helix ready --target enforce --shadow-log "$SHADOW_LOG" --max-shadow-holes 0 --require-signed
-# exit 0 only
+# exit 0 only — a missing --shadow-log path fails (not a clean soak)
+# optional: --bind "$HELIX_DNA_BIND" when a genome declared match-live digests
 ```
 
 5. Set `MODE=enforce` and `POST /__helix/reload` (or restart).  
+   Panel **Start blocking** and `POST /__helix/api/mode` refuse enforce until the same ready gate passes (`HX-NOT-READY` / `HX-NO-SHADOW-LOG`). Starting the process already in `MODE=enforce` remains an ops choice after ready.  
 6. On new deploys: draft → promote → reload — do not invent routes to silence holes (**D5** DNA-only).
 
 ## Soak checklist (honest)
@@ -64,8 +66,9 @@ helix ready --target enforce --shadow-log "$SHADOW_LOG" --max-shadow-holes 0 --r
 | `helix promote --from` | Diff reviewed; no surprise admin routes |
 | `MODE=shadow` | Traffic still flows; holes go to `SHADOW_LOG` / `SIEM_LOG` (prove file sink: `npm run siem-fixture-smoke` → `SIEM_FIXTURE_OK`) |
 | Unexpected holes | `helix triage --shadow-log …` daily — investigate each surface, promote if legitimate, fix app if not ([TRIAGE.md](./TRIAGE.md)) |
-| `helix ready --target enforce --shadow-log …` | Exit 0 with `--max-shadow-holes 0` (or agreed budget) |
-| `MODE=enforce` | Fail closed on out-of-DNA |
+| `helix ready --target enforce --shadow-log …` | Exit 0 with `--max-shadow-holes 0` (or agreed budget); **missing log path fails** (same honesty as triage) |
+| DNA bind (optional) | If `HELIX_DNA_BIND` / `--bind` is set, ready verifies match-live digests before enforce ([DNA-BIND.md](./DNA-BIND.md)) |
+| `MODE=enforce` | Fail closed on out-of-DNA; panel/API flip runs the ready gate |
 | New deploys | Draft → promote → `POST /__helix/reload` (fixture: `npm run reload-fixture-smoke` → `RELOAD_FIXTURE_OK`) |
 
 ## Runbook gaps (ops must fill — no invent)
