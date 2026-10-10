@@ -17,6 +17,7 @@ ENFORCE_GATE_OK
 TOKENS: READY_SMOKE_OK · SOAK_PREFLIGHT_MISSING_LOG_FAIL · SEAL_SMOKE_GATE_OK · DNA_BIND_READY_OK
 CWL_TIP: 1.0.88 (pin unchanged — no language invent)
 BRANCH: candidate/enforce-gate-honesty
+PR: https://github.com/AgenticOp-io/chrysalis-security/pull/51
 HEARTBEAT: waiting
 ```
 
