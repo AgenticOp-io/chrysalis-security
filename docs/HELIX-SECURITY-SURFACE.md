@@ -250,6 +250,8 @@ Credibility after ship is **living with real customer traffic**, not more finger
 
 ## 12. Doc map (where to go next)
 
+**Canonical index:** [DOC-MAP.md](./DOC-MAP.md) · remaining holes: [DOC-HOLES.md](./DOC-HOLES.md)
+
 | Want | Read |
 | --- | --- |
 | How Helix protects (story) | [WHITEPAPER.md](./WHITEPAPER.md) · [THREAT-MODEL.md](./THREAT-MODEL.md) |
@@ -257,11 +259,13 @@ Credibility after ship is **living with real customer traffic**, not more finger
 | Linux install | [INSTALL-MODE-A.md](./INSTALL-MODE-A.md) |
 | Windows install | [INSTALL-MODE-A-WINDOWS.md](./INSTALL-MODE-A-WINDOWS.md) |
 | Modes + reload | [MODES.md](./MODES.md) |
+| CWL tip pin + bridge | [CWL-BRIDGE.md](./CWL-BRIDGE.md) (tip **1.0.88**) |
+| DNA bind / live-match / soak | [DNA-BIND.md](./DNA-BIND.md) · [LIVE-MATCH.md](./LIVE-MATCH.md) · [SOAK.md](./SOAK.md) |
 | NGFW pairing | [AUGMENT.md](./AUGMENT.md) |
 | Desktop lab | [LOCAL-LAB.md](./LOCAL-LAB.md) |
 | Roadmap checklist | [ROADMAP.md](./ROADMAP.md) |
 | Architecture | [ARCHITECTURE.md](./ARCHITECTURE.md) |
-| Index | [README.md](./README.md) |
+| Index | [README.md](./README.md) · [DOC-MAP.md](./DOC-MAP.md) |
 
 ---
 
