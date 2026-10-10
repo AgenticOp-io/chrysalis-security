@@ -1,4 +1,4 @@
-(/* Desk front door — hashed asset name for Helix static collapse */)
+(/* Desk ops console — hashed asset for Helix static collapse */)
 (function () {
   function $(id) {
     return document.getElementById(id);
@@ -10,6 +10,14 @@
     el.classList.remove('ok', 'bad');
     if (ok === true) el.classList.add('ok');
     if (ok === false) el.classList.add('bad');
+  }
+
+  function escapeHtml(s) {
+    return String(s ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   async function getJson(path) {
@@ -34,70 +42,79 @@
     if (!el) return;
     try {
       const { res, body } = await getJson('/api/health');
-      if (res.ok && body.ok) setStatus(el, 'API ok · ' + (body.service || 'desk'), true);
+      if (res.ok && body.ok) setStatus(el, 'API ok · ' + (body.kind || body.service || 'desk'), true);
       else setStatus(el, 'API unhealthy', false);
-    } catch (err) {
+    } catch {
       setStatus(el, 'API unreachable', false);
     }
   }
 
-  async function bootCatalog() {
-    const grid = $('catalogGrid');
-    const status = $('catalogStatus');
-    const sku = $('sku');
+  async function bootSites() {
+    const grid = $('sitesGrid');
+    const status = $('sitesStatus');
+    const site = $('site');
     if (!grid || !status) return;
     try {
-      const { res, body } = await getJson('/api/catalog');
+      const { res, body } = await getJson('/api/sites');
       if (!res.ok) {
-        setStatus(status, 'Catalog failed', false);
+        setStatus(status, 'Sites failed', false);
         return;
       }
-      const items = body.items || [];
-      setStatus(status, items.length + ' SKU(s)', true);
-      grid.innerHTML = items
+      const sites = body.sites || [];
+      setStatus(status, sites.length + ' site(s)', true);
+      grid.innerHTML = sites
         .map(
           (it) =>
             '<article class="card"><h2>' +
-            escapeHtml(it.name) +
+            escapeHtml(it.host) +
             '</h2><p>' +
-            escapeHtml(it.sku) +
-            '</p><p class="price">$' +
-            Number(it.price) +
-            '</p></article>',
+            escapeHtml(it.role) +
+            '</p><p class="price">' +
+            escapeHtml(it.mode) +
+            ' · ' +
+            Number(it.routes) +
+            ' routes</p></article>',
         )
         .join('');
-      if (sku) {
-        sku.innerHTML = items
-          .map((it) => '<option value="' + escapeHtml(it.sku) + '">' + escapeHtml(it.sku) + ' — ' + escapeHtml(it.name) + '</option>')
+      if (site) {
+        site.innerHTML = sites
+          .map(
+            (it) =>
+              '<option value="' +
+              escapeHtml(it.host) +
+              '">' +
+              escapeHtml(it.host) +
+              ' — ' +
+              escapeHtml(it.mode) +
+              '</option>',
+          )
           .join('');
       }
     } catch {
-      setStatus(status, 'Catalog unreachable', false);
+      setStatus(status, 'Sites unreachable', false);
     }
   }
 
-  function escapeHtml(s) {
-    return String(s ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
-
-  async function bootOrders() {
-    const form = $('orderForm');
-    const note = $('orderNote');
+  async function bootTickets() {
+    const form = $('ticketForm');
+    const note = $('ticketNote');
     if (!form) return;
     form.addEventListener('submit', async (ev) => {
       ev.preventDefault();
-      const sku = $('sku')?.value;
-      const qty = Number($('qty')?.value || 0);
+      const site = $('site')?.value;
+      const severity = $('severity')?.value;
+      const text = $('note')?.value;
       try {
-        const { res, body } = await postJson('/api/orders', { sku, qty });
-        if (res.ok && body.ok) setStatus(note, 'Order #' + body.order.id + ' · ' + body.order.sku + ' × ' + body.order.qty, true);
-        else setStatus(note, body.error || 'Order refused', false);
+        const { res, body } = await postJson('/api/tickets', { site, severity, note: text });
+        if (res.ok && body.ok) {
+          setStatus(
+            note,
+            'Ticket #' + body.ticket.id + ' · ' + body.ticket.site + ' · ' + body.ticket.severity,
+            true,
+          );
+        } else setStatus(note, body.error || 'Ticket refused', false);
       } catch {
-        setStatus(note, 'Order failed', false);
+        setStatus(note, 'Ticket failed', false);
       }
     });
   }
@@ -124,11 +141,8 @@
       const email = $('email')?.value;
       try {
         const { res, body } = await postJson('/api/session', { email });
-        if (res.ok && body.ok) {
-          setStatus($('meStatus'), 'Signed in as ' + body.email, true);
-        } else {
-          setStatus($('meStatus'), body.error || 'Sign-in refused', false);
-        }
+        if (res.ok && body.ok) setStatus($('meStatus'), 'Signed in as ' + body.email, true);
+        else setStatus($('meStatus'), body.error || 'Sign-in refused', false);
       } catch {
         setStatus($('meStatus'), 'Sign-in failed', false);
       }
@@ -142,7 +156,7 @@
   }
 
   bootHealth();
-  bootCatalog();
-  bootOrders();
+  bootSites();
+  bootTickets();
   bootAccount();
 })();

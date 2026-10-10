@@ -1,9 +1,8 @@
 /**
- * Desk — real multi-surface app behind Helix (Mode A default upstream).
+ * Desk — operator console behind Helix (Mode A default upstream).
  *
- * HTML storefront + JSON APIs + session cookie + hashed assets + intentional backdoor.
- * Replaces thin demo-api as the Windows / first-run protect target. demo-api stays for
- * unit smokes that pin its tiny surface.
+ * Sites + tickets + session — not a storefront. HTML + JSON + hashed assets +
+ * intentional backdoor. demo-api stays for smokes that pin a tiny JSON toy.
  *
  *   PORT=4090 HOST=127.0.0.1 node fixtures/desk/server.mjs
  */
@@ -17,17 +16,17 @@ const port = Number(process.env.PORT || 4090);
 const host = process.env.HOST || '127.0.0.1';
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), 'public');
 
-const CATALOG = [
-  { id: 1, sku: 'HX-EDGE', name: 'Edge relay', price: 49 },
-  { id: 2, sku: 'HX-CORE', name: 'Core certificate pack', price: 120 },
-  { id: 3, sku: 'HX-LAB', name: 'Lab soak kit', price: 0 },
+const SITES = [
+  { id: 1, host: 'edge.lab', role: 'Mode A front door', mode: 'enforce', routes: 14 },
+  { id: 2, host: 'api.lab', role: 'JSON API hop', mode: 'shadow', routes: 9 },
+  { id: 3, host: 'panel.lab', role: 'Ops console', mode: 'learn', routes: 6 },
 ];
 
 /** @type {Map<string, { email: string, at: string }>} */
 const sessions = new Map();
-/** @type {{ id: number, sku: string, qty: number, at: string }[]} */
-const orders = [];
-let orderSeq = 1;
+/** @type {{ id: number, site: string, severity: string, note: string, at: string }[]} */
+const tickets = [];
+let ticketSeq = 1;
 
 function readBody(req) {
   return new Promise((resolve, reject) => {
@@ -50,13 +49,12 @@ function parseCookies(header) {
 }
 
 function sendJson(res, status, body, extraHeaders = {}) {
-  const payload = JSON.stringify(body);
   res.writeHead(status, {
     'content-type': 'application/json; charset=utf-8',
     'cache-control': 'no-store',
     ...extraHeaders,
   });
-  res.end(payload);
+  res.end(JSON.stringify(body));
 }
 
 function sendFile(res, filePath) {
@@ -80,23 +78,31 @@ const server = http.createServer(async (req, res) => {
 
   try {
     if (pathname === '/api/health' && method === 'GET') {
-      sendJson(res, 200, { ok: true, service: 'desk', surfaces: ['html', 'json', 'session'] });
+      sendJson(res, 200, {
+        ok: true,
+        service: 'desk',
+        kind: 'ops-console',
+        surfaces: ['html', 'json', 'session', 'sites', 'tickets'],
+      });
       return;
     }
 
-    if ((pathname === '/api/catalog' || pathname === '/api/items') && method === 'GET') {
-      const sku = url.searchParams.get('sku');
-      const items = sku ? CATALOG.filter((c) => c.sku === sku) : CATALOG;
-      sendJson(res, 200, { items, count: items.length });
+    // Sites inventory (protected front doors) — also aliased as /api/catalog|/api/items
+    // so older lab DNA that learned those paths still maps during transition.
+    if (
+      (pathname === '/api/sites' || pathname === '/api/catalog' || pathname === '/api/items') &&
+      method === 'GET'
+    ) {
+      sendJson(res, 200, { sites: SITES, count: SITES.length });
       return;
     }
 
-    if (pathname === '/api/orders' && method === 'GET') {
-      sendJson(res, 200, { orders: orders.slice(-20), count: orders.length });
+    if ((pathname === '/api/tickets' || pathname === '/api/orders') && method === 'GET') {
+      sendJson(res, 200, { tickets: tickets.slice(-20), count: tickets.length });
       return;
     }
 
-    if (pathname === '/api/orders' && method === 'POST') {
+    if ((pathname === '/api/tickets' || pathname === '/api/orders') && method === 'POST') {
       const raw = await readBody(req);
       let parsed = {};
       try {
@@ -105,16 +111,24 @@ const server = http.createServer(async (req, res) => {
         sendJson(res, 400, { error: 'bad_json' });
         return;
       }
-      const sku = String(parsed.sku || '');
-      const qty = Number(parsed.qty || 0);
-      const hit = CATALOG.find((c) => c.sku === sku);
-      if (!hit || !Number.isInteger(qty) || qty < 1 || qty > 99) {
-        sendJson(res, 400, { error: 'bad_order' });
+      // Accept ops shape { site, severity, note } or legacy order shape { sku, qty }.
+      const site = String(parsed.site || parsed.sku || '').trim();
+      const severity = String(parsed.severity || (parsed.qty != null ? 'normal' : '')).trim() || 'normal';
+      const note = String(parsed.note || (parsed.qty != null ? `qty ${parsed.qty}` : '')).trim();
+      const hit = SITES.find((s) => s.host === site || s.host.startsWith(site));
+      if (!site || !['low', 'normal', 'high'].includes(severity)) {
+        sendJson(res, 400, { error: 'bad_ticket' });
         return;
       }
-      const row = { id: orderSeq++, sku, qty, at: new Date().toISOString() };
-      orders.push(row);
-      sendJson(res, 200, { ok: true, order: row });
+      const row = {
+        id: ticketSeq++,
+        site: hit?.host || site,
+        severity,
+        note: note || 'opened from desk',
+        at: new Date().toISOString(),
+      };
+      tickets.push(row);
+      sendJson(res, 200, { ok: true, ticket: row });
       return;
     }
 
@@ -160,15 +174,19 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // Intentional unauthorized surface — Helix must block after DNA lock.
     if (pathname === '/api/backdoor' && method === 'GET') {
-      sendJson(res, 200, { pwned: true, secret: 'exfil', note: 'not part of certified desk surface' });
+      sendJson(res, 200, {
+        pwned: true,
+        secret: 'exfil',
+        note: 'not part of certified desk surface',
+      });
       return;
     }
 
-    // Static / HTML
     let rel = pathname === '/' ? '/index.html' : pathname;
     if (rel.endsWith('/')) rel += 'index.html';
+    // Old bookmark → new ops page
+    if (rel === '/catalog.html') rel = '/sites.html';
     const file = path.normalize(path.join(root, rel.replace(/^\//, '')));
     if (!file.startsWith(root)) {
       res.writeHead(403, { 'content-type': 'text/plain' });

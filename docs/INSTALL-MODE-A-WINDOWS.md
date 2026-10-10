@@ -25,7 +25,7 @@ Helix.exe (native WinForms)
          -> Desk :4090 (HTML+JSON app) or your APP_UPSTREAM
 ```
 
-Default upstream is **Desk** ([DESK.md](./DESK.md)) — catalog, orders, session cookie, attack proof — not a two-route toy.
+Default upstream is **Desk** ([DESK.md](./DESK.md)) — ops console (sites, tickets, operator session) + attack proof — not a storefront or two-route toy.
 
 ## Install
 

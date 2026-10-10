@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Desk behind Helix — HTML + catalog + orders + session → learn → promote → enforce.
+ * Desk behind Helix — ops console (sites + tickets + session) → learn → promote → enforce.
  * Tokens: DESK_UP_OK · DESK_LEARN_OK · DESK_ENFORCE_OK · DESK_SMOKE_OK
  */
 import { spawn } from 'node:child_process';
@@ -129,24 +129,23 @@ await wait(helixPort, '/__helix/healthz');
 
 const learnPaths = [
   '/',
-  '/catalog.html',
+  '/sites.html',
   '/account.html',
   '/assets/desk.css',
   '/assets/desk.a1b2c3d4.js',
   '/api/health',
-  '/api/catalog',
-  '/api/items',
-  '/api/orders',
+  '/api/sites',
+  '/api/tickets',
 ];
 for (const p of learnPaths) {
   const r = await req(helixPort, p);
   assert(r.status === 200, `learn GET ${p} → ${r.status}`);
 }
-const order = await req(helixPort, '/api/orders', {
+const ticket = await req(helixPort, '/api/tickets', {
   method: 'POST',
-  body: JSON.stringify({ sku: 'HX-LAB', qty: 2 }),
+  body: JSON.stringify({ site: 'edge.lab', severity: 'high', note: 'probe /admin' }),
 });
-assert(order.status === 200 && order.body.includes('"ok":true'), 'learn POST order');
+assert(ticket.status === 200 && ticket.body.includes('"ok":true'), 'learn POST ticket');
 const session = await req(helixPort, '/api/session', {
   method: 'POST',
   body: JSON.stringify({ email: 'ops@agenticop.io' }),
@@ -199,12 +198,14 @@ const hz = JSON.parse((await req(helixPort, '/__helix/healthz')).body);
 assert(hz.dna === true && hz.mode === 'enforce', `enforce healthz dna/mode: ${JSON.stringify(hz)}`);
 
 const home = await req(helixPort, '/');
-assert(home.status === 200 && home.body.includes('Desk'), `enforce home ${home.status}`);
-const cat = await req(helixPort, '/api/catalog');
+assert(home.status === 200 && home.body.includes('Front doors'), `enforce home ${home.status}`);
+const sites = await req(helixPort, '/api/sites');
 assert(
-  cat.status === 200 && cat.body.includes('HX-EDGE'),
-  `enforce catalog ${cat.status} ${cat.body.slice(0, 200)}`,
+  sites.status === 200 && sites.body.includes('edge.lab'),
+  `enforce sites ${sites.status} ${sites.body.slice(0, 200)}`,
 );
+const sitesPage = await req(helixPort, '/sites.html');
+assert(sitesPage.status === 200 && sitesPage.body.includes('Protected front doors'), 'enforce sites.html');
 const blocked = await req(helixPort, '/api/backdoor');
 assert(
   blocked.status === 403 && blocked.body.includes('HX-ROUTE-UNKNOWN'),
