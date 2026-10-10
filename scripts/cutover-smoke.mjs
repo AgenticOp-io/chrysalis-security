@@ -2284,4 +2284,98 @@ console.log('=== cutover: tip 1.0.86 (RFC-0043 DNA fingerprint sha384+ floor; re
   console.log('CUTOVER_TIP_1_0_86_OK');
 }
 
+console.log('=== cutover: tip 1.0.87 (RFC-0044 DNA proof — multi-fp · match bank · dna expect) ===');
+{
+  const proofDir = '96-dna-proof';
+  const proofPath = path.join(cwlRoot, 'fixtures', 'language-gold', proofDir, 'routes.cwl');
+  assert(fs.existsSync(proofPath), `missing ${proofDir}`);
+  const proofSrc = fs.readFileSync(proofPath, 'utf8');
+  assert(/dna\s+fingerprint\s+"sha384-/.test(proofSrc), `${proofDir} declares sha384 fingerprint`);
+  assert(/dna\s+fingerprint\s+"sha512-/.test(proofSrc), `${proofDir} declares sha512 fingerprint`);
+  assert(/match\s+bank\s*;/.test(proofSrc), `${proofDir} declares match bank`);
+  assert(/dna\s+expect\s+enforce\s*;/.test(proofSrc), `${proofDir} declares dna expect enforce`);
+  assert(/dna\s+expect\s+shadow\s*;/.test(proofSrc), `${proofDir} declares dna expect shadow`);
+  assert(/hole\s+cwl:match-without-certificate\s*;/.test(proofSrc), `${proofDir} catalogues match-without-certificate`);
+  assert(/hole\s+cwl:match-bank-without-bank\s*;/.test(proofSrc), `${proofDir} catalogues match-bank-without-bank`);
+  assert(/hole\s+cwl:dna-expect-unknown\s*;/.test(proofSrc), `${proofDir} catalogues dna-expect-unknown`);
+
+  const sha384 = 'sha384-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+  const sha512 =
+    'sha512-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+  const weak = consumeDnaFingerprint('sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=');
+  assert(weak.ok === false && weak.hole === 'cwl:dna-fingerprint-too-weak', 'Secure keep sha384+ floor');
+  assert(consumeDnaFingerprint(sha384).ok === true, 'Secure accept sha384 DNA bind');
+  assert(consumeDnaFingerprint(sha512).ok === true, 'Secure accept sha512 DNA bind');
+
+  const proofSeeded = await seedDnaFromCwlFile(proofPath, {
+    app_id: `cutover-${proofDir}`,
+    mode: 'draft',
+    fixture: `fixtures/language-gold/${proofDir}/routes.cwl`,
+    cwlRoot,
+  });
+  assert((proofSeeded.routes?.length ?? 0) === 4, `${proofDir} route count`);
+  const bind = proofSeeded.bridge?.cwl_dna_bind;
+  assert(bind?.cwl_dna_certificate === 'app.dna.json', `${proofDir} module dna certificate`);
+  assert(bind?.cwl_dna_fingerprint === sha384, `${proofDir} module primary dna fingerprint`);
+  assert(
+    Array.isArray(bind?.cwl_dna_fingerprints) &&
+      bind.cwl_dna_fingerprints.length === 2 &&
+      bind.cwl_dna_fingerprints[0] === sha384 &&
+      bind.cwl_dna_fingerprints[1] === sha512,
+    `${proofDir} module dnaFingerprints[] document fact`,
+  );
+  assert(bind?.cwl_dna_bank === 'dna/', `${proofDir} module dna bank`);
+  assert(bind?.cwl_match_live === true, `${proofDir} module match live`);
+  assert(bind?.cwl_match_bank === true, `${proofDir} module match bank → cwl_match_bank`);
+  assert(bind?.cwl_dna_expect === 'enforce', `${proofDir} module dna expect → cwl_dna_expect`);
+
+  const invoice = (proofSeeded.bridge?.annotations || []).find((a) => a.path_template === '/invoice');
+  assert(invoice?.cwl_dna_certificate === 'app.dna.json', `${proofDir} invoice dna certificate`);
+  assert(invoice?.cwl_dna_fingerprint === sha384, `${proofDir} invoice primary fingerprint`);
+  assert(
+    Array.isArray(invoice?.cwl_dna_fingerprints) && invoice.cwl_dna_fingerprints[0] === sha384,
+    `${proofDir} invoice dnaFingerprints[]`,
+  );
+  assert(invoice?.cwl_match_live === true, `${proofDir} invoice match live`);
+  assert(invoice?.cwl_match_bank === true, `${proofDir} invoice match bank`);
+  assert(invoice?.cwl_dna_expect === 'shadow', `${proofDir} invoice dna expect shadow (route overrides)`);
+  assert(invoice?.cwl_dna_bank === 'dna/', `${proofDir} invoice inherits dna bank`);
+
+  const expectedHoles = {
+    '/refuse-match-no-cert': 'cwl:match-without-certificate',
+    '/refuse-match-bank': 'cwl:match-bank-without-bank',
+    '/refuse-expect': 'cwl:dna-expect-unknown',
+  };
+  for (const [pathTemplate, reason] of Object.entries(expectedHoles)) {
+    const ann = (proofSeeded.bridge?.annotations || []).find((a) => a.path_template === pathTemplate);
+    assert(ann?.cwl_hole_reason === reason, `${pathTemplate} hole document fact: ${ann?.cwl_hole_reason}`);
+  }
+  assert(
+    proofSeeded.routes.every(
+      (r) =>
+        r.cwl_dna_certificate == null &&
+        r.cwl_dna_fingerprint == null &&
+        r.cwl_dna_fingerprints == null &&
+        r.cwl_dna_bank == null &&
+        r.cwl_match_live == null &&
+        r.cwl_match_bank == null &&
+        r.cwl_dna_expect == null &&
+        r.cwl_dna_bind == null,
+    ),
+    `${proofDir} DNA bind facts stay annotations/bridge, not DNA route fields`,
+  );
+  const seededJson = JSON.stringify(proofSeeded);
+  assert(!/createHash\(|subtle\.digest|sri-check|hashFile\(/.test(seededJson), `${proofDir} no digest invent in CWL`);
+  assert(!/ML-DSA|Dilithium|Kyber|PQ.?hash invent/.test(seededJson), `${proofDir} no PQ crypto invent in CWL`);
+  assert(
+    !/helix\.promote\(|helix\.shadow\(|helix\.enforce\(|promoteToEnforce\(/.test(seededJson),
+    `${proofDir} Helix owns lifecycle — genome does not invent promote/shadow/enforce runtime`,
+  );
+  assert(!/NestFactory|LiveView|Flutter|dart:ui/.test(seededJson), `${proofDir} no Nest/LiveView/Flutter invent`);
+  const proofCertified = stripBridgeEnvelope(proofSeeded);
+  const proofCmp = compareCwlSurfaceToDna(proofSeeded, proofCertified);
+  assert(proofCmp.ok === true, `${proofDir} self-cutover: ${JSON.stringify(proofCmp.missing_in_dna)}`);
+  console.log('CUTOVER_TIP_1_0_87_OK');
+}
+
 console.log('CUTOVER_SMOKE_OK');

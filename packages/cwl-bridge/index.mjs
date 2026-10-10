@@ -684,6 +684,9 @@ function dnaIdentityDocumentFacts(route) {
 const DNA_FINGERPRINT_STRONG_RE = /^sha(384|512)-[A-Za-z0-9+/=]+$/;
 const DNA_FINGERPRINT_WEAK_RE = /^sha256-[A-Za-z0-9+/=]+$/;
 
+/** RFC-0044: Helix lifecycle modes named as document facts (Secure owns promote/shadow/enforce). */
+const DNA_EXPECT_MODES = new Set(['promote', 'shadow', 'enforce']);
+
 /**
  * Tip 1.0.86 RFC-0043: live-match consume accepts sha384/sha512 DNA fingerprints only.
  * `sha256` → refused as `cwl:dna-fingerprint-too-weak` (not copied onto the bind).
@@ -702,12 +705,65 @@ export function consumeDnaFingerprint(sri) {
 }
 
 /**
- * RFC-0042 DNA bind (tip 1.0.85) + RFC-0043 floor (tip 1.0.86): certificate /
- * SRI fingerprint / bank / match live. Document facts on bridge annotations
- * (and module bank on the bridge envelope). Route values override module;
- * Helix verifies digests and enforces live-match — it does not invent hash
- * computation or Helix firewall features inside CWL. Weak (`sha256`) DNA
- * fingerprints are refused in consume and never become live-match binds.
+ * Tip 1.0.87 RFC-0044: resolve declared DNA fingerprints (multi `dnaFingerprints[]`
+ * with primary `dnaFingerprint`). Route overrides module. Each digest passes through
+ * `consumeDnaFingerprint` (sha384+ floor). Primary remains the first declared digest
+ * when strong; weak/bad primary is refused and never copied.
+ * @param {object | null | undefined} route
+ * @param {object | null | undefined} mod
+ * @returns {{ fingerprints: string[], primary: string | null, refused: string | null }}
+ */
+function resolveDnaFingerprints(route, mod) {
+  /** @type {string[]} */
+  let raw = [];
+  if (Array.isArray(route?.dnaFingerprints) && route.dnaFingerprints.length) {
+    raw = route.dnaFingerprints.filter((s) => typeof s === 'string' && s);
+  } else if (typeof route?.dnaFingerprint === 'string' && route.dnaFingerprint) {
+    raw = [route.dnaFingerprint];
+  } else if (Array.isArray(mod?.dnaFingerprints) && mod.dnaFingerprints.length) {
+    raw = mod.dnaFingerprints.filter((s) => typeof s === 'string' && s);
+  } else if (typeof mod?.dnaFingerprint === 'string' && mod.dnaFingerprint) {
+    raw = [mod.dnaFingerprint];
+  }
+  /** @type {string[]} */
+  const fingerprints = [];
+  /** @type {string | null} */
+  let primary = null;
+  /** @type {string | null} */
+  let refused = null;
+  for (let i = 0; i < raw.length; i++) {
+    const consumed = consumeDnaFingerprint(raw[i]);
+    if (consumed.ok) {
+      if (!fingerprints.includes(consumed.value)) fingerprints.push(consumed.value);
+      // Primary remains the first declared digest when it clears the sha384+ floor.
+      if (i === 0) primary = consumed.value;
+    } else if (i === 0 && consumed.hole) {
+      refused = consumed.hole;
+    }
+  }
+  return { fingerprints, primary, refused };
+}
+
+/**
+ * Tip 1.0.87: `dna expect promote|shadow|enforce` — document fact only.
+ * Helix owns lifecycle; unknown modes are not copied (parser catalogues the hole).
+ * @param {unknown} mode
+ * @returns {string | null}
+ */
+function consumeDnaExpect(mode) {
+  if (typeof mode !== 'string' || !mode) return null;
+  const normalized = mode.toLowerCase();
+  return DNA_EXPECT_MODES.has(normalized) ? normalized : null;
+}
+
+/**
+ * RFC-0042 DNA bind (tip 1.0.85) + RFC-0043 floor (tip 1.0.86) + RFC-0044 proof
+ * deepen (tip 1.0.87): certificate / SRI fingerprint(s) / bank / match live /
+ * match bank / dna expect. Document facts on bridge annotations (and module bank
+ * on the bridge envelope). Route values override module; Helix verifies digests
+ * and owns promote/shadow/enforce — it does not invent hash computation or Helix
+ * firewall features inside CWL. Weak (`sha256`) DNA fingerprints are refused in
+ * consume and never become live-match binds.
  * @param {object} route
  * @param {object | null | undefined} mod
  * @returns {object | null}
@@ -721,28 +777,27 @@ function dnaBindDocumentFacts(route, mod) {
       : typeof mod?.dnaCertificate === 'string' && mod.dnaCertificate
         ? mod.dnaCertificate
         : null;
-  const rawFingerprint =
-    typeof route.dnaFingerprint === 'string' && route.dnaFingerprint
-      ? route.dnaFingerprint
-      : typeof mod?.dnaFingerprint === 'string' && mod.dnaFingerprint
-        ? mod.dnaFingerprint
-        : null;
+  const { fingerprints, primary, refused } = resolveDnaFingerprints(route, mod);
   const bank = typeof mod?.dnaBank === 'string' && mod.dnaBank ? mod.dnaBank : null;
   const matchLive = route.matchLive === true || mod?.matchLive === true;
+  const matchBank = route.matchBank === true || mod?.matchBank === true;
+  const dnaExpect =
+    consumeDnaExpect(route.dnaExpect) || consumeDnaExpect(mod?.dnaExpect);
   if (cert) facts.cwl_dna_certificate = cert;
-  if (rawFingerprint) {
-    const consumed = consumeDnaFingerprint(rawFingerprint);
-    if (consumed.ok) facts.cwl_dna_fingerprint = consumed.value;
-    else if (consumed.hole) facts.cwl_dna_fingerprint_refused = consumed.hole;
-  }
+  if (primary) facts.cwl_dna_fingerprint = primary;
+  else if (refused) facts.cwl_dna_fingerprint_refused = refused;
+  if (fingerprints.length) facts.cwl_dna_fingerprints = fingerprints;
   if (bank) facts.cwl_dna_bank = bank;
   if (matchLive) facts.cwl_match_live = true;
+  if (matchBank) facts.cwl_match_bank = true;
+  if (dnaExpect) facts.cwl_dna_expect = dnaExpect;
   return Object.keys(facts).length ? facts : null;
 }
 
 /**
- * Module-scope RFC-0042 DNA bind for the bridge envelope (bank is module-only).
- * Tip 1.0.86: refuse weak DNA digests the same way as route consume.
+ * Module-scope RFC-0042/0044 DNA bind for the bridge envelope (bank is module-only).
+ * Tip 1.0.86: refuse weak DNA digests. Tip 1.0.87: multi-fingerprint, match bank,
+ * dna expect document facts.
  * @param {object | null | undefined} mod
  * @returns {object | null}
  */
@@ -753,13 +808,15 @@ function moduleDnaBindDocumentFacts(mod) {
   if (typeof mod.dnaCertificate === 'string' && mod.dnaCertificate) {
     facts.cwl_dna_certificate = mod.dnaCertificate;
   }
-  if (typeof mod.dnaFingerprint === 'string' && mod.dnaFingerprint) {
-    const consumed = consumeDnaFingerprint(mod.dnaFingerprint);
-    if (consumed.ok) facts.cwl_dna_fingerprint = consumed.value;
-    else if (consumed.hole) facts.cwl_dna_fingerprint_refused = consumed.hole;
-  }
+  const { fingerprints, primary, refused } = resolveDnaFingerprints(null, mod);
+  if (primary) facts.cwl_dna_fingerprint = primary;
+  else if (refused) facts.cwl_dna_fingerprint_refused = refused;
+  if (fingerprints.length) facts.cwl_dna_fingerprints = fingerprints;
   if (typeof mod.dnaBank === 'string' && mod.dnaBank) facts.cwl_dna_bank = mod.dnaBank;
   if (mod.matchLive === true) facts.cwl_match_live = true;
+  if (mod.matchBank === true) facts.cwl_match_bank = true;
+  const dnaExpect = consumeDnaExpect(mod.dnaExpect);
+  if (dnaExpect) facts.cwl_dna_expect = dnaExpect;
   const holes = Array.isArray(mod.dnaHoles) ? mod.dnaHoles.filter((h) => typeof h === 'string' && h) : [];
   if (holes.length) facts.cwl_dna_holes = [...new Set(holes)];
   return Object.keys(facts).length ? facts : null;

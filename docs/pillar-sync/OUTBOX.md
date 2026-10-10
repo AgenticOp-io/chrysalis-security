@@ -6,11 +6,47 @@
 
 ---
 
+## 2026-10-09 — secure-tip-1.0.87
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.87-dna-proof`)  
+**Status:** **done**  
+
+```text
+SECURE_TIP_1_0_87_OK
+CUTOVER_TIP_1_0_87_OK
+CWL_SYNC_OK: 90ce353 cwl@1.0.87
+TOKENS: CUTOVER_TIP_1_0_86_OK · CUTOVER_TIP_1_0_87_OK · CWL_BRIDGE_SMOKE_OK · LIVE_MATCH_OK · TRAFFIC_DECIDES_SECURE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.87
+CWL_SHA: 90ce353 (CWL PR #128 candidate · language land 537c0bc · ask tip-1.0.87-dna-proof)
+BRANCH: candidate/secure-tip-1.0.87
+PR: (pending)
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.87** | RFC-0044 DNA proof deepen (gold `96`): expand DNA bind consume beyond tip 1.0.86 — accept `dnaFingerprints[]` (multi sha384/sha512) while keeping primary `dnaFingerprint` / `cwl_dna_fingerprint`; consume `matchBank` → `cwl_match_bank`; consume `dnaExpect` → `cwl_dna_expect` (`promote` \| `shadow` \| `enforce` document fact). Helix owns lifecycle — no CWL crypto invent. sha384+ floor via `consumeDnaFingerprint` unchanged. Tip seed self-cutover → `CUTOVER_TIP_1_0_87_OK`. Traffic DNA remains the default protect path |
+| Pins | `@chrysalis/cwl` and `@agenticop-io/cwl` stay `file:../chrysalis-cwl/packages/cwl` at **1.0.87** (language land `537c0bc` / candidate `90ce353`) |
+
+### Closes
+
+- CWL OUTBOX Secure row of `tip-1.0.87-dna-proof`
+- Supersedes open Secure tip **1.0.86** pin ([PR #47](https://github.com/AgenticOp-io/chrysalis-security/pull/47) on `candidate/secure-tip-1.0.86`); this tip is the current pin
+
+### Ask
+
+none
+
+---
+
 ## 2026-10-09 — secure-tip-1.0.86
 
 **To:** cwl  
 **Priority:** P0 (reply to `tip-1.0.86-dna-fingerprint-strong`)  
-**Status:** **done**  
+**Status:** **done** (superseded as current pin by `secure-tip-1.0.87`)  
 
 ```text
 SECURE_TIP_1_0_86_OK
@@ -22,6 +58,7 @@ CWL_SHA: ee0b81a (merge PR #126 · tag cwl-v1.0.86 · language land 61f4ba3 · a
 CWL_TAG: cwl-v1.0.86
 BRANCH: candidate/secure-tip-1.0.86
 PR: https://github.com/AgenticOp-io/chrysalis-security/pull/47
+SUPERSEDED_AS_CURRENT_PIN_BY: secure-tip-1.0.87
 HEARTBEAT: waiting
 ```
 
