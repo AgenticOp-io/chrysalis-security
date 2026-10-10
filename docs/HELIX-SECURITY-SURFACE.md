@@ -82,7 +82,7 @@ Ops surfaces (never DNA-gated):
 - `POST /__helix/reload`  
 - Proof page: `/__helix/attack` (lab)
 
-CLI: `npm run helix -- …` (`packages/helix-cli`) — learn, diff, promote, report, ready, triage, …
+CLI: `npm run helix -- …` (`packages/helix-cli`) — learn, diff, promote, report, ready, triage, dna-bind, fingerprint, verify-bind, …
 
 ---
 
@@ -99,6 +99,7 @@ Out-of-box signals (internet majority):
 | Query **names** | `HX-QUERY-SCHEMA-DRIFT` |
 | Status / content class | Fail-closed JSON when certified |
 | Response surface | Cookie **names**, redirect **hosts** ([RESPONSE-SURFACE.md](./RESPONSE-SURFACE.md)) |
+| DNA bind (optional overlay) | Genome-declared SRI digests / quorum / witness / supersedes at shadow/enforce ([DNA-BIND.md](./DNA-BIND.md)); absent overlay ⇒ no check (**D5**) |
 
 Deliberately weak / out of v0:
 

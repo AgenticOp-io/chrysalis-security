@@ -9,6 +9,8 @@
 
 Helix **cutover default** compares authored CWL surface to certified `app-dna-v1` (CWL ⊆ DNA). Protect / learn / enforce stay **DNA-only** (D5) — no CWL required to block traffic.
 
+Optional: when a genome declares DNA fingerprints / `match live` (tips 1.0.85–1.0.88), Helix can verify those digests at runtime via ops overlay `HELIX_DNA_BIND` — see [DNA-BIND.md](./DNA-BIND.md). Absent overlay ⇒ no bind check.
+
 ## Acceptance (closed)
 
 | Check | Proof |

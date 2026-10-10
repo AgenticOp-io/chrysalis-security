@@ -11,6 +11,9 @@ import {
   assessReadiness,
   countShadowHoles,
   triageShadowLogFile,
+  fingerprintDna,
+  verifyDnaBind,
+  loadDnaBindMap,
 } from '../../dna-core/index.mjs';
 import {
   seedDnaFromCwlFile,
@@ -20,6 +23,7 @@ import {
   resolveDeployProfilePath,
   buildUpstreamTargetsReport,
   buildSensitivityMap,
+  buildDnaBindMap,
   loadCwlHoleLookup,
 } from '../../cwl-bridge/index.mjs';
 
@@ -55,12 +59,20 @@ Usage:
                    # declared forwards (RFC-0033) for operator egress review — Helix does not filter egress
   helix sensitivity --cwl <routes.cwl|seed.json> --out <sensitivity.json> [--cwl-root <path>]
                    # credential surfaces → hole severity overlay (HELIX_SENSITIVITY); not part of app-dna-v1
+  helix dna-bind   --cwl <routes.cwl|seed.json> --out <dna-bind.json> [--cwl-root <path>]
+                   # RFC-0042–0045 match-live overlay (HELIX_DNA_BIND); digests declared, not invented
+  helix fingerprint --in <certified.json>
+                   # print sha384/sha512 SRI of the canonical DNA artifact (paste into CWL)
+  helix verify-bind --bind <dna-bind.json> --dna <certified.json>
+                   [--lineage <prev.json>] [--bank <dir>] [--witness-body <text>]
+                   # verify declared digests / quorum / supersedes / witness against live DNA
 
 Signing: hmac-sha256 (shared secret) or ed25519 (PEM/raw private promote, public verify).
-Env: HELIX_DNA_KEY, HELIX_DNA_KEY_ID, HELIX_DNA_ALG. Canon: docs/SIGNED-DNA.md
+Env: HELIX_DNA_KEY, HELIX_DNA_KEY_ID, HELIX_DNA_ALG, HELIX_DNA_BIND, HELIX_DNA_LINEAGE.
+Canon: docs/SIGNED-DNA.md · DNA bind: docs/DNA-BIND.md
 Lifecycle: docs/CERT-LIFECYCLE.md · Product: docs/PRODUCT.md · Modes: docs/MODES.md
 Soak: docs/SOAK.md · Triage: docs/TRIAGE.md · Severity: docs/SEVERITY.md
-CWL bridge: RFC-0022/0023 (chrysalis-cwl). Pin: @agenticop-io/cwl@1.0.86. Canon: docs/CANON.md
+CWL bridge: RFC-0022/0023 (chrysalis-cwl). Pin: @agenticop-io/cwl@1.0.88. Canon: docs/CANON.md
 `);
 }
 
@@ -357,10 +369,10 @@ if (cmd === 'cutover' || cmd === 'compare-cwl') {
   process.exit(report.ok ? 0 : 2);
 }
 
-if (cmd === 'upstreams' || cmd === 'sensitivity') {
+if (cmd === 'upstreams' || cmd === 'sensitivity' || cmd === 'dna-bind') {
   const cwlIn = flag(rest, '--cwl');
   const out = flag(rest, '--out');
-  if (!cwlIn || (cmd === 'sensitivity' && !out)) {
+  if (!cwlIn || ((cmd === 'sensitivity' || cmd === 'dna-bind') && !out)) {
     usage();
     process.exit(1);
   }
@@ -386,6 +398,17 @@ if (cmd === 'upstreams' || cmd === 'sensitivity') {
     process.exit(report.unresolved.length === 0 ? 0 : 2);
   }
 
+  if (cmd === 'dna-bind') {
+    const map = buildDnaBindMap(seed);
+    fs.mkdirSync(path.dirname(out), { recursive: true });
+    fs.writeFileSync(out, JSON.stringify(map, null, 2) + '\n');
+    console.log(
+      `Wrote DNA bind overlay (module match_live=${map.module.match_live} · ${map.routes.length} routes · ${map.proofs.length} proofs) → ${out}\n` +
+        'Point the agent at it with HELIX_DNA_BIND=. Mint digests with: helix fingerprint --in <certified.json>',
+    );
+    process.exit(0);
+  }
+
   const map = buildSensitivityMap(seed);
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, JSON.stringify(map, null, 2) + '\n');
@@ -394,6 +417,48 @@ if (cmd === 'upstreams' || cmd === 'sensitivity') {
       'Point the agent at it with HELIX_SENSITIVITY= to raise hole severity on those routes.',
   );
   process.exit(0);
+}
+
+if (cmd === 'fingerprint') {
+  const input = flag(rest, '--in');
+  if (!input) {
+    usage();
+    process.exit(1);
+  }
+  const digests = fingerprintDna(readJson(input));
+  console.log(JSON.stringify({ kind: 'helix.dna-fingerprint', digests }, null, 2));
+  process.exit(0);
+}
+
+if (cmd === 'verify-bind') {
+  const bindPath = flag(rest, '--bind');
+  const dnaPath = flag(rest, '--dna');
+  if (!bindPath || !dnaPath) {
+    usage();
+    process.exit(1);
+  }
+  const bind = loadDnaBindMap(bindPath) || readJson(bindPath);
+  const dna = readJson(dnaPath);
+  const lineagePath = flag(rest, '--lineage');
+  const bankDir = flag(rest, '--bank');
+  const witnessBody = flag(rest, '--witness-body');
+  const cell = bind.module?.match_live
+    ? bind.module
+    : bind.routes?.find((r) => r.match_live) || bind.module || bind;
+  const result = await verifyDnaBind(
+    { ...cell, match_live: true },
+    {
+      dna,
+      lineageDna: lineagePath ? readJson(lineagePath) : null,
+      bankDir: bankDir || cell.bank || null,
+      skipWitness: !cell.witness,
+      fetchWitness: cell.witness
+        ? async () => ({ status: 200, body: witnessBody || cell.fingerprints?.[0] || '' })
+        : null,
+    },
+  );
+  console.log(JSON.stringify({ kind: 'helix.dna-bind-verify', ...result }, null, 2));
+  process.exit(result.ok ? 0 : 2);
 }
 
 console.error(`Unknown command: ${cmd}`);

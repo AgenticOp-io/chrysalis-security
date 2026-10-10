@@ -1496,6 +1496,102 @@ export function buildSensitivityMap(seed) {
 }
 
 /**
+ * Ops DNA-bind overlay (RFC-0042–0045). Beside the certificate, never inside it.
+ *
+ * Declares which digests / proof units Secure must verify when `match live` is set.
+ * Helix computes digests at verify time — this map only carries what the genome named.
+ *
+ * @param {{ app_id?: string, bridge?: object }} seed seeded DNA with bridge envelope
+ */
+export function buildDnaBindMap(seed) {
+  const bridge = seed?.bridge && typeof seed.bridge === 'object' ? seed.bridge : {};
+  const annotations = Array.isArray(bridge.annotations) ? bridge.annotations : [];
+  const moduleFacts =
+    bridge.cwl_dna_bind && typeof bridge.cwl_dna_bind === 'object' ? bridge.cwl_dna_bind : {};
+
+  const module = {
+    certificate: moduleFacts.cwl_dna_certificate || null,
+    fingerprint: moduleFacts.cwl_dna_fingerprint || null,
+    fingerprints: Array.isArray(moduleFacts.cwl_dna_fingerprints)
+      ? moduleFacts.cwl_dna_fingerprints
+      : moduleFacts.cwl_dna_fingerprint
+        ? [moduleFacts.cwl_dna_fingerprint]
+        : [],
+    bank: moduleFacts.cwl_dna_bank || null,
+    match_live: moduleFacts.cwl_match_live === true,
+    match_bank: moduleFacts.cwl_match_bank === true,
+    expect: moduleFacts.cwl_dna_expect || null,
+    quorum: moduleFacts.cwl_dna_quorum ?? null,
+    lineage: moduleFacts.cwl_dna_lineage || null,
+    supersedes: moduleFacts.cwl_dna_supersedes || null,
+    witness: moduleFacts.cwl_dna_witness || null,
+    scope: moduleFacts.cwl_dna_scope || null,
+  };
+
+  const proofs = Array.isArray(moduleFacts.cwl_dna_proofs)
+    ? moduleFacts.cwl_dna_proofs.map((p) => ({
+        name: p.name,
+        certificate: p.certificate || null,
+        fingerprint: p.fingerprint || null,
+        fingerprints: Array.isArray(p.fingerprints) ? p.fingerprints : [],
+        bank: p.bank || null,
+        match_live: p.match_live === true,
+        match_bank: p.match_bank === true,
+        expect: p.expect || null,
+        quorum: p.quorum ?? null,
+        lineage: p.lineage || null,
+        supersedes: p.supersedes || null,
+        witness: p.witness || null,
+        scope: p.scope || null,
+      }))
+    : [];
+
+  const routes = annotations
+    .filter(
+      (a) =>
+        a &&
+        (a.cwl_match_live === true ||
+          a.cwl_dna_fingerprint ||
+          (Array.isArray(a.cwl_dna_fingerprints) && a.cwl_dna_fingerprints.length) ||
+          a.cwl_dna_proof ||
+          a.cwl_dna_certificate),
+    )
+    .map((a) => ({
+      method: String(a.method || 'GET').toUpperCase(),
+      path_template: a.path_template,
+      host: a.host || 'default',
+      certificate: a.cwl_dna_certificate || null,
+      fingerprint: a.cwl_dna_fingerprint || null,
+      fingerprints: Array.isArray(a.cwl_dna_fingerprints)
+        ? a.cwl_dna_fingerprints
+        : a.cwl_dna_fingerprint
+          ? [a.cwl_dna_fingerprint]
+          : [],
+      match_live: a.cwl_match_live === true,
+      match_bank: a.cwl_match_bank === true,
+      expect: a.cwl_dna_expect || null,
+      proof: a.cwl_dna_proof || null,
+      quorum: a.cwl_dna_quorum ?? null,
+      lineage: a.cwl_dna_lineage || null,
+      supersedes: a.cwl_dna_supersedes || null,
+      witness: a.cwl_dna_witness || null,
+      scope: a.cwl_dna_scope || null,
+    }));
+
+  return {
+    kind: 'chrysalis.helix.dna-bind',
+    schemaVersion: 1,
+    app_id: seed?.app_id ?? null,
+    source: 'cwl-genome',
+    module,
+    proofs,
+    routes,
+    note:
+      'Ops overlay for RFC-0042–0045 DNA bind. Not part of app-dna-v1 — Helix verifies digests; CWL only named them.',
+  };
+}
+
+/**
  * Cookie-purpose overlay (RFC-0034). Names and preference class lists only — never a token.
  * Absent overlay ⇒ Helix does not apply the purpose check (D5).
  * @param {{ bridge?: { annotations?: object[] } }} seed

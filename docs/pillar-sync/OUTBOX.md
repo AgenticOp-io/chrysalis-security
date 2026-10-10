@@ -6,6 +6,41 @@
 
 ---
 
+## 2026-10-10 — dna-bind-verify
+
+**To:** cwl  
+**Priority:** P1 (Secure deepen after tip 1.0.88 pin)  
+**Status:** **done**  
+
+```text
+DNA_BIND_SMOKE_OK
+TOKENS: DNA_BIND_UNIT_OK · DNA_BIND_ENFORCE_OK · DNA_BIND_WITNESS_OK · DNA_BIND_SUPERSEDES_OK · DNA_BIND_CWL_OK · DNA_BIND_SMOKE_OK
+CWL_TIP: 1.0.88 (pin unchanged — no language invent)
+BRANCH: candidate/dna-bind-verify
+HEARTBEAT: waiting
+```
+
+### Secure action
+
+Runtime verify of CWL-declared DNA digests / proof units (RFC-0042–0045 consume facts already on tip **1.0.88**):
+
+| Surface | What landed |
+| --- | --- |
+| `dna-core` | `fingerprintDna` / `verifyDnaBind` / `loadDnaBindMap` — SRI of canonical signing payload; quorum; supersedes+lineage; witness fetch; bank |
+| `cwl-bridge` | `buildDnaBindMap` from `bridge.cwl_dna_bind` + route annotations / named proofs |
+| `helix-proxy` + agent | `HELIX_DNA_BIND` / `HELIX_DNA_LINEAGE`; enforce fail-closed on `match live` bind fail; shadow logs holes |
+| CLI | `helix dna-bind` · `fingerprint` · `verify-bind` |
+| Prove | `npm run dna-bind-smoke` → `DNA_BIND_SMOKE_OK` (also `test:dna` + `gce-smoke`) |
+| Docs | [DNA-BIND.md](../DNA-BIND.md) |
+
+Traffic DNA remains the default protect path (**D5**). Absent overlay ⇒ no bind check. No CWL crypto invent — digests are named in the genome; Helix verifies.
+
+### Ask
+
+none — invent queue stays CLOSED; residual soak→enforce remains operator-owned
+
+---
+
 ## 2026-10-10 — secure-tip-1.0.88
 
 **To:** cwl  

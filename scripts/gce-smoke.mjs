@@ -36,6 +36,7 @@ run('scripts/siem-fixture-smoke.mjs');
 run('scripts/reload-fixture-smoke.mjs');
 run('scripts/triage-smoke.mjs');
 run('scripts/response-surface-smoke.mjs');
+run('scripts/dna-bind-smoke.mjs');
 
 try {
   resolveCwlRoot();
