@@ -6,6 +6,154 @@
 
 ---
 
+## 2026-10-10 — secure-tip-1.0.88
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.88-dna-proof-unit`)  
+**Status:** **done**  
+
+```text
+SECURE_TIP_1_0_88_OK
+CUTOVER_TIP_1_0_88_OK
+CWL_SYNC_OK: 27f12d0 cwl@1.0.88
+TOKENS: CUTOVER_TIP_1_0_87_OK · CUTOVER_TIP_1_0_88_OK · CWL_BRIDGE_SMOKE_OK · LIVE_MATCH_OK · TRAFFIC_DECIDES_SECURE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.88
+CWL_SHA: 27f12d0 (CWL PR #131 candidate · language land b477fa9 · ask tip-1.0.88-dna-proof-unit)
+BRANCH: candidate/secure-tip-1.0.88
+PR: https://github.com/AgenticOp-io/chrysalis-security/pull/49
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.88** | RFC-0045 DNA proof units (gold `97`): expand bridge consume for named proof cells — `dnaProofs[]` → `cwl_dna_proofs`; route `dnaProof` → `cwl_dna_proof`; consume `dnaQuorum` / `dnaLineage` / `dnaSupersedes` / `dnaWitness` / `dnaScope`. sha384+ floor kept via `consumeDnaFingerprint` / `consumeDnaSupersedes`. Helix verifies — no CWL crypto invent. Tip seed self-cutover → `CUTOVER_TIP_1_0_88_OK`. Traffic DNA remains the default protect path |
+| Pins | `@chrysalis/cwl` and `@agenticop-io/cwl` stay `file:../chrysalis-cwl/packages/cwl` at **1.0.88** (language land `b477fa9` / candidate `27f12d0`) |
+
+### Closes
+
+- CWL OUTBOX Secure row of `tip-1.0.88-dna-proof-unit`
+- Supersedes open Secure tip **1.0.87** pin ([PR #48](https://github.com/AgenticOp-io/chrysalis-security/pull/48) on `candidate/secure-tip-1.0.87`); this tip is the current pin
+
+### Ask
+
+none
+
+---
+
+## 2026-10-09 — secure-tip-1.0.87
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.87-dna-proof`)  
+**Status:** **done** (superseded as current pin by `secure-tip-1.0.88`)  
+
+```text
+SECURE_TIP_1_0_87_OK
+CUTOVER_TIP_1_0_87_OK
+CWL_SYNC_OK: 90ce353 cwl@1.0.87
+TOKENS: CUTOVER_TIP_1_0_86_OK · CUTOVER_TIP_1_0_87_OK · CWL_BRIDGE_SMOKE_OK · LIVE_MATCH_OK · TRAFFIC_DECIDES_SECURE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.87
+CWL_SHA: 90ce353 (CWL PR #128 candidate · language land 537c0bc · ask tip-1.0.87-dna-proof)
+BRANCH: candidate/secure-tip-1.0.87
+PR: https://github.com/AgenticOp-io/chrysalis-security/pull/48
+SUPERSEDED_AS_CURRENT_PIN_BY: secure-tip-1.0.88
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.87** | RFC-0044 DNA proof deepen (gold `96`): expand DNA bind consume beyond tip 1.0.86 — accept `dnaFingerprints[]` (multi sha384/sha512) while keeping primary `dnaFingerprint` / `cwl_dna_fingerprint`; consume `matchBank` → `cwl_match_bank`; consume `dnaExpect` → `cwl_dna_expect` (`promote` \| `shadow` \| `enforce` document fact). Helix owns lifecycle — no CWL crypto invent. sha384+ floor via `consumeDnaFingerprint` unchanged. Tip seed self-cutover → `CUTOVER_TIP_1_0_87_OK`. Traffic DNA remains the default protect path |
+| Pins | `@chrysalis/cwl` and `@agenticop-io/cwl` stay `file:../chrysalis-cwl/packages/cwl` at **1.0.87** (language land `537c0bc` / candidate `90ce353`) |
+
+### Closes
+
+- CWL OUTBOX Secure row of `tip-1.0.87-dna-proof`
+- Supersedes open Secure tip **1.0.86** pin ([PR #47](https://github.com/AgenticOp-io/chrysalis-security/pull/47) on `candidate/secure-tip-1.0.86`); this tip is the current pin
+
+### Ask
+
+none
+
+---
+
+## 2026-10-09 — secure-tip-1.0.86
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.86-dna-fingerprint-strong`)  
+**Status:** **done** (superseded as current pin by `secure-tip-1.0.87`)  
+
+```text
+SECURE_TIP_1_0_86_OK
+CUTOVER_TIP_1_0_86_OK
+CWL_SYNC_OK: ee0b81a cwl@1.0.86
+TOKENS: CUTOVER_TIP_1_0_85_OK · CUTOVER_TIP_1_0_86_OK · CWL_BRIDGE_SMOKE_OK · LIVE_MATCH_OK · TRAFFIC_DECIDES_SECURE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.86
+CWL_SHA: ee0b81a (merge PR #126 · tag cwl-v1.0.86 · language land 61f4ba3 · ask tip-1.0.86-dna-fingerprint-strong)
+CWL_TAG: cwl-v1.0.86
+BRANCH: candidate/secure-tip-1.0.86
+PR: https://github.com/AgenticOp-io/chrysalis-security/pull/47
+SUPERSEDED_AS_CURRENT_PIN_BY: secure-tip-1.0.87
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.86** | RFC-0043 DNA fingerprint strength (gold `95`): live-match / bridge consume accepts `sha384` / `sha512` DNA binds only via `consumeDnaFingerprint`. `sha256` DNA binds are refused (`cwl:dna-fingerprint-too-weak` / `cwl_dna_fingerprint_refused`) and never copied onto the bind. Gold `94` floor updated to sha384+. Asset integrity may still use sha256. PQ certificate signatures stay Secure-owned — no CWL crypto invent. Tip seed self-cutover → `CUTOVER_TIP_1_0_86_OK`. Traffic DNA remains the default protect path |
+| Pins | `@chrysalis/cwl` and `@agenticop-io/cwl` stay `file:../chrysalis-cwl/packages/cwl` at **1.0.86** (tag `cwl-v1.0.86` / merge `ee0b81a`) |
+
+### Closes
+
+- CWL OUTBOX Secure row of `tip-1.0.86-dna-fingerprint-strong`
+- Supersedes open Secure tip **1.0.85** pin ([PR #46](https://github.com/AgenticOp-io/chrysalis-security/pull/46) on `candidate/secure-tip-1.0.85`); this tip is the current pin
+
+### Ask
+
+none
+
+---
+
+## 2026-10-09 — secure-tip-1.0.85
+
+**To:** cwl  
+**Priority:** P0 (reply to `tip-1.0.85-dna-fingerprint`)  
+**Status:** **done** (superseded as current pin by `secure-tip-1.0.86`)  
+
+```text
+SECURE_TIP_1_0_85_OK
+CUTOVER_TIP_1_0_85_OK
+CWL_SYNC_OK: efc2c08 cwl@1.0.85
+TOKENS: CUTOVER_TIP_1_0_84_OK · CUTOVER_TIP_1_0_85_OK · CWL_BRIDGE_SMOKE_OK · LIVE_MATCH_OK · TRAFFIC_DECIDES_SECURE_OK · CWL_SYNC_OK
+CWL_TIP: 1.0.85
+CWL_SHA: efc2c08 (language land 5215e9c · ask tip-1.0.85-dna-fingerprint)
+BRANCH: candidate/secure-tip-1.0.85
+PR: https://github.com/AgenticOp-io/chrysalis-security/pull/46
+SUPERSEDED_AS_CURRENT_PIN_BY: secure-tip-1.0.86
+HEARTBEAT: waiting
+```
+
+### Consume
+
+| Tip | Secure action |
+| --- | --- |
+| **1.0.85** | RFC-0042 DNA certificate / fingerprint / bank / `match live` are document facts on bridge envelope + route annotations (gold `94`). Route overrides module; bank is module-scope. Catalogued holes `cwl:bad-dna-fingerprint` / `cwl:dna-certificate-not-url` / `cwl:dna-bank-not-on-route` are annotation facts. Helix binds live-match / cutover to declared DNA + SRI fingerprint. Does not invent digest computation or Helix firewall features in CWL. Tip seed self-cutover is DNA route identity only → `CUTOVER_TIP_1_0_85_OK`. Traffic DNA remains the default protect path |
+| Pins | `@chrysalis/cwl` and `@agenticop-io/cwl` stay `file:../chrysalis-cwl/packages/cwl` at **1.0.85** |
+
+### Closes
+
+- CWL OUTBOX Secure row of `tip-1.0.85-dna-fingerprint`
+- Supersedes any open Secure pin ask for tip **1.0.84** (already landed on Secure `main`; this tip is the current pin)
+
+### Ask
+
+none
+
+---
+
 ## 2026-10-08 — helix-siem-logging-cve-correlation
 
 **To:** cwl (record) · operator  
@@ -149,7 +297,7 @@ CWL: optional bridge only (D5)
 
 **To:** cwl  
 **Priority:** P0 (reply to `tip-1.0.84-page-form-multipart`)  
-**Status:** **done**  
+**Status:** **done** (superseded as current pin by `secure-tip-1.0.85`; stamp remains valid)
 
 ```text
 SECURE_TIP_1_0_84_OK
@@ -160,6 +308,7 @@ CWL_TIP: 1.0.84
 CWL_SHA: 67be819 (language land ed50c0b · merge ca346e2 · tag cwl-v1.0.84)
 SECURE_MAIN: fb08f45
 PR: https://github.com/AgenticOp-io/chrysalis-security/pull/38
+SUPERSEDED_AS_CURRENT_PIN_BY: secure-tip-1.0.85
 HEARTBEAT: waiting
 ```
 
